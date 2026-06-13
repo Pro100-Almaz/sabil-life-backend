@@ -1,8 +1,12 @@
 import logging
+from datetime import datetime
+from datetime import timezone as tz
 
 from django.contrib.auth import login
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from knox.auth import TokenAuthentication
+from knox.models import AuthToken
+from knox.settings import knox_settings
 from knox.views import LoginView as KnoxLoginView
 from rest_framework import generics, permissions, serializers, status, throttling
 from rest_framework.response import Response
@@ -12,9 +16,15 @@ from .schema import (
     PROFILE_DETAIL_SCHEMA,
     PROFILE_PATCH_SCHEMA,
     PROFILE_PUT_SCHEMA,
+    REGISTER_RESPONSE_SCHEMA,
     USER_CREATE_RESPONSE_SCHEMA,
 )
-from .serializers import AuthTokenSerializer, CreateUserSerializer, UserProfileSerializer
+from .serializers import (
+    AuthTokenSerializer,
+    CreateUserSerializer,
+    RegisterSerializer,
+    UserProfileSerializer,
+)
 from .throttles import UserLoginRateThrottle
 
 logger = logging.getLogger(__name__)
@@ -36,12 +46,65 @@ class LoginView(KnoxLoginView):
         return super(LoginView, self).post(request, format=None)
 
 
+@extend_schema(
+    request=RegisterSerializer,
+    responses=REGISTER_RESPONSE_SCHEMA,
+)
+class RegisterView(generics.CreateAPIView):
+    """
+    Public self-service registration endpoint.
+
+    Creates a new user account and returns a Knox bearer token immediately
+    (the user is logged in on registration — no separate login step needed).
+
+    Role rules:
+    - Default role is FAMILY.
+    - TUTOR and MASTERCLASS users are created with is_verified=False; an admin
+      must verify them before their listings become visible.
+    - ADMIN role is rejected — admins are created via createsuperuser or the
+      Django admin /create/ endpoint.
+
+    Response shape: {user, token, expiry}  (Knox single-token, not JWT access+refresh)
+    """
+
+    permission_classes = (permissions.AllowAny,)
+    serializer_class = RegisterSerializer
+    throttle_classes = [throttling.AnonRateThrottle]
+
+    def create(self, request, *args, **kwargs) -> Response:
+        serializer = self.get_serializer(data=request.data)
+        try:
+            serializer.is_valid(raise_exception=True)
+        except serializers.ValidationError as e:
+            logger.warning("Registration failed: %s", e.detail)
+            raise
+
+        user = serializer.save()
+        _, token = AuthToken.objects.create(user)
+        token_ttl = knox_settings.TOKEN_TTL
+        expiry = datetime.now(tz=tz.utc) + token_ttl if token_ttl is not None else None
+
+        logger.info("User %s registered with role %s.", user.email, user.role)
+
+        user_data = UserProfileSerializer(user, context={"request": request}).data
+        return Response(
+            {"user": user_data, "token": token, "expiry": expiry},
+            status=status.HTTP_201_CREATED,
+        )
+
+
 @extend_schema_view(
     get=extend_schema(responses=PROFILE_DETAIL_SCHEMA),
     patch=extend_schema(responses=PROFILE_PATCH_SCHEMA),
     put=extend_schema(responses=PROFILE_PUT_SCHEMA),
 )
-class UserProfileView(generics.RetrieveUpdateAPIView):
+class UserMeView(generics.RetrieveUpdateAPIView):
+    """
+    GET/PATCH/PUT the currently authenticated user's profile.
+
+    Replaces the old /profile/ endpoint. The URL name is 'me'.
+    """
+
     serializer_class = UserProfileSerializer
     permission_classes = (permissions.IsAuthenticated,)
     throttle_classes = [throttling.UserRateThrottle]
@@ -59,7 +122,6 @@ class CreateUserView(generics.CreateAPIView):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         try:
-            # Explicitly validate the data including password complexity checks
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
             headers = self.get_success_headers(serializer.data)

@@ -5,6 +5,7 @@ from apps.core.schema import UNAUTHORIZED_EXAMPLES, ErrorResponseSerializer
 from .serializers import (
     CreateUserSerializer,
     LoginResponseSerializer,
+    RegisterResponseSerializer,
     UserProfileSerializer,
 )
 
@@ -28,6 +29,49 @@ LOGIN_RESPONSE_SCHEMA = {
                     "email": ["This field is required."],
                     "password": ["This field is required."],
                 },
+                status_codes=["400"],
+            ),
+        ],
+    ),
+}
+
+REGISTER_RESPONSE_SCHEMA = {
+    201: OpenApiResponse(
+        response=RegisterResponseSerializer,
+        description="User registered successfully. Returns a Knox bearer token.",
+        examples=[
+            OpenApiExample(
+                "Family Registration",
+                value={
+                    "user": {
+                        "id": 1,
+                        "email": "family@example.com",
+                        "full_name": "Sara Al-Kuwari",
+                        "role": "FAMILY",
+                        "is_verified": True,
+                        "phone": "+97455512345",
+                        "home_lat": 25.369,
+                        "home_lng": 51.551,
+                    },
+                    "token": "abc123...",
+                    "expiry": "2026-06-13T20:00:00Z",
+                },
+                status_codes=["201"],
+            ),
+        ],
+    ),
+    400: OpenApiResponse(
+        response=ErrorResponseSerializer,
+        description="Validation error",
+        examples=[
+            OpenApiExample(
+                "Admin Role Rejected",
+                value={"role": ["Cannot self-register with the ADMIN role."]},
+                status_codes=["400"],
+            ),
+            OpenApiExample(
+                "Weak Password",
+                value={"password": ["This password is too common."]},
                 status_codes=["400"],
             ),
         ],
@@ -72,7 +116,7 @@ USER_CREATE_RESPONSE_SCHEMA = {
 PROFILE_DETAIL_SCHEMA = {
     200: OpenApiResponse(
         response=UserProfileSerializer,
-        description="User profile data",
+        description="Current user profile data",
     ),
     401: OpenApiResponse(
         response=ErrorResponseSerializer,
@@ -92,12 +136,7 @@ PROFILE_PUT_SCHEMA = {
         examples=[
             OpenApiExample(
                 "Invalid Data",
-                value={"password": ["Password must be at least 5 characters long."]},
-                status_codes=["400"],
-            ),
-            OpenApiExample(
-                "Missing Fields",
-                value={"password": ["This field is required."]},
+                value={"password": ["Password must be at least 8 characters long."]},
                 status_codes=["400"],
             ),
         ],

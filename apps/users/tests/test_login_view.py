@@ -192,6 +192,6 @@ class LoginViewTests(APITestCase):
         # All tokens should be valid
         for token in tokens:
             self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
-            profile_url = reverse("v1:users:profile")
-            response = self.client.get(profile_url)
+            me_url = reverse("v1:users:me")
+            response = self.client.get(me_url)
             self.assertEqual(response.status_code, status.HTTP_200_OK)
