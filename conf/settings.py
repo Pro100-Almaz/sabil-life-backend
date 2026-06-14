@@ -170,12 +170,15 @@ REST_FRAMEWORK = {
     },
 }
 
-# TODO ⚡ Update the settings for the DRF Spectacular
 SPECTACULAR_SETTINGS = {
-    "TITLE": "Django Starter Template",
-    "DESCRIPTION": "A comprehensive starting point for your new API with Django and DRF",
+    "TITLE": "Sabil Life API",
+    "DESCRIPTION": (
+        "Backend API for Sabil Life — Doha family directory, "
+        "providers, inquiries, and commissions."
+    ),
     "VERSION": "0.1.0",
     "SERVE_INCLUDE_SCHEMA": False,
+    "SERVERS": [{"url": "/api/v1", "description": "v1"}],
 }
 
 if DEBUG:

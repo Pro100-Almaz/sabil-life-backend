@@ -1,9 +1,9 @@
 [project]
 # TODO ⚡ Change the name, version, description, authors, and license of the project
-name = "django-starter-template"
-version = "0.5.2"
-description = "A comprehensive starting point for your new API with Django and DRF"
-authors = [{name = "Carlos", email = "carlos@pythoncheatsheet.org"}]
+name = "sabil-life-backend"
+version = "0.1.0"
+description = "Sabil Life — Doha family directory backend (Django + DRF)"
+authors = [{name = "Sabil Life Team"}]
 license = {text = "MIT"}
 readme = "README.md"
 requires-python = ">=3.13"
