@@ -7,7 +7,8 @@ from django.contrib.auth.password_validation import validate_password
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
-from .models import CustomUser, UserRole
+from apps.users.enums import UserRole
+from apps.users.models import CustomUser
 from .utils import get_errors
 
 logger = logging.getLogger(__name__)
