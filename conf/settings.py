@@ -97,6 +97,7 @@ INSTALLED_APPS = [
     # local apps
     "apps.users",
     "apps.core",
+    "apps.catalog",
 ]
 
 MIDDLEWARE = [
@@ -148,6 +149,8 @@ REST_KNOX = {
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": ("knox.auth.TokenAuthentication",),
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "PAGE_SIZE": 20,
     "DEFAULT_VERSIONING_CLASS": "rest_framework.versioning.URLPathVersioning",
     "DEFAULT_VERSION": "v1",
     "ALLOWED_VERSIONS": ["v1"],

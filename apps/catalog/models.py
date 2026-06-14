@@ -1,0 +1,66 @@
+import uuid
+from decimal import Decimal
+
+from django.conf import settings
+from django.db import models
+from django.utils.translation import gettext_lazy as _
+
+
+class ListingCategory(models.TextChoices):
+    SCHOOLS = "SCHOOLS", _("Schools")
+    NURSERIES = "NURSERIES", _("Nurseries")
+    ACTIVITIES = "ACTIVITIES", _("Activities")
+    ENTERTAINMENT = "ENTERTAINMENT", _("Entertainment")
+    TUTORING = "TUTORING", _("Tutoring")
+    MASTERCLASSES = "MASTERCLASSES", _("Masterclasses")
+    PARTNERSHIPS = "PARTNERSHIPS", _("Partnerships")
+
+
+class ListingStatus(models.TextChoices):
+    DRAFT = "DRAFT", _("Draft")
+    PENDING = "PENDING", _("Pending")
+    ACTIVE = "ACTIVE", _("Active")
+    REJECTED = "REJECTED", _("Rejected")
+
+
+class Listing(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    title = models.CharField(max_length=200)
+    category = models.CharField(
+        max_length=32,
+        choices=ListingCategory.choices,
+        db_index=True,
+    )
+    subtitle = models.CharField(max_length=300, blank=True)
+    neighborhood = models.CharField(max_length=120, blank=True)
+    lat = models.FloatField(null=True, blank=True)
+    lng = models.FloatField(null=True, blank=True)
+    price_from_qar = models.PositiveIntegerField(default=0)
+    age_groups = models.JSONField(default=list, blank=True)
+    image_urls = models.JSONField(default=list, blank=True)
+    description = models.TextField(blank=True)
+    highlights = models.JSONField(default=list, blank=True)
+    rating = models.DecimalField(max_digits=2, decimal_places=1, default=Decimal("0.0"))
+    review_count = models.PositiveIntegerField(default=0)
+    is_featured = models.BooleanField(default=False, db_index=True)
+    status = models.CharField(
+        max_length=16,
+        choices=ListingStatus.choices,
+        default=ListingStatus.DRAFT,
+        db_index=True,
+    )
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="listings",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-is_featured", "-created_at"]
+
+    def __str__(self) -> str:
+        return f"{self.title} ({self.category})"

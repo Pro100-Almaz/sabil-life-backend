@@ -32,6 +32,7 @@ urlpatterns = [
                     # Enabled: create, profile, login, logout, logoutall
                     path("auth/", include("apps.users.urls")),
                     path("core/", include("apps.core.urls")),
+                    path("", include("apps.catalog.urls")),
                 ],
                 "v1",
             ),
