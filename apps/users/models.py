@@ -2,14 +2,8 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from .managers import CustomUserManager
-
-
-class UserRole(models.TextChoices):
-    FAMILY = "FAMILY", _("Family")
-    TUTOR = "TUTOR", _("Tutor")
-    MASTERCLASS = "MASTERCLASS", _("Masterclass")
-    ADMIN = "ADMIN", _("Admin")
+from apps.users.enums import UserRole
+from apps.users.managers import CustomUserManager
 
 
 class CustomUser(AbstractUser):
