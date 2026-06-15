@@ -178,8 +178,10 @@ SPECTACULAR_SETTINGS = {
     ),
     "VERSION": "0.1.0",
     "SERVE_INCLUDE_SCHEMA": False,
-    "SERVERS": [{"url": "/api/v1", "description": "v1"}],
 }
+
+if DEBUG:
+    CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
 
 if DEBUG:
     try:
