@@ -4,6 +4,9 @@ from django.contrib import admin
 from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
+from apps.inquiries.urls import provider_urlpatterns as inquiry_provider_urls
+from apps.subscriptions.urls import provider_urlpatterns as subscription_provider_urls
+
 admin.site.site_header = "Sabil Life Admin"
 admin.site.site_title = "Sabil Life Admin"
 admin.site.index_title = "Sabil Life"
@@ -18,6 +21,18 @@ urlpatterns = [
                     path("auth/", include("apps.users.urls")),
                     path("core/", include("apps.core.urls")),
                     path("", include("apps.catalog.urls")),
+                    path("provider/", include("apps.providers.urls")),
+                    path(
+                        "provider/",
+                        include((inquiry_provider_urls, "provider-inquiries")),
+                    ),
+                    path(
+                        "provider/",
+                        include((subscription_provider_urls, "provider-subscriptions")),
+                    ),
+                    path("", include("apps.inquiries.urls")),
+                    path("", include("apps.subscriptions.urls")),
+                    path("", include("apps.suggestions.urls")),
                 ],
                 "v1",
             ),

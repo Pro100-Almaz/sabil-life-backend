@@ -41,9 +41,7 @@ class TestSeedCatalogCreates:
 
     def test_correct_category_distribution(self):
         seed()
-        counts = Counter(
-            Listing.objects.values_list("category", flat=True)
-        )
+        counts = Counter(Listing.objects.values_list("category", flat=True))
         assert counts[ListingCategory.SCHOOLS] == 4
         assert counts[ListingCategory.NURSERIES] == 3
         assert counts[ListingCategory.ACTIVITIES] == 6

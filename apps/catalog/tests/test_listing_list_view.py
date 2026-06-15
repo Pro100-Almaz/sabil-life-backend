@@ -218,3 +218,26 @@ class ListingListViewTests(APITestCase):
         response = self.client.get(self.url)
         result = response.data["results"][0]
         self.assertIsNone(result["distance_km"])
+
+    # ------------------------------------------------------------------
+    # Phase 5: private fields must NOT appear in public list response
+    # ------------------------------------------------------------------
+
+    def test_session_schedule_not_in_list_response(self):
+        """Phase 5 private field must never leak on public listing list."""
+        make_listing(title="Private Fields Test")
+        response = self.client.get(self.url)
+        for result in response.data["results"]:
+            self.assertNotIn("session_schedule", result)
+
+    def test_exact_address_not_in_list_response(self):
+        make_listing(title="Private Fields Test 2")
+        response = self.client.get(self.url)
+        for result in response.data["results"]:
+            self.assertNotIn("exact_address", result)
+
+    def test_materials_required_not_in_list_response(self):
+        make_listing(title="Private Fields Test 3")
+        response = self.client.get(self.url)
+        for result in response.data["results"]:
+            self.assertNotIn("materials_required", result)

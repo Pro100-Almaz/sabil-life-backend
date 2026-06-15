@@ -56,6 +56,11 @@ class Listing(models.Model):
         on_delete=models.SET_NULL,
         related_name="listings",
     )
+    # --- Phase 5 private fields (never exposed on public catalog endpoints) ---
+    session_schedule = models.TextField(blank=True, default="")
+    exact_address = models.TextField(blank=True, default="")
+    materials_required = models.JSONField(default=list, blank=True)
+    # -------------------------------------------------------------------------
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

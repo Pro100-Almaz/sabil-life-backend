@@ -160,10 +160,7 @@ class TestMarkFeatured:
 
 class TestAdminActionsRegistered:
     def test_all_four_actions_registered(self, admin_instance):
-        action_names = [
-            a.__name__ if callable(a) else a
-            for a in admin_instance.actions
-        ]
+        action_names = [a.__name__ if callable(a) else a for a in admin_instance.actions]
         assert "approve_listings" in action_names
         assert "reject_listings" in action_names
         assert "mark_featured" in action_names

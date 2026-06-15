@@ -147,3 +147,24 @@ class ListingDetailViewTests(APITestCase):
         # No credentials set — should still return 200
         response = self.client.get(self._url(listing.id))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    # ------------------------------------------------------------------
+    # Phase 5: private fields must NOT appear in public detail response
+    # ------------------------------------------------------------------
+
+    def test_session_schedule_not_in_detail_response(self):
+        """Phase 5 private field must never leak on public listing detail."""
+        listing = make_listing()
+        response = self.client.get(self._url(listing.id))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertNotIn("session_schedule", response.data)
+
+    def test_exact_address_not_in_detail_response(self):
+        listing = make_listing()
+        response = self.client.get(self._url(listing.id))
+        self.assertNotIn("exact_address", response.data)
+
+    def test_materials_required_not_in_detail_response(self):
+        listing = make_listing()
+        response = self.client.get(self._url(listing.id))
+        self.assertNotIn("materials_required", response.data)

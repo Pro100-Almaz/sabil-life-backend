@@ -35,9 +35,7 @@ def approve_listings(modeladmin, request, queryset):
     if skipped:
         modeladmin.message_user(
             request,
-            _(
-                "%(n)d listing(s) skipped — only DRAFT/PENDING listings can be approved."
-            )
+            _("%(n)d listing(s) skipped — only DRAFT/PENDING listings can be approved.")
             % {"n": skipped},
             messages.WARNING,
         )
@@ -138,6 +136,9 @@ class ListingAdmin(admin.ModelAdmin):
                     "age_groups",
                     "image_urls",
                     "image_preview",
+                    "session_schedule",
+                    "exact_address",
+                    "materials_required",
                 )
             },
         ),

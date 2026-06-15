@@ -98,6 +98,10 @@ INSTALLED_APPS = [
     "apps.users",
     "apps.core",
     "apps.catalog",
+    "apps.providers",
+    "apps.inquiries",
+    "apps.subscriptions",
+    "apps.suggestions",
 ]
 
 MIDDLEWARE = [
