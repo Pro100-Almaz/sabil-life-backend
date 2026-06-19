@@ -69,6 +69,14 @@ if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # -----------------------------------------------------------------------------
+# Billing gate (Phase 6 stopgap)
+# -----------------------------------------------------------------------------
+# Phase 6 not yet built. When False, contact_revealed flips to True automatically
+# on inquiry accept (everything is effectively a free trial). Set to True once
+# billing is live to enforce the gate. See docs/PHASE_6_BILLING.md.
+BILLING_GATE_ENABLED = env.bool("BILLING_GATE_ENABLED", default=False)
+
+# -----------------------------------------------------------------------------
 # Databases
 # -----------------------------------------------------------------------------
 DJANGO_DATABASE_URL = env.db("DATABASE_URL")
@@ -102,6 +110,7 @@ INSTALLED_APPS = [
     "apps.inquiries",
     "apps.subscriptions",
     "apps.suggestions",
+    "apps.reviews",
 ]
 
 MIDDLEWARE = [

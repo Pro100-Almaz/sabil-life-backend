@@ -53,14 +53,12 @@ class ListingDetailSerializer(ListingCardSerializer):
 
     Extends ListingCard with: description, highlights, owner_id, reviews.
 
-    reviews is an empty list for now — the Review model is built in Phase 7.
-    TODO (Phase 7): replace the static [] with a nested ReviewSerializer when
-    the Review FK target exists.
+    reviews embeds the 10 most-recent reviews (Phase 7). Full paginated list
+    is at GET /api/v1/listings/{id}/reviews/.
     """
 
     owner_id = serializers.SerializerMethodField()
-    # TODO (Phase 7): replace with ReviewSerializer(many=True, read_only=True)
-    reviews = serializers.ListField(child=serializers.DictField(), read_only=True)
+    reviews = serializers.SerializerMethodField()
 
     class Meta(ListingCardSerializer.Meta):
         fields = ListingCardSerializer.Meta.fields + [
@@ -74,11 +72,13 @@ class ListingDetailSerializer(ListingCardSerializer):
         pk = obj.owner_id
         return str(pk) if pk is not None else None
 
-    def to_representation(self, instance: Listing) -> dict:
-        data = super().to_representation(instance)
-        # reviews is not a model field — inject the static placeholder
-        data["reviews"] = []
-        return data
+    def get_reviews(self, obj: Listing) -> list:
+        from apps.reviews.serializers import ReviewListSerializer
+
+        return ReviewListSerializer(
+            obj.reviews.select_related("author").order_by("-created_at")[:10],
+            many=True,
+        ).data
 
 
 class CategoryCountSerializer(serializers.Serializer):

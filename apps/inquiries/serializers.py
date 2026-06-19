@@ -88,17 +88,26 @@ class ProviderInquirySerializer(serializers.ModelSerializer):
         """
         Return a stable family contact block.
 
-        Phase 5: full_name, phone, email are always null (contact not revealed).
-        Phase 6 will flip to real values when contact_revealed=True.
-        # TODO Phase 6: replace None stubs with obj.family.full_name etc.
-        #               when obj.contact_revealed is True.
+        When contact_revealed=True (free-trial flag or Phase 6 billing gate
+        satisfied), real values are returned. Otherwise all contact fields
+        are null so the client shape is always stable.
+        See docs/PHASE_6_BILLING.md for the full billing-gate design.
         """
-        return {
+        base: dict = {
             "id": str(obj.family_id),
             "full_name": None,
             "phone": None,
             "email": None,
         }
+        if obj.contact_revealed:
+            base.update(
+                {
+                    "full_name": obj.family.full_name,
+                    "phone": obj.family.phone,
+                    "email": obj.family.email,
+                }
+            )
+        return base
 
 
 class InquiryCreateSerializer(serializers.Serializer):

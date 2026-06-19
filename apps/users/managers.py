@@ -1,9 +1,9 @@
 from typing import TYPE_CHECKING
 
-from apps.users.enums import UserRole
-
 from django.contrib.auth.base_user import BaseUserManager
 from django.utils.translation import gettext_lazy as _
+
+from apps.users.enums import UserRole
 
 if TYPE_CHECKING:
     from apps.users.models import CustomUser

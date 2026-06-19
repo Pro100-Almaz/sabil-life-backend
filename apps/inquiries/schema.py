@@ -81,8 +81,7 @@ _CONFLICT_EXAMPLE = [
 _STATUS_PARAM = OpenApiParameter(
     name="status",
     description=(
-        "Filter by inquiry status "
-        "(NEW, CONTACTED, ACCEPTED, DECLINED, COMPLETED)."
+        "Filter by inquiry status (NEW, CONTACTED, ACCEPTED, DECLINED, COMPLETED)."
     ),
     required=False,
     type=str,

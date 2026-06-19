@@ -5,6 +5,8 @@ All business logic for creating and transitioning inquiries is centralised so
 that views stay thin and the transitions are easy to unit-test in isolation.
 """
 
+from django.conf import settings
+
 from apps.catalog.models import Listing, ListingCategory, ListingStatus
 
 from .models import Inquiry, InquiryStatus
@@ -72,4 +74,11 @@ def transition(inquiry: Inquiry, action: str, *, actor) -> Inquiry:
         )
     inquiry.status = action
     inquiry.save(update_fields=["status", "updated_at"])
+    # Phase 6 stopgap: auto-reveal contact on accept when billing gate is off.
+    # When BILLING_GATE_ENABLED=True (production with billing live) this block
+    # is skipped and billing.services.on_inquiry_accepted() handles reveal.
+    # See docs/PHASE_6_BILLING.md.
+    if action == InquiryStatus.ACCEPTED and not settings.BILLING_GATE_ENABLED:
+        inquiry.contact_revealed = True
+        inquiry.save(update_fields=["contact_revealed", "updated_at"])
     return inquiry
