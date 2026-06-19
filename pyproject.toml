@@ -24,6 +24,8 @@ dependencies = [
     "drf-spectacular>=0.29.0",
     "django-filter>=25.1",
     "python-json-logger>=4.0.0",
+    "django-unfold>=0.70.0",
+    "django-import-export>=4.3.0",
 ]
 
 [build-system]

@@ -6,6 +6,8 @@ list display improvements, fieldsets, and empty-value display.
 from django.contrib import admin, messages
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
+from unfold.admin import ModelAdmin
+from unfold.decorators import action, display
 
 from .models import Listing, ListingStatus
 
@@ -21,7 +23,10 @@ _MUTABLE_FOR_REJECT = {
 }
 
 
-@admin.action(description=_("Approve selected listings (DRAFT/PENDING → ACTIVE)"))
+@action(
+    description=_("Approve selected listings (DRAFT/PENDING → ACTIVE)"),
+    icon="check_circle",
+)
 def approve_listings(modeladmin, request, queryset):
     eligible = queryset.filter(status__in=_MUTABLE_FOR_APPROVE)
     skipped = queryset.exclude(status__in=_MUTABLE_FOR_APPROVE).count()
@@ -41,7 +46,10 @@ def approve_listings(modeladmin, request, queryset):
         )
 
 
-@admin.action(description=_("Reject selected listings (→ REJECTED)"))
+@action(
+    description=_("Reject selected listings (→ REJECTED)"),
+    icon="cancel",
+)
 def reject_listings(modeladmin, request, queryset):
     eligible = queryset.filter(status__in=_MUTABLE_FOR_REJECT)
     skipped = queryset.exclude(status__in=_MUTABLE_FOR_REJECT).count()
@@ -61,7 +69,7 @@ def reject_listings(modeladmin, request, queryset):
         )
 
 
-@admin.action(description=_("Mark selected listings as featured"))
+@action(description=_("Mark selected listings as featured"), icon="star")
 def mark_featured(modeladmin, request, queryset):
     updated = queryset.update(is_featured=True)
     modeladmin.message_user(
@@ -71,7 +79,7 @@ def mark_featured(modeladmin, request, queryset):
     )
 
 
-@admin.action(description=_("Unmark selected listings as featured"))
+@action(description=_("Unmark selected listings as featured"), icon="star_outline")
 def unmark_featured(modeladmin, request, queryset):
     updated = queryset.update(is_featured=False)
     modeladmin.message_user(
@@ -85,16 +93,9 @@ def unmark_featured(modeladmin, request, queryset):
 # ListingAdmin
 # ---------------------------------------------------------------------------
 
-_STATUS_COLORS = {
-    ListingStatus.ACTIVE: "#2e7d32",
-    ListingStatus.PENDING: "#e65100",
-    ListingStatus.DRAFT: "#757575",
-    ListingStatus.REJECTED: "#c62828",
-}
-
 
 @admin.register(Listing)
-class ListingAdmin(admin.ModelAdmin):
+class ListingAdmin(ModelAdmin):
     actions = [approve_listings, reject_listings, mark_featured, unmark_featured]
 
     # List view -----------------------------------------------------------
@@ -154,23 +155,18 @@ class ListingAdmin(admin.ModelAdmin):
 
     # Custom columns ------------------------------------------------------
 
-    @admin.display(description=_("Status"), ordering="status")
-    def status_badge(self, obj: Listing) -> str:
-        color = _STATUS_COLORS.get(obj.status, "#757575")
-        return format_html(
-            '<span style="'
-            "background:{color};"
-            "color:#fff;"
-            "padding:2px 8px;"
-            "border-radius:4px;"
-            "font-size:11px;"
-            "font-weight:600;"
-            'white-space:nowrap;">'
-            "{label}"
-            "</span>",
-            color=color,
-            label=obj.get_status_display(),
-        )
+    @display(
+        description=_("Status"),
+        ordering="status",
+        label={
+            ListingStatus.ACTIVE: "success",
+            ListingStatus.PENDING: "warning",
+            ListingStatus.DRAFT: "info",
+            ListingStatus.REJECTED: "danger",
+        },
+    )
+    def status_badge(self, obj: Listing):
+        return obj.status, obj.get_status_display()
 
     @admin.display(description=_("Images"))
     def image_preview(self, obj: Listing) -> str:

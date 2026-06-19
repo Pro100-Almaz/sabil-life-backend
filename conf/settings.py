@@ -5,6 +5,7 @@ from pathlib import Path
 
 import environ
 import sentry_sdk
+from django.utils.translation import gettext_lazy as _
 
 env = environ.Env()
 root_path = environ.Path(__file__) - 2
@@ -88,6 +89,11 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # Applications configuration
 # -----------------------------------------------------------------------------
 INSTALLED_APPS = [
+    # Unfold must come before django.contrib.admin to override its templates.
+    "unfold",
+    "unfold.contrib.filters",
+    "unfold.contrib.forms",
+    "unfold.contrib.import_export",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -102,6 +108,7 @@ INSTALLED_APPS = [
     "knox",
     "django_celery_beat",
     "drf_spectacular",
+    "import_export",
     # local apps
     "apps.users",
     "apps.core",
@@ -143,6 +150,181 @@ TEMPLATES = [
         },
     },
 ]
+
+# -----------------------------------------------------------------------------
+# Unfold Admin
+# -----------------------------------------------------------------------------
+from django.urls import reverse_lazy  # noqa: E402
+
+UNFOLD = {
+    "SITE_TITLE": "Sabil Life Admin",
+    "SITE_HEADER": "Sabil Life",
+    "SITE_SUBHEADER": "Doha family directory",
+    "SITE_URL": "/",
+    "SITE_SYMBOL": "family_restroom",
+    "SHOW_HISTORY": True,
+    "SHOW_VIEW_ON_SITE": True,
+    "SHOW_BACK_BUTTON": True,
+    "THEME": None,  # None = let user toggle light/dark
+    "BORDER_RADIUS": "8px",
+    "COLORS": {
+        "primary": {
+            "50": "240 249 255",
+            "100": "224 242 254",
+            "200": "186 230 253",
+            "300": "125 211 252",
+            "400": "56 189 248",
+            "500": "14 165 233",
+            "600": "2 132 199",
+            "700": "3 105 161",
+            "800": "7 89 133",
+            "900": "12 74 110",
+            "950": "8 47 73",
+        },
+    },
+    "SIDEBAR": {
+        "show_search": True,
+        "show_all_applications": False,
+        "navigation": [
+            {
+                "title": _("Navigation"),
+                "separator": False,
+                "items": [
+                    {
+                        "title": _("Dashboard"),
+                        "icon": "dashboard",
+                        "link": reverse_lazy("admin:index"),
+                    },
+                ],
+            },
+            {
+                "title": _("Catalog"),
+                "separator": True,
+                "items": [
+                    {
+                        "title": _("Listings"),
+                        "icon": "storefront",
+                        "link": reverse_lazy(
+                            "admin:catalog_listing_changelist"
+                        ),
+                    },
+                    {
+                        "title": _("Reviews"),
+                        "icon": "rate_review",
+                        "link": reverse_lazy(
+                            "admin:reviews_review_changelist"
+                        ),
+                    },
+                ],
+            },
+            {
+                "title": _("Providers"),
+                "separator": True,
+                "items": [
+                    {
+                        "title": _("Provider profiles"),
+                        "icon": "badge",
+                        "link": reverse_lazy(
+                            "admin:providers_providerprofile_changelist"
+                        ),
+                    },
+                ],
+            },
+            {
+                "title": _("Engagement"),
+                "separator": True,
+                "items": [
+                    {
+                        "title": _("Inquiries"),
+                        "icon": "forum",
+                        "link": reverse_lazy(
+                            "admin:inquiries_inquiry_changelist"
+                        ),
+                    },
+                    {
+                        "title": _("Subscriptions"),
+                        "icon": "school",
+                        "link": reverse_lazy(
+                            "admin:subscriptions_masterclasssubscription_changelist"
+                        ),
+                    },
+                    {
+                        "title": _("Suggestions"),
+                        "icon": "tips_and_updates",
+                        "link": reverse_lazy(
+                            "admin:suggestions_servicesuggestion_changelist"
+                        ),
+                    },
+                ],
+            },
+            {
+                "title": _("Users & Access"),
+                "separator": True,
+                "items": [
+                    {
+                        "title": _("Users"),
+                        "icon": "person",
+                        "link": reverse_lazy("admin:users_customuser_changelist"),
+                    },
+                    {
+                        "title": _("Groups"),
+                        "icon": "groups",
+                        "link": reverse_lazy("admin:auth_group_changelist"),
+                    },
+                ],
+            },
+            {
+                "title": _("Scheduling"),
+                "separator": True,
+                "items": [
+                    {
+                        "title": _("Periodic tasks"),
+                        "icon": "schedule",
+                        "link": reverse_lazy(
+                            "admin:django_celery_beat_periodictask_changelist"
+                        ),
+                    },
+                    {
+                        "title": _("Crontab schedules"),
+                        "icon": "alarm",
+                        "link": reverse_lazy(
+                            "admin:django_celery_beat_crontabschedule_changelist"
+                        ),
+                    },
+                ],
+            },
+        ],
+    },
+    "TABS": [
+        {
+            "models": ["catalog.listing"],
+            "items": [
+                {
+                    "title": _("All listings"),
+                    "link": reverse_lazy("admin:catalog_listing_changelist"),
+                },
+                {
+                    "title": _("Pending"),
+                    "link": (
+                        lambda request: reverse_lazy(
+                            "admin:catalog_listing_changelist"
+                        )
+                        + "?status__exact=pending"
+                    ),
+                },
+                {
+                    "title": _("Active"),
+                    "link": (
+                        lambda request: reverse_lazy(
+                            "admin:catalog_listing_changelist"
+                        )
+                        + "?status__exact=active"
+                    ),
+                },
+            ],
+        },
+    ],
+}
 
 # -----------------------------------------------------------------------------
 # Rest Framework

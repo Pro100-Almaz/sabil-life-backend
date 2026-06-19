@@ -8,6 +8,8 @@ admin_notes is editable by admin only (writable field in the form, never in API)
 
 from django.contrib import admin, messages
 from django.utils.translation import gettext_lazy as _
+from unfold.admin import ModelAdmin
+from unfold.decorators import action
 
 from .models import ServiceSuggestion, SuggestionStatus
 
@@ -16,7 +18,7 @@ from .models import ServiceSuggestion, SuggestionStatus
 # ---------------------------------------------------------------------------
 
 
-@admin.action(description=_("Mark selected suggestions as Reviewed"))
+@action(description=_("Mark selected suggestions as Reviewed"), icon="visibility")
 def mark_reviewed(modeladmin, request, queryset):
     updated = queryset.exclude(status=SuggestionStatus.REVIEWED).update(
         status=SuggestionStatus.REVIEWED
@@ -28,7 +30,7 @@ def mark_reviewed(modeladmin, request, queryset):
     )
 
 
-@admin.action(description=_("Mark selected suggestions as Acted on"))
+@action(description=_("Mark selected suggestions as Acted on"), icon="task_alt")
 def mark_acted_on(modeladmin, request, queryset):
     updated = queryset.exclude(status=SuggestionStatus.ACTED_ON).update(
         status=SuggestionStatus.ACTED_ON
@@ -40,7 +42,7 @@ def mark_acted_on(modeladmin, request, queryset):
     )
 
 
-@admin.action(description=_("Mark selected suggestions as Dismissed"))
+@action(description=_("Mark selected suggestions as Dismissed"), icon="block")
 def mark_dismissed(modeladmin, request, queryset):
     updated = queryset.exclude(status=SuggestionStatus.DISMISSED).update(
         status=SuggestionStatus.DISMISSED
@@ -58,7 +60,7 @@ def mark_dismissed(modeladmin, request, queryset):
 
 
 @admin.register(ServiceSuggestion)
-class ServiceSuggestionAdmin(admin.ModelAdmin):
+class ServiceSuggestionAdmin(ModelAdmin):
     actions = [mark_reviewed, mark_acted_on, mark_dismissed]
 
     list_display = (

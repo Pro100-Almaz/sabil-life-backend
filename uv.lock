@@ -428,6 +428,15 @@ wheels = [
 ]
 
 [[package]]
+name = "diff-match-patch"
+version = "20241021"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/0e/ad/32e1777dd57d8e85fa31e3a243af66c538245b8d64b7265bec9a61f2ca33/diff_match_patch-20241021.tar.gz", hash = "sha256:beae57a99fa48084532935ee2968b8661db861862ec82c6f21f4acdd6d835073", size = 39962, upload-time = "2024-10-21T19:41:21.094Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f7/bb/2aa9b46a01197398b901e458974c20ed107935c26e44e37ad5b0e5511e44/diff_match_patch-20241021-py3-none-any.whl", hash = "sha256:93cea333fb8b2bc0d181b0de5e16df50dd344ce64828226bda07728818936782", size = 43252, upload-time = "2024-10-21T19:41:19.914Z" },
+]
+
+[[package]]
 name = "django"
 version = "6.0.5"
 source = { registry = "https://pypi.org/simple" }
@@ -518,6 +527,20 @@ wheels = [
 ]
 
 [[package]]
+name = "django-import-export"
+version = "4.4.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "diff-match-patch" },
+    { name = "django" },
+    { name = "tablib" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/92/32/5b83cc46a70ac94c1d17144097bf8aee7d9bb401d0863652c8d5ce1d2e50/django_import_export-4.4.1.tar.gz", hash = "sha256:165dc7fdcd56a6356342eef3f88f3f3682b64b6f67e9a259a137e8b57aeff10c", size = 2238690, upload-time = "2026-05-05T12:42:44.295Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/91/d1/110aeb2acffea56d4222861b5678c2643f0bda00081e40d687077348bb7c/django_import_export-4.4.1-py3-none-any.whl", hash = "sha256:8be2782e505ae303ccb02070a1b4c528995922126fca9ee449eb28666835dd4b", size = 157691, upload-time = "2026-05-05T12:42:42.554Z" },
+]
+
+[[package]]
 name = "django-redis"
 version = "6.0.0"
 source = { registry = "https://pypi.org/simple" }
@@ -581,6 +604,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/da/05/9b93a66452cdb8a08ab26f08d5766d2332673e659a8b2aeb73f2a904d421/django_timezone_field-7.2.1.tar.gz", hash = "sha256:def846f9e7200b7b8f2a28fcce2b78fb2d470f6a9f272b07c4e014f6ba4c6d2e", size = 13096, upload-time = "2025-12-06T23:50:44.591Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/41/7f/d885667401515b467f84569c56075bc9add72c9fd425fca51a25f4c997e1/django_timezone_field-7.2.1-py3-none-any.whl", hash = "sha256:276915b72c5816f57c3baf9e43f816c695ef940d1b21f91ebf6203c09bf4ad44", size = 13284, upload-time = "2025-12-06T23:50:43.302Z" },
+]
+
+[[package]]
+name = "django-unfold"
+version = "0.97.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "django" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/9c/ec/e44e90b3746b59fe1e31d64d23fd2d4913ffbfc494650679bd7908669ec9/django_unfold-0.97.2.tar.gz", hash = "sha256:99d45049d31bd4f1f7caffbc371a8e175438a305c40672e38c23143212f78689", size = 1126046, upload-time = "2026-06-18T06:51:20.475Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/44/ac/42c5ed367632a0f3824cff902571286a633409b17e74662ae9b338059b9c/django_unfold-0.97.2-py3-none-any.whl", hash = "sha256:ab3c3161ecffb3fa9fe535c4456836b88441e7525663d81ad425259754ab92e9", size = 1253750, upload-time = "2026-06-18T06:51:18.933Z" },
 ]
 
 [[package]]
@@ -1585,8 +1620,10 @@ dependencies = [
     { name = "django-cors-headers" },
     { name = "django-environ" },
     { name = "django-filter" },
+    { name = "django-import-export" },
     { name = "django-redis" },
     { name = "django-rest-knox" },
+    { name = "django-unfold" },
     { name = "djangorestframework" },
     { name = "drf-spectacular" },
     { name = "gunicorn" },
@@ -1623,8 +1660,10 @@ requires-dist = [
     { name = "django-cors-headers", specifier = ">=4.5.0" },
     { name = "django-environ", specifier = ">=0.12.0" },
     { name = "django-filter", specifier = ">=25.1" },
+    { name = "django-import-export", specifier = ">=4.3.0" },
     { name = "django-redis", specifier = ">=6.0.0" },
     { name = "django-rest-knox", specifier = ">=5.0.2" },
+    { name = "django-unfold", specifier = ">=0.70.0" },
     { name = "djangorestframework", specifier = ">=3.15.2" },
     { name = "drf-spectacular", specifier = ">=0.29.0" },
     { name = "gunicorn", specifier = ">=23.0.0" },
@@ -1701,6 +1740,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/28/e3/55dcc2cfbc3ca9c29519eb6884dd1415ecb53b0e934862d3559ddcb7e20b/stack_data-0.6.3.tar.gz", hash = "sha256:836a778de4fec4dcd1dcd89ed8abff8a221f58308462e1c4aa2a3cf30148f0b9", size = 44707, upload-time = "2023-09-30T13:58:05.479Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/f1/7b/ce1eafaf1a76852e2ec9b22edecf1daa58175c090266e9f6c64afcd81d91/stack_data-0.6.3-py3-none-any.whl", hash = "sha256:d5558e0c25a4cb0853cddad3d77da9891a08cb85dd9f9f91b9f8cd66e511e695", size = 24521, upload-time = "2023-09-30T13:58:03.53Z" },
+]
+
+[[package]]
+name = "tablib"
+version = "3.9.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/11/00/416d2ba54d7d58a7f7c61bf62dfeb48fd553cf49614daf83312f2d2c156e/tablib-3.9.0.tar.gz", hash = "sha256:1b6abd8edb0f35601e04c6161d79660fdcde4abb4a54f66cc9f9054bd55d5fe2", size = 125565, upload-time = "2025-10-15T18:21:56.263Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/66/6b/32e51d847148b299088fc42d3d896845fd09c5247190133ea69dbe71ba51/tablib-3.9.0-py3-none-any.whl", hash = "sha256:eda17cd0d4dda614efc0e710227654c60ddbeb1ca92cdcfc5c3bd1fc5f5a6e4a", size = 49580, upload-time = "2025-10-15T18:21:44.185Z" },
 ]
 
 [[package]]

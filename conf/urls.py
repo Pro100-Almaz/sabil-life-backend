@@ -7,10 +7,6 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from apps.inquiries.urls import provider_urlpatterns as inquiry_provider_urls
 from apps.subscriptions.urls import provider_urlpatterns as subscription_provider_urls
 
-admin.site.site_header = "Sabil Life Admin"
-admin.site.site_title = "Sabil Life Admin"
-admin.site.index_title = "Sabil Life"
-
 urlpatterns = [
     path("admin-panel/", admin.site.urls, name="admin"),
     path(

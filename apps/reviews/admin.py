@@ -11,12 +11,13 @@ per instance when using the default manager), so rating recompute fires.
 """
 
 from django.contrib import admin
+from unfold.admin import ModelAdmin
 
 from .models import Review
 
 
 @admin.register(Review)
-class ReviewAdmin(admin.ModelAdmin):
+class ReviewAdmin(ModelAdmin):
     list_display = ("listing_title", "author_email", "rating", "created_at")
     list_filter = ("rating", "listing__category")
     search_fields = ("listing__title", "author__email", "text")

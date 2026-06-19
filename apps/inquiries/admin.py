@@ -4,12 +4,13 @@ Inquiry admin — Phase 5.
 
 from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
+from unfold.admin import ModelAdmin
 
 from .models import Inquiry
 
 
 @admin.register(Inquiry)
-class InquiryAdmin(admin.ModelAdmin):
+class InquiryAdmin(ModelAdmin):
     list_display = (
         "id",
         "status",

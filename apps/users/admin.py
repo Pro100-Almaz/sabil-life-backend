@@ -1,17 +1,19 @@
 from django.contrib import admin, messages
-from django.contrib.auth.admin import UserAdmin
+from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 from django.utils.translation import gettext_lazy as _
+from unfold.admin import ModelAdmin
+from unfold.decorators import action
+from unfold.forms import AdminPasswordChangeForm
 
 from .forms import CustomUserChangeForm, CustomUserCreationForm
 from .models import CustomUser
 
 
-@admin.action(description=_("Verify selected providers (set is_verified=True)"))
+@action(
+    description=_("Verify selected providers (set is_verified=True)"),
+    icon="verified",
+)
 def verify_providers(modeladmin, request, queryset):
-    """
-    Bulk-set is_verified=True on selected users.
-    Meaningful only for TUTOR/MASTERCLASS roles; harmless for others.
-    """
     updated = queryset.update(is_verified=True)
     modeladmin.message_user(
         request,
@@ -20,9 +22,10 @@ def verify_providers(modeladmin, request, queryset):
     )
 
 
-class CustomUserAdmin(UserAdmin):
+class CustomUserAdmin(ModelAdmin, DjangoUserAdmin):
     add_form = CustomUserCreationForm
     form = CustomUserChangeForm
+    change_password_form = AdminPasswordChangeForm
     model = CustomUser
     actions = [verify_providers]
 
