@@ -48,6 +48,10 @@ def create_inquiry(family, listing: Listing, message: str) -> Inquiry:
             "Inquiries only allowed on TUTORING listings; "
             "use /subscriptions/ for masterclasses."
         )
+    if listing.owner_id is None:
+        raise ValueError(
+            "Listing has no provider assigned and cannot accept inquiries."
+        )
     return Inquiry.objects.create(
         family=family,
         listing=listing,

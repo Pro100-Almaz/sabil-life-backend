@@ -14,13 +14,39 @@ from decimal import Decimal
 from django.core.management.base import BaseCommand
 
 from apps.catalog.models import Listing, ListingCategory, ListingStatus
+from apps.users.enums import UserRole
+from apps.users.models import CustomUser
 
 # Fixed namespace — never change this or all deterministic UUIDs will shift.
 NAMESPACE = uuid.UUID("11111111-2222-3333-4444-555555555555")
 
+# Seed providers — non-prod accounts that own seeded TUTORING / MASTERCLASSES
+# listings so the family inquiry / subscribe flows have a valid provider FK to
+# snapshot. These rows are intentionally lookup-by-email; passwords are usable
+# in dev (mirrors `apps/core/management/commands/seed.py`).
+SEED_TUTOR_EMAIL = "seed-tutor@sabil.local"
+SEED_MC_EMAIL = "seed-masterclass@sabil.local"
+SEED_PROVIDER_PASSWORD = "testpass123"
+
 
 def _uid(slug: str) -> uuid.UUID:
     return uuid.uuid5(NAMESPACE, slug)
+
+
+def _get_or_create_seed_provider(email: str, role: str, label: str) -> CustomUser:
+    user, created = CustomUser.objects.get_or_create(
+        email=email,
+        defaults={
+            "role": role,
+            "is_verified": True,
+            "full_name": f"Seed {label}",
+            "is_active": True,
+        },
+    )
+    if created:
+        user.set_password(SEED_PROVIDER_PASSWORD)
+        user.save(update_fields=["password"])
+    return user
 
 
 def _img(slug: str, n: int = 2) -> list[str]:
@@ -644,8 +670,9 @@ class Command(BaseCommand):
             "--clean",
             action="store_true",
             help=(
-                "Delete all listings whose owner IS NULL before re-seeding. "
-                "Provider-owned listings are never touched."
+                "Delete all seeded listings (matched by deterministic UUID) "
+                "before re-seeding. Provider-created listings outside the seed "
+                "set are never touched."
             ),
         )
         parser.add_argument(
@@ -660,10 +687,25 @@ class Command(BaseCommand):
             return
 
         if options["clean"]:
-            deleted, _ = Listing.objects.filter(owner__isnull=True).delete()
+            seed_ids = [_uid(d["slug"]) for d in LISTINGS]
+            deleted, _ = Listing.objects.filter(id__in=seed_ids).delete()
             self.stdout.write(
-                self.style.WARNING(f"Deleted {deleted} admin-owned listing(s).")
+                self.style.WARNING(f"Deleted {deleted} previously-seeded listing(s).")
             )
+
+        # Upsert the two seed provider users so TUTORING / MASTERCLASSES
+        # listings have a valid owner. Other categories stay owner=None
+        # since they don't participate in the inquiry/subscription flows.
+        tutor_owner = _get_or_create_seed_provider(
+            SEED_TUTOR_EMAIL, UserRole.TUTOR, "Tutor"
+        )
+        mc_owner = _get_or_create_seed_provider(
+            SEED_MC_EMAIL, UserRole.MASTERCLASS, "Masterclass"
+        )
+        category_owner = {
+            ListingCategory.TUTORING: tutor_owner,
+            ListingCategory.MASTERCLASSES: mc_owner,
+        }
 
         created_count = 0
         existed_count = 0
@@ -687,7 +729,7 @@ class Command(BaseCommand):
                 "review_count": data["review_count"],
                 "is_featured": data["is_featured"],
                 "status": ListingStatus.ACTIVE,
-                "owner": None,
+                "owner": category_owner.get(data["category"]),
             }
             _, created = Listing.objects.update_or_create(
                 id=listing_id, defaults=defaults
@@ -710,6 +752,14 @@ class Command(BaseCommand):
                 f"Seeded {total} listings "
                 f"({created_count} created, {existed_count} already existed). "
                 f"Breakdown: {breakdown}."
+            )
+        )
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"Seed providers: "
+                f"{SEED_TUTOR_EMAIL} (TUTOR) / "
+                f"{SEED_MC_EMAIL} (MASTERCLASS) "
+                f"— password '{SEED_PROVIDER_PASSWORD}' (dev only)."
             )
         )
 

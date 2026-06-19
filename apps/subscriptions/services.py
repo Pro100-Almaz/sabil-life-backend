@@ -29,6 +29,10 @@ def create_subscription(family, listing: Listing) -> MasterclassSubscription:
             "Subscriptions only allowed on MASTERCLASSES listings; "
             "use /inquiries/ for tutoring."
         )
+    if listing.owner_id is None:
+        raise ValueError(
+            "Listing has no provider assigned and cannot accept subscriptions."
+        )
     if MasterclassSubscription.objects.filter(
         family=family,
         listing=listing,

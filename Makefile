@@ -1,4 +1,4 @@
-.PHONY: help up down build rebuild shell migrate makemigrations test test-cov logs logs-worker logs-beat superuser seed clean prune ps docs docs-serve docs-build docs-deploy bump update-deps add-dep remove-dep
+.PHONY: help up down build rebuild shell migrate makemigrations test test-cov logs logs-worker logs-beat superuser seed seed-catalog seed-catalog-clean clean prune ps docs docs-serve docs-build docs-deploy bump update-deps add-dep remove-dep
 
 # Default target - show help
 help:
@@ -19,6 +19,8 @@ help:
 	@echo "  makemigrations  Create new migrations"
 	@echo "  superuser       Create a superuser"
 	@echo "  seed            Seed database (20 users + superuser)"
+	@echo "  seed-catalog    Seed 24 demo listings (idempotent)"
+	@echo "  seed-catalog-clean  Wipe seeded listings then re-seed"
 	@echo ""
 	@echo "Testing & Debugging:"
 	@echo "  test            Run all tests"
@@ -76,6 +78,12 @@ superuser:
 
 seed:
 	docker compose exec backend python manage.py seed --users 20 --superuser --clean
+
+seed-catalog:
+	docker compose exec backend python manage.py seed_catalog
+
+seed-catalog-clean:
+	docker compose exec backend python manage.py seed_catalog --clean
 
 # Testing & Debugging
 test:
