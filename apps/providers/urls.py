@@ -1,7 +1,7 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 
-from .views import ProviderListingViewSet, ProviderProfileView
+from .views import AvatarUploadView, ProviderListingViewSet, ProviderProfileView, TutorDetailView
 
 app_name = "providers"
 
@@ -11,4 +11,6 @@ router.register(r"listings", ProviderListingViewSet, basename="provider-listings
 
 urlpatterns = [
     path("profile/", ProviderProfileView.as_view(), name="provider-profile"),
+    path("tutor-detail/", TutorDetailView.as_view(), name="tutor-detail"),
+    path("avatar/", AvatarUploadView.as_view(), name="avatar-upload"),
 ] + router.urls

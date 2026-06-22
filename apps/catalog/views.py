@@ -9,6 +9,8 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 
 from .filters import ListingFilter
+from apps.providers.models import TutorDetail, TutorSubject
+
 from .models import Listing, ListingCategory, ListingStatus
 from .schema import (
     CATEGORIES_SCHEMA,
@@ -20,6 +22,7 @@ from .serializers import (
     CategoryCountSerializer,
     ListingCardSerializer,
     ListingDetailSerializer,
+    TutorCardSerializer,
 )
 from .services import annotate_distance_km
 
@@ -74,7 +77,7 @@ class ListingViewSet(viewsets.ReadOnlyModelViewSet):
                 lat = float(lat_str)
                 lng = float(lng_str)
                 qs = annotate_distance_km(qs, lat, lng)
-            except TypeError, ValueError:
+            except (TypeError, ValueError):
                 logger.debug(
                     "Invalid lat/lng params (%s, %s) — distance not annotated.",
                     lat_str,
@@ -89,7 +92,7 @@ class ListingViewSet(viewsets.ReadOnlyModelViewSet):
             try:
                 max_dist = float(max_dist_str)
                 qs = qs.filter(distance_km__lte=max_dist)
-            except TypeError, ValueError:
+            except (TypeError, ValueError):
                 pass
 
         # ------------------------------------------------------------------
@@ -145,3 +148,23 @@ def categories_view(request: Request) -> Response:
 
     serializer = CategoryCountSerializer(data, many=True)
     return Response(serializer.data)
+
+
+class TutorListViewSet(viewsets.ReadOnlyModelViewSet):
+    permission_classes = [permissions.AllowAny]
+    serializer_class = TutorCardSerializer
+
+    def get_queryset(self):
+        return (
+            TutorDetail.objects
+            .select_related("user")
+            .filter(user__role="TUTOR", user__is_verified=True)
+            .order_by("-rating", "-review_count")
+        )
+
+
+@api_view(["GET"])
+@permission_classes([permissions.AllowAny])
+def tutor_subjects_view(request: Request) -> Response:
+    names = list(TutorSubject.objects.values_list("name", flat=True))
+    return Response(names)
