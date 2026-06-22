@@ -309,7 +309,7 @@ UNFOLD = {
                         lambda request: reverse_lazy(
                             "admin:catalog_listing_changelist"
                         )
-                        + "?status__exact=pending"
+                        + "?status__exact=PENDING"
                     ),
                 },
                 {
@@ -318,7 +318,7 @@ UNFOLD = {
                         lambda request: reverse_lazy(
                             "admin:catalog_listing_changelist"
                         )
-                        + "?status__exact=active"
+                        + "?status__exact=ACTIVE"
                     ),
                 },
             ],
