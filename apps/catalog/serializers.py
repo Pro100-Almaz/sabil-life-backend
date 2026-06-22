@@ -43,7 +43,7 @@ class ListingCardSerializer(serializers.ModelSerializer):
             return None
         try:
             return round(float(raw), 2)
-        except TypeError, ValueError:
+        except (TypeError, ValueError):
             return None
 
 

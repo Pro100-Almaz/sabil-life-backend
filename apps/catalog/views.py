@@ -74,7 +74,7 @@ class ListingViewSet(viewsets.ReadOnlyModelViewSet):
                 lat = float(lat_str)
                 lng = float(lng_str)
                 qs = annotate_distance_km(qs, lat, lng)
-            except TypeError, ValueError:
+            except (TypeError, ValueError):
                 logger.debug(
                     "Invalid lat/lng params (%s, %s) — distance not annotated.",
                     lat_str,
@@ -89,7 +89,7 @@ class ListingViewSet(viewsets.ReadOnlyModelViewSet):
             try:
                 max_dist = float(max_dist_str)
                 qs = qs.filter(distance_km__lte=max_dist)
-            except TypeError, ValueError:
+            except (TypeError, ValueError):
                 pass
 
         # ------------------------------------------------------------------
