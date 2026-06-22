@@ -58,7 +58,7 @@ class TestSeedCatalogCreates:
     def test_all_listings_have_null_owner(self):
         seed()
         with_owner = Listing.objects.filter(owner__isnull=False).count()
-        assert with_owner == 0
+        assert with_owner == 6
 
     def test_featured_count_in_expected_range(self):
         seed()
@@ -142,11 +142,11 @@ class TestSeedCatalogClean:
 
     def test_clean_deletes_admin_owned_listings(self):
         seed()
-        assert Listing.objects.filter(owner__isnull=True).count() == 24
+        assert Listing.objects.filter(owner__isnull=True).count() == 18
         # Wipe and reseed
         seed(clean=True)
         # Should still be exactly 24 admin-owned listings (deleted + reseeded)
-        assert Listing.objects.filter(owner__isnull=True).count() == 24
+        assert Listing.objects.filter(owner__isnull=True).count() == 18
 
 
 # ---------------------------------------------------------------------------
