@@ -19,6 +19,17 @@ class IsProvider(BasePermission):
         )
 
 
+class IsTutor(BasePermission):
+    message = "Only users with the TUTOR role can access this resource."
+
+    def has_permission(self, request: Request, view: APIView) -> bool:
+        return bool(
+            request.user
+            and request.user.is_authenticated
+            and request.user.role == "TUTOR"
+        )
+
+
 class IsListingOwner(BasePermission):
     """
     Object-level permission: only the owner of the listing may act on it.

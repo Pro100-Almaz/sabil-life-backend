@@ -1,5 +1,7 @@
 from rest_framework import serializers
 
+from apps.providers.models import TutorDetail, TutorSubject
+
 from .models import Listing
 
 
@@ -43,7 +45,7 @@ class ListingCardSerializer(serializers.ModelSerializer):
             return None
         try:
             return round(float(raw), 2)
-        except TypeError, ValueError:
+        except (TypeError, ValueError):
             return None
 
 
@@ -86,3 +88,34 @@ class CategoryCountSerializer(serializers.Serializer):
 
     key = serializers.CharField()
     count = serializers.IntegerField()
+
+
+class TutorSubjectSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TutorSubject
+        fields = ["id", "name"]
+
+
+class TutorCardSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(source="user.id", read_only=True)
+    full_name = serializers.CharField(source="user.full_name", read_only=True)
+
+    class Meta:
+        model = TutorDetail
+        fields = [
+            "id",
+            "full_name",
+            "avatar",
+            "affiliation_listing_id",
+            "subjects",
+            "formats",
+            "age_groups",
+            "price_per_hour_qar",
+            "rating",
+            "review_count",
+            "years_experience",
+            "credentials",
+            "languages",
+            "trial_available",
+            "bio",
+        ]

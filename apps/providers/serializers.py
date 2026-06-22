@@ -3,7 +3,7 @@ from rest_framework import serializers
 from apps.catalog.models import Listing, ListingCategory
 from apps.users.enums import UserRole
 
-from .models import ProviderProfile
+from .models import ProviderProfile, TutorDetail
 
 # ---------------------------------------------------------------------------
 # Provider Profile
@@ -54,6 +54,68 @@ class ProviderProfileSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
         read_only_fields = ["created_at", "updated_at"]
+
+
+# ---------------------------------------------------------------------------
+# Tutor Detail
+# ---------------------------------------------------------------------------
+
+
+class AvatarUploadSerializer(serializers.ModelSerializer):
+    avatar = serializers.ImageField()
+    avatar_url = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = TutorDetail
+        fields = ["avatar", "avatar_url"]
+        extra_kwargs = {"avatar": {"write_only": True}}
+
+    def get_avatar_url(self, obj: TutorDetail) -> str:
+        if not obj.avatar:
+            return ""
+        request = self.context.get("request")
+        return request.build_absolute_uri(obj.avatar.url) if request else obj.avatar.url
+
+
+class TutorDetailSerializer(serializers.ModelSerializer):
+    user_id = serializers.IntegerField(source="user.id", read_only=True)
+    full_name = serializers.CharField(source="user.full_name", read_only=True)
+    avatar_url = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = TutorDetail
+        fields = [
+            "user_id",
+            "full_name",
+            "avatar",
+            "avatar_url",
+            "affiliation_listing_id",
+            "subjects",
+            "formats",
+            "age_groups",
+            "price_per_hour_qar",
+            "rating",
+            "review_count",
+            "years_experience",
+            "credentials",
+            "languages",
+            "trial_available",
+            "bio",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = [
+            "rating",
+            "review_count",
+            "created_at",
+            "updated_at",
+        ]
+
+    def get_avatar_url(self, obj: TutorDetail) -> str:
+        if not obj.avatar:
+            return ""
+        request = self.context.get("request")
+        return request.build_absolute_uri(obj.avatar.url) if request else obj.avatar.url
 
 
 # ---------------------------------------------------------------------------
