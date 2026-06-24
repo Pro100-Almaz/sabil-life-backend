@@ -86,14 +86,13 @@ class TestReviewListView:
         result = resp.json()["results"][0]
         assert "email" not in result
 
-    def test_author_id_not_in_response(self):
-        listing = _listing("No Author ID")
+    def test_author_id_in_response(self):
+        listing = _listing("Has Author ID")
         family = _user("lv_noid@test.com", full_name="Hidden User")
         Review.objects.create(listing=listing, author=family, rating=5)
         resp = self.client.get(_reviews_url(listing.id))
         result = resp.json()["results"][0]
-        assert "author_id" not in result
-        assert "author" not in result
+        assert result["author_id"] == family.id
 
     def test_response_fields(self):
         listing = _listing("Fields Check")
@@ -101,7 +100,7 @@ class TestReviewListView:
         Review.objects.create(listing=listing, author=family, rating=4, text="Good")
         resp = self.client.get(_reviews_url(listing.id))
         result = resp.json()["results"][0]
-        assert set(result.keys()) == {"id", "rating", "text", "author_name", "created_at"}
+        assert set(result.keys()) == {"id", "rating", "text", "author_name", "author_id", "created_at"}
 
     def test_paginated_response_shape(self):
         listing = _listing("Paginated")

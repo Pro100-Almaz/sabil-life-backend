@@ -509,21 +509,47 @@ if not DEBUG:
 # -----------------------------------------------------------------------------
 # Static & Media Files
 # -----------------------------------------------------------------------------
-STORAGES = {
-    "default": {
-        "BACKEND": "django.core.files.storage.FileSystemStorage",
-    },
-    "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
-    },
-}
+USE_MINIO = env.bool("USE_MINIO", default=False)
+
+if USE_MINIO:
+    INSTALLED_APPS += ["storages"]
+    AWS_ACCESS_KEY_ID = env("AWS_ACCESS_KEY_ID")
+    AWS_SECRET_ACCESS_KEY = env("AWS_SECRET_ACCESS_KEY")
+    AWS_STORAGE_BUCKET_NAME = env("AWS_STORAGE_BUCKET_NAME")
+    AWS_S3_ENDPOINT_URL = env("AWS_S3_ENDPOINT_URL")
+    AWS_S3_REGION_NAME = env("AWS_S3_REGION_NAME", default="us-east-1")
+    AWS_S3_ADDRESSING_STYLE = env("AWS_S3_ADDRESSING_STYLE", default="path")
+    AWS_DEFAULT_ACL = None
+    AWS_QUERYSTRING_AUTH = env.bool("AWS_QUERYSTRING_AUTH", default=False)
+
+    STORAGES = {
+        "default": {
+            "BACKEND": "storages.backends.s3.S3Storage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
+    }
+else:
+    STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
+    }
 
 STATIC_URL = "/static/"
 STATICFILES_DIRS = [root_path("static")]
 STATIC_ROOT = tempfile.mkdtemp() if DEBUG else root_path("static_root")
 
-MEDIA_URL = "/media/"
-MEDIA_ROOT = root_path("media_root")
+if USE_MINIO:
+    MEDIA_URL = f"{AWS_S3_ENDPOINT_URL}/{AWS_STORAGE_BUCKET_NAME}/"
+    MEDIA_ROOT = ""
+else:
+    MEDIA_URL = "/media/"
+    MEDIA_ROOT = root_path("media_root")
 
 # -----------------------------------------------------------------------------
 # Django Debug Toolbar and Django Extensions
