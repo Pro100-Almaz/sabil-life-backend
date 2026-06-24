@@ -23,7 +23,7 @@ class ListingFilter(django_filters.FilterSet):
     """
 
     category = django_filters.CharFilter(method="filter_category")
-    q = django_filters.CharFilter(method="filter_q")
+    search = django_filters.CharFilter(method="filter_search")
     price_max = django_filters.NumberFilter(
         field_name="price_from_qar", lookup_expr="lte"
     )
@@ -46,7 +46,7 @@ class ListingFilter(django_filters.FilterSet):
         """Case-insensitive category exact match."""
         return queryset.filter(category=value.upper())
 
-    def filter_q(self, queryset: QuerySet, name: str, value: str) -> QuerySet:
+    def filter_search(self, queryset: QuerySet, name: str, value: str) -> QuerySet:
         """Full-text search: title OR subtitle icontains."""
         return queryset.filter(Q(title__icontains=value) | Q(subtitle__icontains=value))
 
