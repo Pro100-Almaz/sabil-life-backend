@@ -9,7 +9,7 @@ from django.conf import settings
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from ..catalog.models import Listing
+from apps.catalog.models import Listing
 
 class Favorite(models.Model):
     listing = models.ForeignKey(
