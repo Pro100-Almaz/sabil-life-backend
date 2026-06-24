@@ -10,7 +10,7 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from apps.users.models import UserRole
+from apps.users.enums import UserRole
 
 User = get_user_model()
 
@@ -42,7 +42,7 @@ class MeViewTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["email"], self.user.email)
         self.assertEqual(response.data["full_name"], self.user.full_name)
-        self.assertEqual(response.data["role"], UserRole.FAMILY)
+        self.assertIn(UserRole.FAMILY, response.data["roles"])
         self.assertNotIn("password", response.data)
 
     def test_me_response_contains_phase1_fields(self):
@@ -54,7 +54,7 @@ class MeViewTests(APITestCase):
             "id",
             "email",
             "full_name",
-            "role",
+            "roles",
             "is_verified",
             "phone",
             "home_lat",
@@ -144,13 +144,13 @@ class MeViewTests(APITestCase):
             "Expected 'too common' error not found",
         )
 
-    def test_role_is_read_only(self):
-        """Role field cannot be changed via PATCH."""
+    def test_roles_is_read_only(self):
+        """Roles cannot be changed via PATCH."""
         self.client.force_authenticate(user=self.user)
-        self.client.patch(self.url, {"role": "ADMIN"}, format="json")
-        # Either 200 (field ignored) or 400; role must not change
+        self.client.patch(self.url, {"roles": ["ADMIN"]}, format="json")
         self.user.refresh_from_db()
-        self.assertEqual(self.user.role, UserRole.FAMILY)
+        self.assertTrue(self.user.has_role(UserRole.FAMILY))
+        self.assertFalse(self.user.has_role(UserRole.ADMIN))
 
     def test_is_verified_is_read_only(self):
         """is_verified cannot be changed via PATCH by the user themselves."""

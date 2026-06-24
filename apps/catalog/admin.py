@@ -9,7 +9,7 @@ from django.utils.translation import gettext_lazy as _
 from unfold.admin import ModelAdmin
 from unfold.decorators import action, display
 
-from .models import Listing, ListingStatus
+from apps.catalog.models import Listing, ListingStatus
 
 # ---------------------------------------------------------------------------
 # Bulk moderation actions

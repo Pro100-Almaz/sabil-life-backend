@@ -14,14 +14,14 @@ from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import mixins, permissions, status, viewsets
 from rest_framework.response import Response
 
-from .models import ServiceSuggestion
-from .permissions import IsFamily
-from .schema import (
+from apps.suggestions.models import ServiceSuggestion
+from apps.suggestions.permissions import IsFamily
+from apps.suggestions.schema import (
     SUGGESTION_CREATE_SCHEMA,
     SUGGESTION_LIST_SCHEMA,
     SUGGESTION_RETRIEVE_SCHEMA,
 )
-from .serializers import SuggestionCreateSerializer, SuggestionSerializer
+from apps.suggestions.serializers import SuggestionCreateSerializer, SuggestionSerializer
 
 logger = logging.getLogger(__name__)
 

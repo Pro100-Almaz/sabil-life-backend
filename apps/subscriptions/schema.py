@@ -6,7 +6,7 @@ from drf_spectacular.utils import OpenApiExample, OpenApiParameter, OpenApiRespo
 
 from apps.core.schema import UNAUTHORIZED_EXAMPLES, ErrorResponseSerializer
 
-from .serializers import FamilySubscriptionSerializer, ProviderSubscriptionSerializer
+from apps.subscriptions.serializers import FamilySubscriptionSerializer, ProviderSubscriptionSerializer
 
 _PRIVATE_DETAILS_EXAMPLE = {
     "session_schedule": "Saturday mornings 9-11am",

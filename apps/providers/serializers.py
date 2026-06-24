@@ -3,10 +3,10 @@ from rest_framework import serializers
 from apps.catalog.models import Listing, ListingCategory
 from apps.users.enums import UserRole
 
-from .models import ProviderProfile, TutorDetail
+from apps.providers.models import ProviderVerification, StatusChoices, TutorDetail
 
 # ---------------------------------------------------------------------------
-# Provider Profile
+# Provider Listings — shared maps
 # ---------------------------------------------------------------------------
 
 _PROVIDER_CATEGORY_MAP: dict[str, str] = {
@@ -20,40 +20,6 @@ _CATEGORY_ROLE_ERROR: dict[str, str] = {
         "MASTERCLASS providers can only create MASTERCLASSES listings."
     ),
 }
-
-
-class ProviderProfileSerializer(serializers.ModelSerializer):
-    """
-    Serializer for GET/PATCH /api/v1/provider/profile/.
-
-    Writable fields: display_name, bio, subjects, hourly_rate_qar, availability.
-    Read-only fields: user_id, email, full_name, role, is_verified,
-                      created_at, updated_at.
-    """
-
-    user_id = serializers.IntegerField(source="user.id", read_only=True)
-    email = serializers.EmailField(source="user.email", read_only=True)
-    full_name = serializers.CharField(source="user.full_name", read_only=True)
-    role = serializers.CharField(source="user.role", read_only=True)
-    is_verified = serializers.BooleanField(read_only=True)
-
-    class Meta:
-        model = ProviderProfile
-        fields = [
-            "user_id",
-            "email",
-            "full_name",
-            "role",
-            "is_verified",
-            "display_name",
-            "bio",
-            "subjects",
-            "hourly_rate_qar",
-            "availability",
-            "created_at",
-            "updated_at",
-        ]
-        read_only_fields = ["created_at", "updated_at"]
 
 
 # ---------------------------------------------------------------------------
@@ -101,12 +67,14 @@ class TutorDetailSerializer(serializers.ModelSerializer):
             "languages",
             "trial_available",
             "bio",
+            "is_verified",
             "created_at",
             "updated_at",
         ]
         read_only_fields = [
             "rating",
             "review_count",
+            "is_verified",
             "created_at",
             "updated_at",
         ]
@@ -136,8 +104,9 @@ class ProviderListingSerializer(serializers.ModelSerializer):
         id, owner_id, status, rating, review_count, created_at, updated_at.
 
     Category constraint:
-        TUTOR  → must use TUTORING category.
         MASTERCLASS → must use MASTERCLASSES category.
+        MANAGER / ADMIN → may use any category.
+        Tutors cannot create listings at all (blocked at the view permission).
         Validated in validate_category(); also re-validated on update.
 
     Status rule:
@@ -198,13 +167,94 @@ class ProviderListingSerializer(serializers.ModelSerializer):
         user = self._get_request_user()
         if user is None:
             return value
-        allowed = _PROVIDER_CATEGORY_MAP.get(user.role)
-        if allowed is None:
-            # Non-provider user — permission layer will catch this first,
-            # but guard defensively.
+        # Managers and admins may create listings in any category.
+        if user.has_any_role(UserRole.MANAGER, UserRole.ADMIN):
+            return value
+        allowed_categories = set()
+        for role_key, cat in _PROVIDER_CATEGORY_MAP.items():
+            if user.has_role(role_key):
+                allowed_categories.add(cat)
+        if not allowed_categories:
             raise serializers.ValidationError(
                 "Your role does not permit creating listings."
             )
-        if value != allowed:
-            raise serializers.ValidationError(_CATEGORY_ROLE_ERROR[user.role])
+        if value not in allowed_categories:
+            raise serializers.ValidationError(
+                f"Your roles do not allow creating listings in the {value} category."
+            )
         return value
+
+
+# ---------------------------------------------------------------------------
+# Provider Verification
+# ---------------------------------------------------------------------------
+
+
+class VerifyProviderSerializer(serializers.ModelSerializer):
+    """
+    Read serializer for a provider's verification record.
+
+    Used by both the provider-facing GET (so the provider can see their
+    status and, if rejected, the reviewer's comment) and the admin list/
+    retrieve endpoints. Every field is read-only here — state transitions
+    happen via dedicated endpoints/serializers.
+    """
+
+    user_id = serializers.IntegerField(source="user.id", read_only=True)
+    email = serializers.EmailField(source="user.email", read_only=True)
+    full_name = serializers.CharField(source="user.full_name", read_only=True)
+
+    class Meta:
+        model = ProviderVerification
+        fields = [
+            "id",
+            "user_id",
+            "email",
+            "full_name",
+            "provider_type",
+            "status",
+            "comment",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = fields
+
+
+class ProviderVerificationReviewSerializer(serializers.ModelSerializer):
+    """
+    Admin/manager serializer to APPROVE or REJECT a verification.
+
+    Rules:
+      - status may only be set to APPROVED or REJECTED.
+      - a REJECTED verification must carry a comment explaining why.
+      - a CANCELLED verification can no longer be reviewed.
+    """
+
+    class Meta:
+        model = ProviderVerification
+        fields = ["status", "comment"]
+
+    def validate_status(self, value: str) -> str:
+        if value not in (StatusChoices.APPROVED, StatusChoices.REJECTED):
+            raise serializers.ValidationError(
+                "Reviewers may only set status to APPROVED or REJECTED."
+            )
+        return value
+
+    def validate(self, attrs: dict) -> dict:
+        if self.instance and self.instance.status == StatusChoices.CANCELLED:
+            raise serializers.ValidationError(
+                "This verification was cancelled by the provider and can no "
+                "longer be reviewed."
+            )
+
+        status_value = attrs.get("status", getattr(self.instance, "status", None))
+        comment = (attrs.get("comment") or "").strip()
+        if status_value == StatusChoices.REJECTED and not comment:
+            raise serializers.ValidationError(
+                {"comment": "A comment explaining the rejection is required."}
+            )
+        # Clear any stale rejection note when approving.
+        if status_value == StatusChoices.APPROVED:
+            attrs["comment"] = comment
+        return attrs

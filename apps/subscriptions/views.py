@@ -20,12 +20,11 @@ from rest_framework import mixins, permissions, status, viewsets
 from rest_framework.response import Response
 
 from apps.catalog.models import Listing
-from apps.providers.permissions import IsProvider
 
-from . import services
-from .models import MasterclassSubscription, SubscriptionStatus
-from .permissions import IsFamily
-from .schema import (
+from apps.subscriptions import services
+from apps.subscriptions.models import MasterclassSubscription, SubscriptionStatus
+from apps.subscriptions.permissions import IsFamily
+from apps.subscriptions.schema import (
     PROVIDER_SUBSCRIPTION_LIST_SCHEMA,
     PROVIDER_SUBSCRIPTION_RETRIEVE_SCHEMA,
     SUBSCRIPTION_CANCEL_SCHEMA,
@@ -33,11 +32,12 @@ from .schema import (
     SUBSCRIPTION_LIST_SCHEMA,
     SUBSCRIPTION_RETRIEVE_SCHEMA,
 )
-from .serializers import (
+from apps.subscriptions.serializers import (
     FamilySubscriptionSerializer,
     ProviderSubscriptionSerializer,
     SubscriptionCreateSerializer,
 )
+from apps.users.permissions import IsProvider
 
 logger = logging.getLogger(__name__)
 

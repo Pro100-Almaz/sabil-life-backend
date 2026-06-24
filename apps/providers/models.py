@@ -6,90 +6,18 @@ from django.utils.translation import gettext_lazy as _
 from apps.users.enums import UserRole
 
 
-class ProviderProfileManager(models.Manager):
-    """Custom manager with a lazy-create helper."""
-
-    def get_or_create_for_user(self, user) -> "ProviderProfile":
-        """
-        Return the ProviderProfile for *user*, creating it if it doesn't exist.
-
-        This is the canonical lazy-create entry point used by the profile view.
-        It avoids the complexity of post_save signals while guaranteeing a
-        freshly-registered TUTOR/MASTERCLASS always gets a 200 on first GET,
-        rather than a 404.
-        """
-        profile, _ = self.get_or_create(user=user)
-        return profile
+class ProviderChoices(models.TextChoices):
+    MASTERCLASS = "MASTERCLASS", _("Masterclass")
+    TUTOR = "TUTOR", _("Tutor")
 
 
-class ProviderProfile(models.Model):
-    """
-    One-to-one profile record for provider users (TUTOR or MASTERCLASS role).
+class StatusChoices(models.TextChoices):
+    PENDING = "PENDING", _("Pending")
+    APPROVED = "APPROVED", _("Approved")
+    REJECTED = "REJECTED", _("Rejected")
+    UPDATED = "UPDATED", _("Updated")
+    CANCELLED = "CANCELLED", _("Cancelled")
 
-    is_verified is a read-through property that mirrors user.is_verified so
-    there is a single source of truth — the admin flips the flag on CustomUser,
-    not here.
-    """
-
-    user = models.OneToOneField(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name="provider_profile",
-        verbose_name=_("user"),
-    )
-    display_name = models.CharField(_("display name"), max_length=200, blank=True)
-    bio = models.TextField(_("bio"), blank=True)
-    subjects = models.JSONField(
-        _("subjects"),
-        default=list,
-        blank=True,
-        help_text=_('List of subject strings, e.g. ["Math", "Arabic"].'),
-    )
-    hourly_rate_qar = models.PositiveIntegerField(
-        _("hourly rate (QAR)"), null=True, blank=True
-    )
-    availability = models.TextField(_("availability"), blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    objects = ProviderProfileManager()
-
-    class Meta:
-        verbose_name = _("provider profile")
-        verbose_name_plural = _("provider profiles")
-
-    # ------------------------------------------------------------------
-    # Validation
-    # ------------------------------------------------------------------
-
-    def clean(self) -> None:
-        """Reject profiles for non-provider users."""
-        super().clean()
-        if self.user_id and self.user.role not in {UserRole.TUTOR, UserRole.MASTERCLASS}:
-            raise ValidationError(
-                _(
-                    "ProviderProfile can only be created for users with role "
-                    "TUTOR or MASTERCLASS. Current role: %(role)s."
-                ),
-                params={"role": self.user.role},
-                code="invalid_role",
-            )
-
-    def save(self, *args, **kwargs) -> None:
-        self.clean()
-        super().save(*args, **kwargs)
-
-    # ------------------------------------------------------------------
-    # Properties
-    # ------------------------------------------------------------------
-
-    @property
-    def is_verified(self) -> bool:
-        """Read-through: mirrors user.is_verified — single source of truth."""
-        return self.user.is_verified
-
-    def __str__(self) -> str:
-        return f"ProviderProfile({self.user.email})"
 
 
 class TutorDetail(models.Model):
@@ -131,6 +59,8 @@ class TutorDetail(models.Model):
     )
     trial_available = models.BooleanField(_("trial available"), default=False)
     bio = models.TextField(_("bio"), blank=True)
+    is_verified = models.BooleanField(_("verified"), default=False)
+    deleted_at = models.DateTimeField(_("deleted at"), null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -140,11 +70,8 @@ class TutorDetail(models.Model):
 
     def clean(self) -> None:
         super().clean()
-        if self.user_id and self.user.role != UserRole.TUTOR:
-            raise ValidationError(
-                _("TutorDetail can only be created for users with role TUTOR."),
-                code="invalid_role",
-            )
+        if self.deleted_at:
+            return
 
     def save(self, *args, **kwargs) -> None:
         self.clean()
@@ -171,3 +98,55 @@ class TutorSubject(models.Model):
 
     def __str__(self) -> str:
         return self.name
+
+
+class ProviderVerification(models.Model):
+    """
+    Tracks the verification lifecycle of a provider (TUTOR / MASTERCLASS).
+
+    A record is created automatically when the provider first fills in their
+    detail form (status=PENDING) and flips to UPDATED whenever they re-submit.
+    A manager/admin then APPROVES or REJECTS it (with a comment on rejection),
+    and the provider may CANCEL their own pending request.
+
+    A user can have at most one verification per provider_type.
+    """
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="provider_verifications",
+        verbose_name=_("user"),
+    )
+    provider_type = models.CharField(
+        _("provider type"),
+        max_length=20,
+        choices=ProviderChoices.choices,
+    )
+    status = models.CharField(
+        _("status"),
+        max_length=20,
+        choices=StatusChoices.choices,
+        default=StatusChoices.PENDING,
+    )
+    comment = models.TextField(
+        _("comment"),
+        blank=True,
+        help_text=_("Reviewer note — e.g. the reason a verification was rejected."),
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = _("provider verification")
+        verbose_name_plural = _("provider verifications")
+        ordering = ["-updated_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "provider_type"],
+                name="unique_verification_per_user_provider_type",
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"ProviderVerification({self.user.email}, {self.provider_type}, {self.status})"

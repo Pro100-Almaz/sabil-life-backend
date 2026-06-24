@@ -10,8 +10,8 @@ Wired in ReviewsConfig.ready() (apps.py).
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 
-from .models import Review
-from .services import recompute_listing_rating
+from apps.reviews.models import Review
+from apps.reviews.services import recompute_listing_rating
 
 
 @receiver([post_save, post_delete], sender=Review)

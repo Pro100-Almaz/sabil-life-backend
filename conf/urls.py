@@ -30,6 +30,7 @@ urlpatterns = [
                     path("", include("apps.subscriptions.urls")),
                     path("", include("apps.suggestions.urls")),
                     path("", include("apps.reviews.urls")),
+                    path("", include("apps.favorites.urls")),
                 ],
                 "v1",
             ),

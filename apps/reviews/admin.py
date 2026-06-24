@@ -13,7 +13,7 @@ per instance when using the default manager), so rating recompute fires.
 from django.contrib import admin
 from unfold.admin import ModelAdmin
 
-from .models import Review
+from apps.reviews.models import Review
 
 
 @admin.register(Review)
