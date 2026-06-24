@@ -2,11 +2,15 @@ import logging
 
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import generics, mixins, permissions, viewsets
+import rest_framework.exceptions
+import rest_framework.parsers
+import rest_framework.status
+from rest_framework.response import Response
 
 from apps.catalog.models import Listing, ListingStatus
 
-from .models import ProviderProfile
-from .permissions import IsListingOwner, IsProvider
+from .models import ProviderProfile, TutorDetail
+from .permissions import IsListingOwner, IsProvider, IsTutor
 from .schema import (
     PROVIDER_LISTING_CREATE_SCHEMA,
     PROVIDER_LISTING_DESTROY_SCHEMA,
@@ -16,7 +20,12 @@ from .schema import (
     PROVIDER_PROFILE_GET_SCHEMA,
     PROVIDER_PROFILE_PATCH_SCHEMA,
 )
-from .serializers import ProviderListingSerializer, ProviderProfileSerializer
+from .serializers import (
+    AvatarUploadSerializer,
+    ProviderListingSerializer,
+    ProviderProfileSerializer,
+    TutorDetailSerializer,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +58,78 @@ class ProviderProfileView(generics.RetrieveUpdateAPIView):
         profile = ProviderProfile.objects.get_or_create_for_user(self.request.user)
         self.check_object_permissions(self.request, profile)
         return profile
+
+
+# ---------------------------------------------------------------------------
+# Tutor Detail
+# ---------------------------------------------------------------------------
+
+
+class TutorDetailView(generics.CreateAPIView, generics.RetrieveUpdateAPIView):
+    """
+    GET   /api/v1/provider/tutor-detail/ — retrieve own tutor detail.
+    POST  /api/v1/provider/tutor-detail/ — create tutor detail.
+    PATCH /api/v1/provider/tutor-detail/ — update tutor detail.
+
+    Auth: IsAuthenticated + IsTutor.
+    Avatar is uploaded as a file (multipart/form-data).
+    """
+
+    serializer_class = TutorDetailSerializer
+    permission_classes = [permissions.IsAuthenticated, IsTutor]
+    http_method_names = ["get", "post", "patch", "head", "options"]
+    parser_classes = [
+        rest_framework.parsers.MultiPartParser,
+        rest_framework.parsers.FormParser,
+        rest_framework.parsers.JSONParser,
+    ]
+
+    def get_object(self) -> TutorDetail:
+        try:
+            obj = TutorDetail.objects.get(user=self.request.user)
+        except TutorDetail.DoesNotExist:
+            raise rest_framework.exceptions.NotFound("Tutor detail not found.")
+        self.check_object_permissions(self.request, obj)
+        return obj
+
+    def perform_create(self, serializer) -> None:
+        serializer.save(user=self.request.user)
+
+    def create(self, request, *args, **kwargs):
+        if TutorDetail.objects.filter(user=request.user).exists():
+            return Response(
+                {"detail": "Tutor detail already exists. Use PATCH to update."},
+                status=rest_framework.status.HTTP_409_CONFLICT,
+            )
+        return super().create(request, *args, **kwargs)
+
+
+# ---------------------------------------------------------------------------
+# Avatar Upload
+# ---------------------------------------------------------------------------
+
+
+class AvatarUploadView(generics.UpdateAPIView):
+    """
+    POST /api/v1/provider/avatar/ — upload/replace tutor avatar.
+
+    Returns {"avatar_url": "<full URL>"}.
+    """
+
+    serializer_class = AvatarUploadSerializer
+    permission_classes = [permissions.IsAuthenticated, IsTutor]
+    http_method_names = ["post", "options"]
+    parser_classes = [
+        rest_framework.parsers.MultiPartParser,
+        rest_framework.parsers.FormParser,
+    ]
+
+    def get_object(self) -> TutorDetail:
+        obj, _ = TutorDetail.objects.get_or_create(user=self.request.user)
+        return obj
+
+    def post(self, request, *args, **kwargs):
+        return self.partial_update(request, *args, **kwargs)
 
 
 # ---------------------------------------------------------------------------

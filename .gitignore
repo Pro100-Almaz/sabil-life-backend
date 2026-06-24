@@ -197,3 +197,5 @@ cython_debug/
 
 .idea
 .omc
+
+media_root/
