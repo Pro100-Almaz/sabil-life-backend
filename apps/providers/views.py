@@ -34,7 +34,7 @@ from .serializers import (
     TutorDetailSerializer,
     VerifyProviderSerializer,
 )
-from ..users.permissions import IsManagerOrAdmin, IsMasterclass
+from ..users.permissions import IsManagerOrAdmin, IsMasterclassManagerOrAdmin
 
 logger = logging.getLogger(__name__)
 
@@ -211,7 +211,7 @@ class ProviderListingViewSet(
     """
 
     serializer_class = ProviderListingSerializer
-    permission_classes = [permissions.IsAuthenticated, IsMasterclass]
+    permission_classes = [permissions.IsAuthenticated, IsMasterclassManagerOrAdmin]
     lookup_field = "id"
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
 
@@ -222,10 +222,10 @@ class ProviderListingViewSet(
         if self.action in {"retrieve", "partial_update", "destroy"}:
             return [
                 permissions.IsAuthenticated(),
-                IsMasterclass(),
+                IsMasterclassManagerOrAdmin(),
                 IsListingOwner(),
             ]
-        return [permissions.IsAuthenticated(), IsMasterclass()]
+        return [permissions.IsAuthenticated(), IsMasterclassManagerOrAdmin()]
 
     def _resolved_status(self) -> str:
         """Return the status that should be applied on every provider write."""

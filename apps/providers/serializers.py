@@ -104,8 +104,9 @@ class ProviderListingSerializer(serializers.ModelSerializer):
         id, owner_id, status, rating, review_count, created_at, updated_at.
 
     Category constraint:
-        TUTOR  → must use TUTORING category.
         MASTERCLASS → must use MASTERCLASSES category.
+        MANAGER / ADMIN → may use any category.
+        Tutors cannot create listings at all (blocked at the view permission).
         Validated in validate_category(); also re-validated on update.
 
     Status rule:
@@ -165,6 +166,9 @@ class ProviderListingSerializer(serializers.ModelSerializer):
     def validate_category(self, value: str) -> str:
         user = self._get_request_user()
         if user is None:
+            return value
+        # Managers and admins may create listings in any category.
+        if user.has_any_role(UserRole.MANAGER, UserRole.ADMIN):
             return value
         allowed_categories = set()
         for role_key, cat in _PROVIDER_CATEGORY_MAP.items():
