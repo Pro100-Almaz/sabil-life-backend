@@ -3,8 +3,10 @@ from unittest.mock import MagicMock
 
 from django.test import TestCase
 
-from apps.providers.permissions import IsListingOwner, IsProvider
+from apps.providers.permissions import IsListingOwner
 from apps.users.enums import UserRole
+from apps.users.permissions import IsProvider
+
 
 
 def _mock_request(user) -> MagicMock:

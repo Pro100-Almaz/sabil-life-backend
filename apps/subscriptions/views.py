@@ -20,7 +20,6 @@ from rest_framework import mixins, permissions, status, viewsets
 from rest_framework.response import Response
 
 from apps.catalog.models import Listing
-from apps.providers.permissions import IsProvider
 
 from apps.subscriptions import services
 from apps.subscriptions.models import MasterclassSubscription, SubscriptionStatus
@@ -38,6 +37,7 @@ from apps.subscriptions.serializers import (
     ProviderSubscriptionSerializer,
     SubscriptionCreateSerializer,
 )
+from apps.users.permissions import IsProvider
 
 logger = logging.getLogger(__name__)
 

@@ -23,7 +23,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from apps.catalog.models import Listing
-from apps.providers.permissions import IsProvider
+from apps.users.permissions import IsProvider
 
 from apps.inquiries import services
 from apps.inquiries.models import Inquiry, InquiryStatus

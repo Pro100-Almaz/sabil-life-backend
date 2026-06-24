@@ -7,7 +7,6 @@ import rest_framework.exceptions
 import rest_framework.parsers
 import rest_framework.status
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
 from apps.catalog.models import Listing, ListingStatus
 from apps.users.enums import UserRole
@@ -19,7 +18,7 @@ from apps.providers.models import (
     StatusChoices,
     TutorDetail,
 )
-from apps.providers.permissions import IsListingOwner, IsProvider, IsTutor
+from apps.providers.permissions import IsListingOwner
 from apps.providers.schema import (
     PROVIDER_LISTING_CREATE_SCHEMA,
     PROVIDER_LISTING_DESTROY_SCHEMA,
@@ -35,6 +34,7 @@ from apps.providers.serializers import (
     VerifyProviderSerializer,
 )
 from apps.users.permissions import IsManagerOrAdmin, IsMasterclassManagerOrAdmin
+
 
 logger = logging.getLogger(__name__)
 
