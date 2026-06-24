@@ -90,3 +90,84 @@ class ProviderProfile(models.Model):
 
     def __str__(self) -> str:
         return f"ProviderProfile({self.user.email})"
+
+
+class TutorDetail(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="tutor_detail",
+        verbose_name=_("user"),
+    )
+    avatar = models.ImageField(
+        _("avatar"), upload_to="avatars/", blank=True,
+    )
+    affiliation_listing_id = models.CharField(
+        _("affiliation listing ID"), max_length=120, blank=True,
+    )
+    subjects = models.JSONField(_("subjects"), default=list, blank=True)
+    formats = models.JSONField(
+        _("formats"), default=list, blank=True,
+        help_text=_('e.g. ["ONE_ON_ONE", "SMALL_GROUP", "AT_CENTRE"]'),
+    )
+    age_groups = models.JSONField(
+        _("age groups"), default=list, blank=True,
+        help_text=_('e.g. ["6-11", "12-15"]'),
+    )
+    price_per_hour_qar = models.PositiveIntegerField(
+        _("price per hour (QAR)"), null=True, blank=True,
+    )
+    rating = models.DecimalField(
+        _("rating"), max_digits=2, decimal_places=1, default=0,
+    )
+    review_count = models.PositiveIntegerField(_("review count"), default=0)
+    years_experience = models.PositiveIntegerField(
+        _("years of experience"), null=True, blank=True,
+    )
+    credentials = models.CharField(_("credentials"), max_length=300, blank=True)
+    languages = models.JSONField(
+        _("languages"), default=list, blank=True,
+        help_text=_('e.g. ["EN", "AR"]'),
+    )
+    trial_available = models.BooleanField(_("trial available"), default=False)
+    bio = models.TextField(_("bio"), blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = _("tutor detail")
+        verbose_name_plural = _("tutor details")
+
+    def clean(self) -> None:
+        super().clean()
+        if self.user_id and self.user.role != UserRole.TUTOR:
+            raise ValidationError(
+                _("TutorDetail can only be created for users with role TUTOR."),
+                code="invalid_role",
+            )
+
+    def save(self, *args, **kwargs) -> None:
+        self.clean()
+        if self.pk:
+            try:
+                old = TutorDetail.objects.get(pk=self.pk)
+            except TutorDetail.DoesNotExist:
+                old = None
+            if old and old.avatar and old.avatar != self.avatar:
+                old.avatar.delete(save=False)
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return f"TutorDetail({self.user.email})"
+
+
+class TutorSubject(models.Model):
+    name = models.CharField(_("name"), max_length=200, unique=True)
+
+    class Meta:
+        verbose_name = _("tutor subject")
+        verbose_name_plural = _("tutor subjects")
+        ordering = ["name"]
+
+    def __str__(self) -> str:
+        return self.name

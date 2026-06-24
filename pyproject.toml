@@ -26,7 +26,11 @@ dependencies = [
     "python-json-logger>=4.0.0",
     "django-unfold>=0.70.0",
     "django-import-export>=4.3.0",
+<<<<<<< HEAD
     "django-storages[s3]>=1.14.6",
+=======
+    "Pillow>=11.0.0",
+>>>>>>> 5177c23d222e5b8bd769eaff98b7f9cbd5a41417
 ]
 
 [build-system]
