@@ -100,27 +100,27 @@ class ListingListViewTests(APITestCase):
     # Search filter (q)
     # ------------------------------------------------------------------
 
-    def test_q_filter_matches_title(self):
+    def test_search_filter_matches_title(self):
         listing = make_listing(title="Bright Stars Academy")
         make_listing(title="Another Place")
 
-        response = self.client.get(self.url, {"q": "bright"})
+        response = self.client.get(self.url, {"search": "bright"})
         ids = [r["id"] for r in response.data["results"]]
         self.assertIn(str(listing.id), ids)
         self.assertEqual(len(ids), 1)
 
-    def test_q_filter_matches_subtitle(self):
+    def test_search_filter_matches_subtitle(self):
         listing = make_listing(title="Generic Title", subtitle="Expert coding lessons")
         make_listing(title="Other Listing", subtitle="Something else")
 
-        response = self.client.get(self.url, {"q": "coding"})
+        response = self.client.get(self.url, {"search": "coding"})
         ids = [r["id"] for r in response.data["results"]]
         self.assertIn(str(listing.id), ids)
         self.assertEqual(len(ids), 1)
 
-    def test_q_filter_case_insensitive(self):
+    def test_search_filter_case_insensitive(self):
         listing = make_listing(title="Creative Arts Studio")
-        response = self.client.get(self.url, {"q": "CREATIVE"})
+        response = self.client.get(self.url, {"search": "CREATIVE"})
         ids = [r["id"] for r in response.data["results"]]
         self.assertIn(str(listing.id), ids)
 
