@@ -25,6 +25,35 @@ services:
       timeout: 5s
       retries: 5
 
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    env_file:
+      - .env
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER:-minioadmin}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-minioadmin}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+
+  minio-create-bucket:
+    image: minio/mc:latest
+    restart: "no"
+    env_file:
+      - .env
+    depends_on:
+      minio:
+        condition: service_started
+    entrypoint: >
+      /bin/sh -c "
+      until mc alias set local http://minio:9000 $${MINIO_ROOT_USER:-minioadmin} $${MINIO_ROOT_PASSWORD:-minioadmin}; do sleep 1; done &&
+      mc mb --ignore-existing local/$${AWS_STORAGE_BUCKET_NAME:-sabil-life-media}
+      "
+
   backend:
     build: .
     image: django-starter-template:dev
@@ -41,11 +70,14 @@ services:
       - DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       - REDIS_URL=redis://redis:6379/0
       - CELERY_BROKER_URL=redis://redis:6379/0
+      - AWS_S3_ENDPOINT_URL=http://minio:9000
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
+      minio-create-bucket:
+        condition: service_completed_successfully
 
   worker:
     image: django-starter-template:dev
@@ -60,11 +92,14 @@ services:
       - DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       - REDIS_URL=redis://redis:6379/0
       - CELERY_BROKER_URL=redis://redis:6379/0
+      - AWS_S3_ENDPOINT_URL=http://minio:9000
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
+      minio-create-bucket:
+        condition: service_completed_successfully
 
   beat:
     image: django-starter-template:dev
@@ -79,13 +114,17 @@ services:
       - DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       - REDIS_URL=redis://redis:6379/0
       - CELERY_BROKER_URL=redis://redis:6379/0
+      - AWS_S3_ENDPOINT_URL=http://minio:9000
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
+      minio-create-bucket:
+        condition: service_completed_successfully
       backend:
         condition: service_started
 
 volumes:
   postgres_data:
+  minio_data:
