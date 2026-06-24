@@ -99,4 +99,3 @@ class TestListingDetailEmbedsReviews:
         resp = self.client.get(_detail_url(listing.id))
         review_entry = resp.json()["reviews"][0]
         assert "email" not in review_entry
-        assert "author_id" not in review_entry

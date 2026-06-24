@@ -2,7 +2,7 @@
 Review serializers — Phase 7.
 
 Three shapes:
-  ReviewListSerializer   — public read. Never exposes author.email or author.id.
+  ReviewListSerializer   — public read. Exposes author_id but never author.email.
   ReviewCreateSerializer — family POST. Validates engagement gate + uniqueness.
   ReviewUpdateSerializer — family PATCH. Updates rating/text only.
 """
@@ -19,14 +19,14 @@ class ReviewListSerializer(serializers.ModelSerializer):
     Public read serializer — safe to expose without authentication.
 
     author_name is author.full_name, falling back to "Anonymous" if blank.
-    author.id and author.email are intentionally excluded.
+    author.email is intentionally excluded.
     """
 
     author_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Review
-        fields = ["id", "rating", "text", "author_name", "created_at"]
+        fields = ["id", "rating", "text", "author_name", "created_at", "author_id"]
         read_only_fields = fields
 
     def get_author_name(self, obj: Review) -> str:
