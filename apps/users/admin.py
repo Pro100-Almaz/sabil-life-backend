@@ -5,8 +5,8 @@ from unfold.admin import ModelAdmin
 from unfold.decorators import action
 from unfold.forms import AdminPasswordChangeForm
 
-from .forms import CustomUserChangeForm, CustomUserCreationForm
-from .models import CustomUser, Role
+from apps.users.forms import CustomUserChangeForm, CustomUserCreationForm
+from apps.users.models import CustomUser, Role
 
 
 @action(

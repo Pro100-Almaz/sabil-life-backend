@@ -3,7 +3,7 @@ from rest_framework import serializers
 from apps.catalog.models import Listing, ListingCategory
 from apps.users.enums import UserRole
 
-from .models import ProviderVerification, StatusChoices, TutorDetail
+from apps.providers.models import ProviderVerification, StatusChoices, TutorDetail
 
 # ---------------------------------------------------------------------------
 # Provider Listings — shared maps

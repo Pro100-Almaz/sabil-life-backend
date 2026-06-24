@@ -16,7 +16,7 @@ Contact redaction pattern (Phase 5):
 
 from rest_framework import serializers
 
-from .models import Inquiry
+from apps.inquiries.models import Inquiry
 
 
 class FamilyInquirySerializer(serializers.ModelSerializer):

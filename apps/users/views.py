@@ -11,7 +11,7 @@ from knox.views import LoginView as KnoxLoginView
 from rest_framework import generics, permissions, serializers, status, throttling
 from rest_framework.response import Response
 
-from .schema import (
+from apps.users.schema import (
     LOGIN_RESPONSE_SCHEMA,
     PROFILE_DETAIL_SCHEMA,
     PROFILE_PATCH_SCHEMA,
@@ -19,13 +19,13 @@ from .schema import (
     REGISTER_RESPONSE_SCHEMA,
     USER_CREATE_RESPONSE_SCHEMA,
 )
-from .serializers import (
+from apps.users.serializers import (
     AuthTokenSerializer,
     CreateUserSerializer,
     RegisterSerializer,
     UserProfileSerializer,
 )
-from .throttles import UserLoginRateThrottle
+from apps.users.throttles import UserLoginRateThrottle
 
 logger = logging.getLogger(__name__)
 

@@ -1,7 +1,7 @@
 import django_filters
 from django.db.models import Q, QuerySet
 
-from .models import Listing
+from apps.catalog.models import Listing
 
 
 class ListingFilter(django_filters.FilterSet):

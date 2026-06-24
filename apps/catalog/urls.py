@@ -1,7 +1,7 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 
-from .views import ListingViewSet, TutorListViewSet, categories_view, tutor_subjects_view
+from apps.catalog.views import ListingViewSet, TutorListViewSet, categories_view, tutor_subjects_view
 
 router = DefaultRouter()
 router.register(r"listings", ListingViewSet, basename="listings")

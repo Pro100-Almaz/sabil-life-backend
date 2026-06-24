@@ -8,23 +8,23 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.request import Request
 from rest_framework.response import Response
 
-from .filters import ListingFilter
+from apps.catalog.filters import ListingFilter
 from apps.providers.models import TutorDetail, TutorSubject
 
-from .models import Listing, ListingCategory, ListingStatus
-from .schema import (
+from apps.catalog.models import Listing, ListingCategory, ListingStatus
+from apps.catalog.schema import (
     CATEGORIES_SCHEMA,
     LISTING_DETAIL_SCHEMA,
     LISTING_LIST_PARAMETERS,
     LISTING_LIST_SCHEMA,
 )
-from .serializers import (
+from apps.catalog.serializers import (
     CategoryCountSerializer,
     ListingCardSerializer,
     ListingDetailSerializer,
     TutorCardSerializer,
 )
-from .services import annotate_distance_km
+from apps.catalog.services import annotate_distance_km
 
 logger = logging.getLogger(__name__)
 

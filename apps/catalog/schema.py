@@ -13,7 +13,7 @@ from drf_spectacular.utils import (
     OpenApiTypes,
 )
 
-from .serializers import (
+from apps.catalog.serializers import (
     CategoryCountSerializer,
     ListingCardSerializer,
     ListingDetailSerializer,

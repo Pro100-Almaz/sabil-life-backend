@@ -10,8 +10,8 @@ Three shapes:
 from django.db import IntegrityError
 from rest_framework import serializers
 
-from .models import Review
-from .services import can_review
+from apps.reviews.models import Review
+from apps.reviews.services import can_review
 
 
 class ReviewListSerializer(serializers.ModelSerializer):

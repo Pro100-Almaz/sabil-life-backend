@@ -18,15 +18,15 @@ from rest_framework.views import APIView
 
 from apps.catalog.models import Listing, ListingStatus
 
-from .models import Review
-from .permissions import IsFamily
-from .schema import (
+from apps.reviews.models import Review
+from apps.reviews.permissions import IsFamily
+from apps.reviews.schema import (
     LISTING_REVIEWS_CREATE_SCHEMA,
     LISTING_REVIEWS_LIST_SCHEMA,
     MY_REVIEWS_LIST_SCHEMA,
     REVIEW_DETAIL_SCHEMA,
 )
-from .serializers import (
+from apps.reviews.serializers import (
     ReviewCreateSerializer,
     ReviewListSerializer,
     ReviewUpdateSerializer,

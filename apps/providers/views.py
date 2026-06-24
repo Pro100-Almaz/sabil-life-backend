@@ -13,28 +13,28 @@ from apps.catalog.models import Listing, ListingStatus
 from apps.users.enums import UserRole
 from apps.users.models import Role
 
-from .models import (
+from apps.providers.models import (
     ProviderChoices,
     ProviderVerification,
     StatusChoices,
     TutorDetail,
 )
-from .permissions import IsListingOwner, IsProvider, IsTutor
-from .schema import (
+from apps.providers.permissions import IsListingOwner, IsProvider, IsTutor
+from apps.providers.schema import (
     PROVIDER_LISTING_CREATE_SCHEMA,
     PROVIDER_LISTING_DESTROY_SCHEMA,
     PROVIDER_LISTING_LIST_SCHEMA,
     PROVIDER_LISTING_RETRIEVE_SCHEMA,
     PROVIDER_LISTING_UPDATE_SCHEMA,
 )
-from .serializers import (
+from apps.providers.serializers import (
     AvatarUploadSerializer,
     ProviderListingSerializer,
     ProviderVerificationReviewSerializer,
     TutorDetailSerializer,
     VerifyProviderSerializer,
 )
-from ..users.permissions import IsManagerOrAdmin, IsMasterclassManagerOrAdmin
+from apps.users.permissions import IsManagerOrAdmin, IsMasterclassManagerOrAdmin
 
 logger = logging.getLogger(__name__)
 

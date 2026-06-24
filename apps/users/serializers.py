@@ -10,7 +10,7 @@ from rest_framework import serializers
 from apps.users.enums import UserRole
 from apps.users.models import CustomUser
 
-from .utils import get_errors
+from apps.users.utils import get_errors
 
 logger = logging.getLogger(__name__)
 MIN_PASSWORD_LENGTH = getattr(settings, "MIN_PASSWORD_LENGTH", 8)

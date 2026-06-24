@@ -1,7 +1,7 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 
-from .views import (
+from apps.providers.views import (
     AvatarUploadView,
     ProviderListingViewSet,
     ProviderVerificationAdminViewSet,

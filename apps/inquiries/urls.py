@@ -1,6 +1,6 @@
 from rest_framework.routers import DefaultRouter
 
-from .views import FamilyInquiryViewSet, ProviderInquiryViewSet
+from apps.inquiries.views import FamilyInquiryViewSet, ProviderInquiryViewSet
 
 app_name = "inquiries"
 

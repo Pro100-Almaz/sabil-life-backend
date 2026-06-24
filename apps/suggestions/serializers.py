@@ -7,7 +7,7 @@ It is only accessible via the Django admin panel.
 
 from rest_framework import serializers
 
-from .models import ServiceSuggestion
+from apps.suggestions.models import ServiceSuggestion
 
 
 class SuggestionSerializer(serializers.ModelSerializer):

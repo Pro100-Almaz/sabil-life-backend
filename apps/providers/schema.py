@@ -8,7 +8,7 @@ from drf_spectacular.utils import OpenApiExample, OpenApiResponse
 
 from apps.core.schema import UNAUTHORIZED_EXAMPLES, ErrorResponseSerializer
 
-from .serializers import ProviderListingSerializer
+from apps.providers.serializers import ProviderListingSerializer
 
 # ---------------------------------------------------------------------------
 # Reusable example values

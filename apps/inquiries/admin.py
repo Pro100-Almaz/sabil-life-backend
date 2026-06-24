@@ -6,7 +6,7 @@ from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
 from unfold.admin import ModelAdmin
 
-from .models import Inquiry
+from apps.inquiries.models import Inquiry
 
 
 @admin.register(Inquiry)
