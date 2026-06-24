@@ -118,6 +118,7 @@ INSTALLED_APPS = [
     "apps.subscriptions",
     "apps.suggestions",
     "apps.reviews",
+    "apps.favorites",
 ]
 
 MIDDLEWARE = [
@@ -215,6 +216,13 @@ UNFOLD = {
                             "admin:reviews_review_changelist"
                         ),
                     },
+                    # {
+                    #     "title": _("Favorites"),
+                    #     "icon": "favorite",
+                    #     "link": reverse_lazy(
+                    #         "admin:favorites_favorite_changelist"
+                    #     ),
+                    # },
                 ],
             },
             {
