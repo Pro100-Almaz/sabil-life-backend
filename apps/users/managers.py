@@ -10,18 +10,9 @@ if TYPE_CHECKING:
 
 
 class CustomUserManager(BaseUserManager):
-    """
-    Custom user model manager where email is the unique identifier
-    for authentication instead of usernames.
-    """
-
     def create_user(
         self, email: str, password: str, **extra_fields: dict
     ) -> "CustomUser":
-        """
-        Create and save a user with the given email and password.
-        """
-
         if not email:
             raise ValueError(_("The Email must be set"))
 
@@ -34,10 +25,6 @@ class CustomUserManager(BaseUserManager):
     def create_superuser(
         self, email: str, password: str, **extra_fields: dict
     ) -> "CustomUser":
-        """
-        Create and save a SuperUser with the given email and password.
-        """
-
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
         extra_fields.setdefault("is_active", True)
@@ -48,4 +35,10 @@ class CustomUserManager(BaseUserManager):
         if extra_fields.get("is_superuser") is not True:
             raise ValueError(_("Superuser must have is_superuser=True."))
 
-        return self.create_user(email, password, **extra_fields)
+        user = self.create_user(email, password, **extra_fields)
+
+        from apps.users.models import Role
+
+        admin_role, _created = Role.objects.get_or_create(name=UserRole.ADMIN)
+        user.roles.add(admin_role)
+        return user

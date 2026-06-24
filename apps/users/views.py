@@ -84,7 +84,7 @@ class RegisterView(generics.CreateAPIView):
         token_ttl = knox_settings.TOKEN_TTL
         expiry = datetime.now(tz=tz.utc) + token_ttl if token_ttl is not None else None
 
-        logger.info("User %s registered with role %s.", user.email, user.role)
+        logger.info("User %s registered.", user.email)
 
         user_data = UserProfileSerializer(user, context={"request": request}).data
         return Response(

@@ -8,26 +8,11 @@ from drf_spectacular.utils import OpenApiExample, OpenApiResponse
 
 from apps.core.schema import UNAUTHORIZED_EXAMPLES, ErrorResponseSerializer
 
-from .serializers import ProviderListingSerializer, ProviderProfileSerializer
+from .serializers import ProviderListingSerializer
 
 # ---------------------------------------------------------------------------
 # Reusable example values
 # ---------------------------------------------------------------------------
-
-_PROFILE_EXAMPLE = {
-    "user_id": 7,
-    "email": "tutor@example.com",
-    "full_name": "Ahmed Al-Mansoori",
-    "role": "TUTOR",
-    "is_verified": True,
-    "display_name": "Ahmed Maths Tutoring",
-    "bio": "10 years teaching secondary school mathematics in Doha.",
-    "subjects": ["Math", "Physics"],
-    "hourly_rate_qar": 150,
-    "availability": "Weekday evenings, weekend mornings",
-    "created_at": "2026-01-15T08:00:00Z",
-    "updated_at": "2026-06-01T12:00:00Z",
-}
 
 _LISTING_EXAMPLE = {
     "id": "550e8400-e29b-41d4-a716-446655440000",
@@ -70,76 +55,6 @@ _CATEGORY_MISMATCH_EXAMPLE = [
         status_codes=["400"],
     )
 ]
-
-# ---------------------------------------------------------------------------
-# Profile endpoint schemas
-# ---------------------------------------------------------------------------
-
-PROVIDER_PROFILE_GET_SCHEMA = {
-    "summary": "Get own provider profile",
-    "description": (
-        "Returns the authenticated provider's profile. "
-        "Auto-creates the profile if it doesn't exist yet (lazy-create on first access)."
-    ),
-    "responses": {
-        200: OpenApiResponse(
-            response=ProviderProfileSerializer,
-            description="Provider profile data.",
-            examples=[
-                OpenApiExample(
-                    "Profile",
-                    value=_PROFILE_EXAMPLE,
-                    status_codes=["200"],
-                )
-            ],
-        ),
-        401: OpenApiResponse(
-            response=ErrorResponseSerializer,
-            description="Authentication required.",
-            examples=UNAUTHORIZED_EXAMPLES,
-        ),
-        403: OpenApiResponse(
-            response=ErrorResponseSerializer,
-            description="User is not a provider.",
-            examples=_FORBIDDEN_EXAMPLE,
-        ),
-    },
-}
-
-PROVIDER_PROFILE_PATCH_SCHEMA = {
-    "summary": "Update own provider profile",
-    "description": (
-        "Partial update of the authenticated provider's profile. "
-        "is_verified is read-only; only admins may change it via the User model."
-    ),
-    "responses": {
-        200: OpenApiResponse(
-            response=ProviderProfileSerializer,
-            description="Updated provider profile.",
-            examples=[
-                OpenApiExample(
-                    "Updated profile",
-                    value={**_PROFILE_EXAMPLE, "display_name": "Ahmed Advanced Maths"},
-                    status_codes=["200"],
-                )
-            ],
-        ),
-        400: OpenApiResponse(
-            response=ErrorResponseSerializer,
-            description="Validation error.",
-        ),
-        401: OpenApiResponse(
-            response=ErrorResponseSerializer,
-            description="Authentication required.",
-            examples=UNAUTHORIZED_EXAMPLES,
-        ),
-        403: OpenApiResponse(
-            response=ErrorResponseSerializer,
-            description="User is not a provider.",
-            examples=_FORBIDDEN_EXAMPLE,
-        ),
-    },
-}
 
 # ---------------------------------------------------------------------------
 # Listing endpoint schemas

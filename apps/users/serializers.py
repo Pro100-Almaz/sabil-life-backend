@@ -87,13 +87,10 @@ class CreateUserSerializer(serializers.ModelSerializer):
 
 class RegisterSerializer(serializers.ModelSerializer):
     """
-    Public self-service registration serializer.
+    Public self-service registration.
 
-    Differences from CreateUserSerializer (admin tool):
-    - Exposes full_name, role, phone
-    - Rejects role=ADMIN (admins created via Django admin / createsuperuser)
-    - Sets is_verified=True for FAMILY, False for TUTOR/MASTERCLASS
-    - No password2 confirm field — single password field with full validation
+    Every user registers as FAMILY.  Additional roles (TUTOR, MASTERCLASS,
+    MANAGER) are granted later by a manager/admin after verification.
     """
 
     password = serializers.CharField(
@@ -101,28 +98,15 @@ class RegisterSerializer(serializers.ModelSerializer):
         min_length=MIN_PASSWORD_LENGTH,
         style={"input_type": "password"},
     )
-    role = serializers.ChoiceField(
-        choices=UserRole.choices,
-        default=UserRole.FAMILY,
-        required=False,
-    )
     full_name = serializers.CharField(required=False, allow_blank=True, default="")
     phone = serializers.CharField(required=False, allow_blank=True, default="")
 
     class Meta:
         model = CustomUser
-        fields = ("email", "password", "full_name", "role", "phone")
-
-    def validate_role(self, value: str) -> str:
-        if value == UserRole.ADMIN:
-            raise serializers.ValidationError(
-                _("Cannot self-register with the ADMIN role.")
-            )
-        return value
+        fields = ("email", "password", "full_name", "phone")
 
     def validate(self, data: dict) -> dict:
         password = data.get("password", "")
-        # Build a throwaway model instance for similarity validation
         user_data = {k: v for k, v in data.items() if k != "password"}
         try:
             validate_password(password, self.Meta.model(**user_data))
@@ -137,18 +121,17 @@ class RegisterSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data: dict) -> CustomUser:
-        role = validated_data.get("role", UserRole.FAMILY)
-        # Families are verified on registration; providers need admin verification.
-        is_verified = role not in {UserRole.TUTOR, UserRole.MASTERCLASS}
-        validated_data["is_verified"] = is_verified
-        return CustomUser.objects.create_user(**validated_data)
+        from apps.users.models import Role
+
+        validated_data["is_verified"] = True
+        user = CustomUser.objects.create_user(**validated_data)
+        family_role, _ = Role.objects.get_or_create(name=UserRole.FAMILY)
+        user.roles.add(family_role)
+        return user
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
-    """
-    Serializer for the /me/ endpoint. Exposes all Phase 1 profile fields.
-    Password is write-only (used for password-change on PATCH/PUT).
-    """
+    roles = serializers.SerializerMethodField()
 
     class Meta:
         model = CustomUser
@@ -156,7 +139,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "id",
             "email",
             "full_name",
-            "role",
+            "roles",
             "is_verified",
             "phone",
             "home_lat",
@@ -168,10 +151,12 @@ class UserProfileSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             "id": {"read_only": True},
             "email": {"read_only": True},
-            "role": {"read_only": True},
             "is_verified": {"read_only": True},
             "password": {"write_only": True, "min_length": MIN_PASSWORD_LENGTH},
         }
+
+    def get_roles(self, obj: CustomUser) -> list[str]:
+        return list(obj.roles.values_list("name", flat=True))
 
     def validate(self, data: dict) -> dict:
         if "password" in data:

@@ -6,7 +6,7 @@ from unfold.decorators import action
 from unfold.forms import AdminPasswordChangeForm
 
 from .forms import CustomUserChangeForm, CustomUserCreationForm
-from .models import CustomUser
+from .models import CustomUser, Role
 
 
 @action(
@@ -22,6 +22,12 @@ def verify_providers(modeladmin, request, queryset):
     )
 
 
+@admin.register(Role)
+class RoleAdmin(ModelAdmin):
+    list_display = ("name",)
+    search_fields = ("name",)
+
+
 class CustomUserAdmin(ModelAdmin, DjangoUserAdmin):
     add_form = CustomUserCreationForm
     form = CustomUserChangeForm
@@ -32,19 +38,20 @@ class CustomUserAdmin(ModelAdmin, DjangoUserAdmin):
     list_display = (
         "email",
         "full_name",
-        "role",
+        "display_roles",
         "is_verified",
         "is_staff",
         "is_active",
     )
     list_filter = (
-        "role",
+        "roles",
         "is_verified",
         "is_staff",
         "is_active",
     )
     search_fields = ("email", "full_name", "phone")
     ordering = ("email",)
+    filter_horizontal = ("roles",)
 
     fieldsets = (
         (None, {"fields": ("email", "password")}),
@@ -54,7 +61,7 @@ class CustomUserAdmin(ModelAdmin, DjangoUserAdmin):
         ),
         (
             _("Role & verification"),
-            {"fields": ("role", "is_verified")},
+            {"fields": ("roles", "is_verified")},
         ),
         (
             _("Location"),
@@ -84,7 +91,7 @@ class CustomUserAdmin(ModelAdmin, DjangoUserAdmin):
                     "password1",
                     "password2",
                     "full_name",
-                    "role",
+                    "roles",
                     "is_verified",
                     "is_staff",
                     "is_active",
@@ -94,6 +101,10 @@ class CustomUserAdmin(ModelAdmin, DjangoUserAdmin):
             },
         ),
     )
+
+    @admin.display(description=_("Roles"))
+    def display_roles(self, obj: CustomUser) -> str:
+        return ", ".join(obj.roles.values_list("name", flat=True)) or "-"
 
 
 admin.site.register(CustomUser, CustomUserAdmin)

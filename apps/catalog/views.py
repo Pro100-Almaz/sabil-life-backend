@@ -158,7 +158,7 @@ class TutorListViewSet(viewsets.ReadOnlyModelViewSet):
         return (
             TutorDetail.objects
             .select_related("user")
-            .filter(user__role="TUTOR", user__is_verified=True)
+            .filter(user__role="TUTOR", is_verified=True)
             .order_by("-rating", "-review_count")
         )
 

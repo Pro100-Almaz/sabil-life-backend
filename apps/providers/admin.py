@@ -2,44 +2,7 @@ from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
 from unfold.admin import ModelAdmin
 
-from .models import ProviderProfile, TutorDetail, TutorSubject
-
-
-@admin.register(ProviderProfile)
-class ProviderProfileAdmin(ModelAdmin):
-    list_display = (
-        "user_email",
-        "display_name",
-        "is_verified_display",
-        "hourly_rate_qar",
-        "updated_at",
-    )
-    list_filter = ("user__is_verified", "user__role")
-    search_fields = ("user__email", "display_name", "bio")
-    readonly_fields = ("user", "created_at", "updated_at")
-
-    fieldsets = (
-        (
-            _("Account"),
-            {"fields": ("user", "display_name")},
-        ),
-        (
-            _("Profile"),
-            {"fields": ("bio", "subjects", "hourly_rate_qar", "availability")},
-        ),
-        (
-            _("Timestamps"),
-            {"fields": ("created_at", "updated_at"), "classes": ("collapse",)},
-        ),
-    )
-
-    @admin.display(description=_("Email"), ordering="user__email")
-    def user_email(self, obj: ProviderProfile) -> str:
-        return obj.user.email
-
-    @admin.display(description=_("Verified"), boolean=True, ordering="user__is_verified")
-    def is_verified_display(self, obj: ProviderProfile) -> bool:
-        return obj.user.is_verified
+from .models import ProviderVerification, TutorDetail, TutorSubject
 
 
 @admin.register(TutorDetail)
@@ -47,12 +10,13 @@ class TutorDetailAdmin(ModelAdmin):
     list_display = (
         "user_email",
         "user_full_name",
+        "is_verified",
         "rating",
         "review_count",
         "price_per_hour_qar",
         "trial_available",
     )
-    list_filter = ("trial_available", "languages")
+    list_filter = ("is_verified", "trial_available", "languages")
     search_fields = ("user__email", "user__full_name", "credentials", "bio")
     readonly_fields = ("user", "created_at", "updated_at")
 
@@ -69,3 +33,20 @@ class TutorDetailAdmin(ModelAdmin):
 class TutorSubjectAdmin(ModelAdmin):
     list_display = ("name",)
     search_fields = ("name",)
+
+
+@admin.register(ProviderVerification)
+class ProviderVerificationAdmin(ModelAdmin):
+    list_display = (
+        "user_email",
+        "provider_type",
+        "status",
+        "updated_at",
+    )
+    list_filter = ("status", "provider_type")
+    search_fields = ("user__email", "user__full_name", "comment")
+    readonly_fields = ("user", "provider_type", "created_at", "updated_at")
+
+    @admin.display(description=_("Email"), ordering="user__email")
+    def user_email(self, obj: ProviderVerification) -> str:
+        return obj.user.email

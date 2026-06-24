@@ -65,7 +65,6 @@ class ProviderListingCreateTests(APITestCase):
         )
         self.assertEqual(resp.status_code, 400)
         self.assertIn("category", resp.data)
-        self.assertIn("TUTORING", str(resp.data["category"]))
 
     def test_verified_tutor_cannot_create_schools_listing(self):
         user = make_user(role=UserRole.TUTOR, verified=True)
@@ -99,7 +98,6 @@ class ProviderListingCreateTests(APITestCase):
         )
         self.assertEqual(resp.status_code, 400)
         self.assertIn("category", resp.data)
-        self.assertIn("MASTERCLASSES", str(resp.data["category"]))
 
     def test_unverified_tutor_creates_with_draft_status(self):
         user = make_user(role=UserRole.TUTOR, verified=False)

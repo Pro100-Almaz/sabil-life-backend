@@ -6,37 +6,37 @@ from apps.users.enums import UserRole
 from apps.users.managers import CustomUserManager
 
 
+class Role(models.Model):
+    name = models.CharField(
+        _("name"), max_length=20, choices=UserRole.choices, unique=True,
+    )
+
+    class Meta:
+        verbose_name = _("role")
+        verbose_name_plural = _("roles")
+
+    def __str__(self) -> str:
+        return self.name
+
+
 class CustomUser(AbstractUser):
-    """
-    CustomUser is a custom user model that extends Django's AbstractUser.
-    It uses email as the unique identifier instead of the username.
-    """
-
-    # The username field is set to None to disable it.
     username = None
-
-    # The email field is set to be unique because it is the unique identifier.
     email = models.EmailField(_("email address"), unique=True)
 
-    # Specifies the field to be used as the unique identifier for the user.
     USERNAME_FIELD = "email"
-
-    # A list of fields that will be prompted for when creating a user
-    # via the createsuperuser command. If empty, the USERNAME_FIELD is
-    # the only required.
     REQUIRED_FIELDS = []
 
-    # The CustomUserManager allows the creation of a user where email
-    # is the unique identifier.
     objects = CustomUserManager()
 
-    # Phase 1 fields
     full_name = models.CharField(_("full name"), max_length=255, blank=True, default="")
     role = models.CharField(
-        _("role"),
+        _("legacy role"),
         max_length=20,
         choices=UserRole.choices,
         default=UserRole.FAMILY,
+    )
+    roles = models.ManyToManyField(
+        Role, related_name="users", blank=True, verbose_name=_("roles"),
     )
     phone = models.CharField(_("phone"), max_length=32, blank=True, default="")
     home_lat = models.FloatField(_("home latitude"), null=True, blank=True)
@@ -50,10 +50,37 @@ class CustomUser(AbstractUser):
         ),
     )
 
+    def _get_role_names(self) -> set[str]:
+        if not hasattr(self, "_role_names_cache"):
+            self._role_names_cache = set(
+                self.roles.values_list("name", flat=True)
+            )
+        return self._role_names_cache
+
+    def has_role(self, role_name: str) -> bool:
+        role_names = self._get_role_names()
+        if role_name in role_names:
+            return True
+        # MANAGER inherits every role except ADMIN
+        if role_name != UserRole.ADMIN and UserRole.MANAGER in role_names:
+            return True
+        return False
+
+    def has_any_role(self, *role_names: str) -> bool:
+        return any(self.has_role(r) for r in role_names)
+
     @property
     def is_provider(self) -> bool:
-        """Return True if the user has a provider role (TUTOR or MASTERCLASS)."""
-        return self.role in {UserRole.TUTOR, UserRole.MASTERCLASS}
+        return self.has_any_role(UserRole.TUTOR, UserRole.MASTERCLASS)
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        # Sync legacy role field → M2M for backward compatibility
+        if self.role:
+            role_obj, _ = Role.objects.get_or_create(name=self.role)
+            self.roles.add(role_obj)
+            if hasattr(self, "_role_names_cache"):
+                del self._role_names_cache
 
     def __str__(self):
         return self.email
