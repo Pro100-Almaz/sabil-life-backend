@@ -6,4 +6,5 @@ class UserRole(models.TextChoices):
     FAMILY = "FAMILY", _("Family")
     TUTOR = "TUTOR", _("Tutor")
     MASTERCLASS = "MASTERCLASS", _("Masterclass")
+    MANAGER = "MANAGER", _("Manager")
     ADMIN = "ADMIN", _("Admin")

@@ -1,6 +1,6 @@
 from unfold.forms import UserChangeForm, UserCreationForm
 
-from .models import CustomUser
+from apps.users.models import CustomUser
 
 
 class CustomUserCreationForm(UserCreationForm):

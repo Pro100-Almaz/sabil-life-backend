@@ -23,12 +23,12 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from apps.catalog.models import Listing
-from apps.providers.permissions import IsProvider
+from apps.users.permissions import IsProvider
 
-from . import services
-from .models import Inquiry, InquiryStatus
-from .permissions import IsFamily
-from .schema import (
+from apps.inquiries import services
+from apps.inquiries.models import Inquiry, InquiryStatus
+from apps.inquiries.permissions import IsFamily
+from apps.inquiries.schema import (
     INQUIRY_CREATE_SCHEMA,
     INQUIRY_LIST_SCHEMA,
     INQUIRY_RETRIEVE_SCHEMA,
@@ -39,7 +39,7 @@ from .schema import (
     PROVIDER_INQUIRY_LIST_SCHEMA,
     PROVIDER_INQUIRY_RETRIEVE_SCHEMA,
 )
-from .serializers import (
+from apps.inquiries.serializers import (
     FamilyInquirySerializer,
     InquiryCreateSerializer,
     ProviderInquirySerializer,

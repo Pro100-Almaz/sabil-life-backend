@@ -1,6 +1,6 @@
 from rest_framework.routers import DefaultRouter
 
-from .views import FamilySuggestionViewSet
+from apps.suggestions.views import FamilySuggestionViewSet
 
 app_name = "suggestions"
 

@@ -6,7 +6,7 @@ Mounted at the api/v1/ prefix level in conf/urls.py.
 
 from django.urls import path
 
-from .views import ListingReviewsView, MyReviewsView, ReviewDetailView
+from apps.reviews.views import ListingReviewsView, MyReviewsView, ReviewDetailView
 
 urlpatterns = [
     path(

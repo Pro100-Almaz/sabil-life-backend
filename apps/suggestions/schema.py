@@ -6,7 +6,7 @@ from drf_spectacular.utils import OpenApiExample, OpenApiResponse
 
 from apps.core.schema import UNAUTHORIZED_EXAMPLES, ErrorResponseSerializer
 
-from .serializers import SuggestionSerializer
+from apps.suggestions.serializers import SuggestionSerializer
 
 _SUGGESTION_EXAMPLE = {
     "id": 1,

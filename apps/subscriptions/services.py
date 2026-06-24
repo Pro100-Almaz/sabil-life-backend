@@ -4,7 +4,7 @@ Subscription service layer — Phase 5.
 
 from apps.catalog.models import Listing, ListingCategory, ListingStatus
 
-from .models import MasterclassSubscription, SubscriptionStatus
+from apps.subscriptions.models import MasterclassSubscription, SubscriptionStatus
 
 
 class DuplicateSubscription(Exception):

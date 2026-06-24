@@ -1,7 +1,7 @@
 from django.urls import path
 from knox import views as knox_views
 
-from .views import CreateUserView, LoginView, RegisterView, UserMeView
+from apps.users.views import CreateUserView, LoginView, RegisterView, UserMeView
 
 app_name = "users"
 

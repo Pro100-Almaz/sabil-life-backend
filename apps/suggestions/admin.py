@@ -11,7 +11,7 @@ from django.utils.translation import gettext_lazy as _
 from unfold.admin import ModelAdmin
 from unfold.decorators import action
 
-from .models import ServiceSuggestion, SuggestionStatus
+from apps.suggestions.models import ServiceSuggestion, SuggestionStatus
 
 # ---------------------------------------------------------------------------
 # Bulk actions

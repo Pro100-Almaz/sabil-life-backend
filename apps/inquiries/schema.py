@@ -8,7 +8,7 @@ from drf_spectacular.utils import OpenApiExample, OpenApiParameter, OpenApiRespo
 
 from apps.core.schema import UNAUTHORIZED_EXAMPLES, ErrorResponseSerializer
 
-from .serializers import FamilyInquirySerializer, ProviderInquirySerializer
+from apps.inquiries.serializers import FamilyInquirySerializer, ProviderInquirySerializer
 
 # ---------------------------------------------------------------------------
 # Reusable example values

@@ -9,7 +9,7 @@ from django.conf import settings
 
 from apps.catalog.models import Listing, ListingCategory, ListingStatus
 
-from .models import Inquiry, InquiryStatus
+from apps.inquiries.models import Inquiry, InquiryStatus
 
 
 class InvalidTransition(Exception):

@@ -15,7 +15,7 @@ Contact deferral note (Phase 5):
 
 from rest_framework import serializers
 
-from .models import MasterclassSubscription
+from apps.subscriptions.models import MasterclassSubscription
 
 
 class ListingPrivateDetailsSerializer(serializers.Serializer):

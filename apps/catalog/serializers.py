@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from apps.providers.models import TutorDetail, TutorSubject
 
-from .models import Listing
+from apps.catalog.models import Listing
 
 
 class ListingCardSerializer(serializers.ModelSerializer):
