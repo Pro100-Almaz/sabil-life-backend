@@ -5,24 +5,27 @@ from rest_framework.test import APIClient, APITestCase
 
 from apps.catalog.models import Listing, ListingCategory, ListingStatus
 from apps.users.enums import UserRole
-from apps.users.models import CustomUser
+from apps.users.models import CustomUser, Role
 
 LISTINGS_URL = "/api/v1/provider/listings/"
 PUBLIC_LISTINGS_URL = "/api/v1/listings/"
 
 
 def make_user(
-    role: str = UserRole.TUTOR,
+    roles: list[str] | None = None,
     verified: bool = True,
     email: str | None = None,
 ) -> CustomUser:
-    email = email or f"{role.lower()}_{uuid.uuid4().hex[:8]}@example.com"
-    return CustomUser.objects.create_user(
+    roles = roles or [UserRole.TUTOR]
+    email = email or f"user_{uuid.uuid4().hex[:8]}@example.com"
+    user = CustomUser.objects.create_user(
         email=email,
         password="TestPass123!",
-        role=role,
         is_verified=verified,
     )
+    role_objs = Role.objects.filter(name__in=roles)
+    user.roles.add(*role_objs)
+    return user
 
 
 def auth_client(user: CustomUser) -> APIClient:
@@ -47,7 +50,7 @@ def _listing_payload(**kwargs) -> dict:
 
 class ProviderListingCreateTests(APITestCase):
     def test_verified_tutor_creates_tutoring_listing(self):
-        user = make_user(role=UserRole.TUTOR, verified=True)
+        user = make_user(roles=[UserRole.TUTOR], verified=True)
         client = auth_client(user)
         resp = client.post(LISTINGS_URL, _listing_payload(), format="json")
         self.assertEqual(resp.status_code, 201)
@@ -56,7 +59,7 @@ class ProviderListingCreateTests(APITestCase):
         self.assertEqual(resp.data["category"], ListingCategory.TUTORING)
 
     def test_verified_tutor_cannot_create_masterclasses_listing(self):
-        user = make_user(role=UserRole.TUTOR, verified=True)
+        user = make_user(roles=[UserRole.TUTOR], verified=True)
         client = auth_client(user)
         resp = client.post(
             LISTINGS_URL,
@@ -67,7 +70,7 @@ class ProviderListingCreateTests(APITestCase):
         self.assertIn("category", resp.data)
 
     def test_verified_tutor_cannot_create_schools_listing(self):
-        user = make_user(role=UserRole.TUTOR, verified=True)
+        user = make_user(roles=[UserRole.TUTOR], verified=True)
         client = auth_client(user)
         resp = client.post(
             LISTINGS_URL,
@@ -77,7 +80,7 @@ class ProviderListingCreateTests(APITestCase):
         self.assertEqual(resp.status_code, 400)
 
     def test_verified_masterclass_creates_masterclasses_listing(self):
-        user = make_user(role=UserRole.MASTERCLASS, verified=True)
+        user = make_user(roles=[UserRole.MASTERCLASS], verified=True)
         client = auth_client(user)
         payload = _listing_payload(
             title="Pottery Workshop",
@@ -89,7 +92,7 @@ class ProviderListingCreateTests(APITestCase):
         self.assertEqual(resp.data["category"], ListingCategory.MASTERCLASSES)
 
     def test_masterclass_cannot_create_tutoring_listing(self):
-        user = make_user(role=UserRole.MASTERCLASS, verified=True)
+        user = make_user(roles=[UserRole.MASTERCLASS], verified=True)
         client = auth_client(user)
         resp = client.post(
             LISTINGS_URL,
@@ -100,7 +103,7 @@ class ProviderListingCreateTests(APITestCase):
         self.assertIn("category", resp.data)
 
     def test_unverified_tutor_creates_with_draft_status(self):
-        user = make_user(role=UserRole.TUTOR, verified=False)
+        user = make_user(roles=[UserRole.TUTOR], verified=False)
         client = auth_client(user)
         resp = client.post(LISTINGS_URL, _listing_payload(), format="json")
         self.assertEqual(resp.status_code, 201)
@@ -108,7 +111,7 @@ class ProviderListingCreateTests(APITestCase):
 
     def test_status_in_body_is_ignored(self):
         """Any status value in the request body must be overridden by the server."""
-        user = make_user(role=UserRole.TUTOR, verified=True)
+        user = make_user(roles=[UserRole.TUTOR], verified=True)
         client = auth_client(user)
         payload = _listing_payload()
         payload["status"] = ListingStatus.ACTIVE
@@ -118,8 +121,8 @@ class ProviderListingCreateTests(APITestCase):
 
     def test_owner_in_body_is_ignored(self):
         """Any owner value in the body must be discarded; owner = caller."""
-        user1 = make_user(role=UserRole.TUTOR, verified=True)
-        user2 = make_user(role=UserRole.TUTOR, verified=True)
+        user1 = make_user(roles=[UserRole.TUTOR], verified=True)
+        user2 = make_user(roles=[UserRole.TUTOR], verified=True)
         client = auth_client(user1)
         payload = _listing_payload()
         payload["owner"] = user2.id
@@ -128,7 +131,7 @@ class ProviderListingCreateTests(APITestCase):
         self.assertEqual(resp.data["owner_id"], str(user1.id))
 
     def test_family_cannot_create_listing(self):
-        user = make_user(role=UserRole.FAMILY, verified=True)
+        user = make_user(roles=[UserRole.FAMILY], verified=True)
         client = auth_client(user)
         resp = client.post(LISTINGS_URL, _listing_payload(), format="json")
         self.assertEqual(resp.status_code, 403)
@@ -141,8 +144,8 @@ class ProviderListingCreateTests(APITestCase):
 
 class ProviderListingListTests(APITestCase):
     def test_provider_sees_only_own_listings(self):
-        user1 = make_user(role=UserRole.TUTOR, verified=True)
-        user2 = make_user(role=UserRole.TUTOR, verified=True)
+        user1 = make_user(roles=[UserRole.TUTOR], verified=True)
+        user2 = make_user(roles=[UserRole.TUTOR], verified=True)
         Listing.objects.create(
             title="Listing A",
             category=ListingCategory.TUTORING,
@@ -165,7 +168,7 @@ class ProviderListingListTests(APITestCase):
 
 class ProviderListingRetrieveTests(APITestCase):
     def test_tutor_can_get_own_listing(self):
-        user = make_user(role=UserRole.TUTOR, verified=True)
+        user = make_user(roles=[UserRole.TUTOR], verified=True)
         listing = Listing.objects.create(
             title="Own Listing",
             category=ListingCategory.TUTORING,
@@ -178,8 +181,8 @@ class ProviderListingRetrieveTests(APITestCase):
         self.assertEqual(resp.data["title"], "Own Listing")
 
     def test_tutor_get_other_listing_returns_404(self):
-        user1 = make_user(role=UserRole.TUTOR, verified=True)
-        user2 = make_user(role=UserRole.TUTOR, verified=True)
+        user1 = make_user(roles=[UserRole.TUTOR], verified=True)
+        user2 = make_user(roles=[UserRole.TUTOR], verified=True)
         listing = Listing.objects.create(
             title="Other Listing",
             category=ListingCategory.TUTORING,
@@ -193,7 +196,7 @@ class ProviderListingRetrieveTests(APITestCase):
 
 class ProviderListingUpdateTests(APITestCase):
     def test_tutor_patch_own_listing(self):
-        user = make_user(role=UserRole.TUTOR, verified=True)
+        user = make_user(roles=[UserRole.TUTOR], verified=True)
         listing = Listing.objects.create(
             title="Old Title",
             category=ListingCategory.TUTORING,
@@ -212,7 +215,7 @@ class ProviderListingUpdateTests(APITestCase):
         self.assertEqual(resp.data["status"], ListingStatus.PENDING)
 
     def test_unverified_tutor_patch_stays_draft(self):
-        user = make_user(role=UserRole.TUTOR, verified=False)
+        user = make_user(roles=[UserRole.TUTOR], verified=False)
         listing = Listing.objects.create(
             title="Draft",
             category=ListingCategory.TUTORING,
@@ -229,7 +232,7 @@ class ProviderListingUpdateTests(APITestCase):
         self.assertEqual(resp.data["status"], ListingStatus.DRAFT)
 
     def test_patch_category_to_wrong_value_returns_400(self):
-        user = make_user(role=UserRole.TUTOR, verified=True)
+        user = make_user(roles=[UserRole.TUTOR], verified=True)
         listing = Listing.objects.create(
             title="Tutor Listing",
             category=ListingCategory.TUTORING,
@@ -246,8 +249,8 @@ class ProviderListingUpdateTests(APITestCase):
         self.assertIn("category", resp.data)
 
     def test_tutor_patch_another_listing_returns_404(self):
-        user1 = make_user(role=UserRole.TUTOR, verified=True)
-        user2 = make_user(role=UserRole.TUTOR, verified=True)
+        user1 = make_user(roles=[UserRole.TUTOR], verified=True)
+        user2 = make_user(roles=[UserRole.TUTOR], verified=True)
         listing = Listing.objects.create(
             title="Other",
             category=ListingCategory.TUTORING,
@@ -265,7 +268,7 @@ class ProviderListingUpdateTests(APITestCase):
 
 class ProviderListingDeleteTests(APITestCase):
     def test_tutor_delete_own_listing(self):
-        user = make_user(role=UserRole.TUTOR, verified=True)
+        user = make_user(roles=[UserRole.TUTOR], verified=True)
         listing = Listing.objects.create(
             title="To Delete",
             category=ListingCategory.TUTORING,
@@ -278,8 +281,8 @@ class ProviderListingDeleteTests(APITestCase):
         self.assertFalse(Listing.objects.filter(id=listing.id).exists())
 
     def test_tutor_delete_another_listing_returns_404(self):
-        user1 = make_user(role=UserRole.TUTOR, verified=True)
-        user2 = make_user(role=UserRole.TUTOR, verified=True)
+        user1 = make_user(roles=[UserRole.TUTOR], verified=True)
+        user2 = make_user(roles=[UserRole.TUTOR], verified=True)
         listing = Listing.objects.create(
             title="Not Mine",
             category=ListingCategory.TUTORING,
@@ -294,7 +297,7 @@ class ProviderListingDeleteTests(APITestCase):
 
 class ProviderListingPublicVisibilityTests(APITestCase):
     def test_pending_listing_not_visible_in_public_api(self):
-        user = make_user(role=UserRole.TUTOR, verified=True)
+        user = make_user(roles=[UserRole.TUTOR], verified=True)
         client = auth_client(user)
         resp = client.post(LISTINGS_URL, _listing_payload(title="Hidden"), format="json")
         self.assertEqual(resp.status_code, 201)
@@ -307,7 +310,7 @@ class ProviderListingPublicVisibilityTests(APITestCase):
         self.assertNotIn("Hidden", titles)
 
     def test_active_listing_visible_in_public_api_after_admin_approval(self):
-        user = make_user(role=UserRole.TUTOR, verified=True)
+        user = make_user(roles=[UserRole.TUTOR], verified=True)
         listing = Listing.objects.create(
             title="Approved Listing",
             category=ListingCategory.TUTORING,
