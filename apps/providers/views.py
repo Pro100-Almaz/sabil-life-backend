@@ -214,6 +214,11 @@ class ProviderListingViewSet(
     permission_classes = [permissions.IsAuthenticated, IsMasterclassManagerOrAdmin]
     lookup_field = "id"
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
+    parser_classes = [
+        rest_framework.parsers.MultiPartParser,
+        rest_framework.parsers.FormParser,
+        rest_framework.parsers.JSONParser,
+    ]
 
     def get_queryset(self):
         return Listing.objects.filter(owner=self.request.user)

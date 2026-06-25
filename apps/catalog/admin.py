@@ -3,7 +3,12 @@ Catalog admin — Phase 3: moderation actions, status badge, image preview,
 list display improvements, fieldsets, and empty-value display.
 """
 
+import uuid
+from pathlib import Path
+
+from django import forms
 from django.contrib import admin, messages
+from django.core.files.storage import default_storage
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 from unfold.admin import ModelAdmin
@@ -21,6 +26,30 @@ _MUTABLE_FOR_REJECT = {
     ListingStatus.PENDING,
     ListingStatus.ACTIVE,
 }
+
+
+class MultipleImageInput(forms.ClearableFileInput):
+    allow_multiple_selected = True
+
+
+class MultipleImageField(forms.FileField):
+    widget = MultipleImageInput
+
+    def clean(self, data, initial=None):
+        single_clean = super().clean
+        if not data:
+            return []
+        if isinstance(data, (list, tuple)):
+            return [single_clean(item, initial) for item in data]
+        return [single_clean(data, initial)]
+
+
+class ListingAdminForm(forms.ModelForm):
+    uploaded_images = MultipleImageField(required=False, label=_("Upload images"))
+
+    class Meta:
+        model = Listing
+        fields = "__all__"
 
 
 @action(
@@ -96,6 +125,7 @@ def unmark_featured(modeladmin, request, queryset):
 
 @admin.register(Listing)
 class ListingAdmin(ModelAdmin):
+    form = ListingAdminForm
     actions = [approve_listings, reject_listings, mark_featured, unmark_featured]
 
     # List view -----------------------------------------------------------
@@ -135,6 +165,7 @@ class ListingAdmin(ModelAdmin):
                     "description",
                     "highlights",
                     "age_groups",
+                    "uploaded_images",
                     "image_urls",
                     "image_preview",
                     "session_schedule",
@@ -188,3 +219,20 @@ class ListingAdmin(ModelAdmin):
         )
         wrapper = '<div style="display:flex;flex-wrap:wrap;gap:4px;">{}</div>'
         return format_html(wrapper, imgs)
+
+    def save_model(self, request, obj: Listing, form: ListingAdminForm, change: bool) -> None:
+        super().save_model(request, obj, form, change)
+
+        uploaded_images = form.cleaned_data.get("uploaded_images") or []
+        if not uploaded_images:
+            return
+
+        image_urls = list(obj.image_urls or [])
+        for uploaded_image in uploaded_images:
+            suffix = Path(uploaded_image.name).suffix.lower()
+            object_name = f"listings/{obj.id}/{uuid.uuid4().hex}{suffix}"
+            saved_name = default_storage.save(object_name, uploaded_image)
+            image_urls.append(default_storage.url(saved_name))
+
+        obj.image_urls = image_urls
+        obj.save(update_fields=["image_urls", "updated_at"])

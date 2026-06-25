@@ -1,3 +1,7 @@
+import uuid
+from pathlib import Path
+
+from django.core.files.storage import default_storage
 from rest_framework import serializers
 
 from apps.catalog.models import Listing, ListingCategory
@@ -117,6 +121,11 @@ class ProviderListingSerializer(serializers.ModelSerializer):
     """
 
     owner_id = serializers.SerializerMethodField(read_only=True)
+    images = serializers.ListField(
+        child=serializers.ImageField(),
+        write_only=True,
+        required=False,
+    )
 
     class Meta:
         model = Listing
@@ -131,6 +140,7 @@ class ProviderListingSerializer(serializers.ModelSerializer):
             "price_from_qar",
             "age_groups",
             "image_urls",
+            "images",
             "description",
             "highlights",
             "is_featured",
@@ -183,6 +193,69 @@ class ProviderListingSerializer(serializers.ModelSerializer):
                 f"Your roles do not allow creating listings in the {value} category."
             )
         return value
+
+    def validate(self, attrs: dict) -> dict:
+        attrs = super().validate(attrs)
+        request = self.context.get("request")
+        if request is not None:
+            uploaded_images = request.FILES.getlist("images")
+            if uploaded_images:
+                attrs["images"] = uploaded_images
+        return attrs
+
+    def _build_file_url(self, saved_name: str) -> str:
+        file_url = default_storage.url(saved_name)
+        if file_url.startswith(("http://", "https://")):
+            return file_url
+
+        request = self.context.get("request")
+        return request.build_absolute_uri(file_url) if request else file_url
+
+    def _store_uploaded_images(self, listing: Listing, uploaded_images: list) -> list[str]:
+        saved_names: list[str] = []
+        try:
+            urls: list[str] = []
+            for uploaded_image in uploaded_images:
+                suffix = Path(uploaded_image.name).suffix.lower()
+                object_name = f"listings/{listing.id}/{uuid.uuid4().hex}{suffix}"
+                saved_name = default_storage.save(object_name, uploaded_image)
+                saved_names.append(saved_name)
+                urls.append(self._build_file_url(saved_name))
+            return urls
+        except Exception:
+            for saved_name in saved_names:
+                default_storage.delete(saved_name)
+            raise
+
+    def create(self, validated_data: dict) -> Listing:
+        uploaded_images = validated_data.pop("images", [])
+        initial_urls = list(validated_data.get("image_urls", []))
+        listing = super().create(validated_data)
+
+        if not uploaded_images:
+            return listing
+
+        try:
+            uploaded_urls = self._store_uploaded_images(listing, uploaded_images)
+            listing.image_urls = initial_urls + uploaded_urls
+            listing.save(update_fields=["image_urls", "updated_at"])
+        except Exception:
+            listing.delete()
+            raise
+
+        return listing
+
+    def update(self, instance: Listing, validated_data: dict) -> Listing:
+        uploaded_images = validated_data.pop("images", [])
+        instance = super().update(instance, validated_data)
+
+        if not uploaded_images:
+            return instance
+
+        uploaded_urls = self._store_uploaded_images(instance, uploaded_images)
+        instance.image_urls = list(instance.image_urls or []) + uploaded_urls
+        instance.save(update_fields=["image_urls", "updated_at"])
+        return instance
 
 
 # ---------------------------------------------------------------------------
