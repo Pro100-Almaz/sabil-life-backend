@@ -32,7 +32,7 @@ class MultipleImageInput(forms.ClearableFileInput):
     allow_multiple_selected = True
 
 
-class MultipleImageField(forms.FileField):
+class MultipleImageField(forms.ImageField):
     widget = MultipleImageInput
 
     def clean(self, data, initial=None):
@@ -50,6 +50,12 @@ class ListingAdminForm(forms.ModelForm):
     class Meta:
         model = Listing
         fields = "__all__"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["uploaded_images"].widget.attrs.update(
+            {"multiple": True, "accept": "image/*"}
+        )
 
 
 @action(
@@ -223,7 +229,7 @@ class ListingAdmin(ModelAdmin):
     def save_model(self, request, obj: Listing, form: ListingAdminForm, change: bool) -> None:
         super().save_model(request, obj, form, change)
 
-        uploaded_images = form.cleaned_data.get("uploaded_images") or []
+        uploaded_images = request.FILES.getlist("uploaded_images") or []
         if not uploaded_images:
             return
 
