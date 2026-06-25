@@ -22,7 +22,8 @@ Implementation note on dlat/dlng:
 import math
 
 from django.db.models import ExpressionWrapper, FloatField, Func, QuerySet, Value
-
+from urllib.parse import urlparse, unquote
+from django.conf import settings
 
 class _Radians(Func):
     """RADIANS(expr) — convert degrees to radians."""
@@ -129,3 +130,22 @@ def haversine_km(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
         + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2) ** 2
     )
     return 2 * R * math.asin(math.sqrt(a))
+
+def url_to_storage_key(url: str) -> str | None:
+    """
+    Reverse default_storage.url(): turn a stored image URL back into the
+    storage key that default_storage.delete() expects.
+
+    MinIO:  https://host/<bucket>/listings/<id>/<uuid>.jpg  -> listings/<id>/<uuid>.jpg
+    Local:  http://host/media/listings/<id>/<uuid>.jpg       -> listings/<id>/<uuid>.jpg
+    """
+    
+    if not url:
+        return None
+    
+    path = unquote(urlparse(url).path) 
+    prefix = urlparse(settings.MEDIA_URL).path
+    if prefix and prefix in path:
+        return path.split(prefix, 1)[1].lstrip('/') or None
+    
+    return path.lstrip("/") or None 
