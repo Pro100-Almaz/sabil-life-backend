@@ -66,7 +66,9 @@ class ListingViewSet(viewsets.ReadOnlyModelViewSet):
     ordering_fields = ["rating", "price_from_qar", "created_at"]
 
     def get_queryset(self) -> QuerySet:
-        qs = Listing.objects.filter(status=ListingStatus.ACTIVE).exclude(owner=self.request.user)
+        qs = Listing.objects.filter(status=ListingStatus.ACTIVE)
+        if self.request.user.is_authenticated:
+            qs = qs.exclude(owner=self.request.user)
 
         # ------------------------------------------------------------------
         # Distance annotation
