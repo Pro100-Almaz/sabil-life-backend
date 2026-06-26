@@ -5,8 +5,6 @@ from apps.providers.models import TutorDetail, TutorSubject
 
 from apps.catalog.models import Listing, ListingClient, ListingClientStatus
 
-User = get_user_model()
-
 
 class ListingCardSerializer(serializers.ModelSerializer):
     """
@@ -175,7 +173,7 @@ class ListingClientUserSerializer(serializers.ModelSerializer):
     """Minimal user info embedded in the owner-facing request list."""
 
     class Meta:
-        model = User
+        model = get_user_model()
         fields = ["id", "full_name", "email", "phone"]
 
 
