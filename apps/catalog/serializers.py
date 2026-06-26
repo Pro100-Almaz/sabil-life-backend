@@ -1,8 +1,11 @@
+from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from apps.providers.models import TutorDetail, TutorSubject
 
-from apps.catalog.models import Listing
+from apps.catalog.models import Listing, ListingClient, ListingClientStatus
+
+User = get_user_model()
 
 
 class ListingCardSerializer(serializers.ModelSerializer):
@@ -119,3 +122,109 @@ class TutorCardSerializer(serializers.ModelSerializer):
             "trial_available",
             "bio",
         ]
+
+
+class ListingClientSerializer(serializers.ModelSerializer):
+    """
+    Client-facing serializer (FAMILY role).
+
+    Used by ListingClientViewSet to create and view a client's own requests.
+    On create the client only supplies ``listing``; ``user`` and ``status``
+    are set by the view. ``status`` is read-only here.
+    """
+
+    listing_title = serializers.CharField(source="listing.title", read_only=True)
+
+    class Meta:
+        model = ListingClient
+        fields = ["id", "listing", "listing_title", "status", "created_at"]
+        read_only_fields = ["id", "listing_title", "status", "created_at"]
+
+    def validate_listing(self, listing: Listing) -> Listing:
+        user = self.context["request"].user
+
+        if listing.owner == user:
+            raise serializers.ValidationError(
+                "You cannot request your own listing."
+            )
+
+        if ListingClient.objects.filter(user=user, listing=listing).exists():
+            raise serializers.ValidationError(
+                "You have already requested this listing."
+            )
+
+        return listing
+
+
+class ListingClientListSerializer(serializers.ModelSerializer):
+    """
+    Client-facing read serializer for the list endpoint.
+
+    Embeds the full listing card so the app can render the listing alongside
+    the request ``status`` without a second round-trip.
+    """
+
+    listing = ListingCardSerializer(read_only=True)
+
+    class Meta:
+        model = ListingClient
+        fields = ["id", "listing", "status", "comment", "created_at", "updated_at"]
+
+
+class ListingClientUserSerializer(serializers.ModelSerializer):
+    """Minimal user info embedded in the owner-facing request list."""
+
+    class Meta:
+        model = User
+        fields = ["id", "full_name", "email", "phone"]
+
+
+class ListingClientOwnerSerializer(serializers.ModelSerializer):
+    """
+    Owner-facing serializer (MASTERCLASS role).
+
+    Used by ListingOwnerViewSet to list the clients who requested an owned
+    listing and to PATCH the request ``status`` (accept / reject). Only
+    ``status`` is writable; everything else is read-only.
+    """
+
+    user = ListingClientUserSerializer(read_only=True)
+    listing_title = serializers.CharField(source="listing.title", read_only=True)
+
+    class Meta:
+        model = ListingClient
+        fields = [
+            "id",
+            "user",
+            "listing",
+            "listing_title",
+            "status",
+            "comment",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = [
+            "id",
+            "user",
+            "listing",
+            "listing_title",
+            "created_at",
+            "updated_at",
+        ]
+
+    def validate(self, attrs):
+        # Resolve the effective status after this (partial) update.
+        status = attrs.get(
+            "status",
+            getattr(self.instance, "status", None),
+        )
+        comment = attrs.get(
+            "comment",
+            getattr(self.instance, "comment", ""),
+        )
+        if status == ListingClientStatus.REJECTED and not (comment or "").strip():
+            raise serializers.ValidationError(
+                {"comment": "A comment is required when rejecting a request."}
+            )
+        return attrs
+
