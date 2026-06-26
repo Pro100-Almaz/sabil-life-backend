@@ -23,6 +23,12 @@ class ListingStatus(models.TextChoices):
     REJECTED = "REJECTED", _("Rejected")
 
 
+class ListingClientStatus(models.TextChoices):
+    PENDING = "PENDING", _("Pending")
+    ACCEPTED = "ACCEPTED", _("Accepted")
+    REJECTED = "REJECTED", _("Rejected")
+
+
 class Listing(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     title = models.CharField(max_length=200)
@@ -69,3 +75,37 @@ class Listing(models.Model):
 
     def __str__(self) -> str:
         return f"{self.title} ({self.category})"
+
+
+class ListingClient(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="listing_requests",
+    )
+    listing = models.ForeignKey(
+        Listing,
+        on_delete=models.CASCADE,
+        related_name="clients",
+    )
+    status = models.CharField(
+        choices=ListingClientStatus.choices,
+        default=ListingClientStatus.PENDING,
+        max_length=40,
+    )
+    comment = models.TextField(blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "listing"],
+                name="unique_listing_client_per_user",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.user} → {self.listing} ({self.status})"
