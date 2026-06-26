@@ -102,7 +102,7 @@ class FamilyInquiryViewSet(
         tutor_id = input_serializer.validated_data["tutor_id"]
         message = input_serializer.validated_data["message"]
 
-        tutor = get_object_or_404(TutorDetail, user__id=tutor_id)
+        tutor = get_object_or_404(TutorDetail, id=tutor_id)
 
         try:
             inquiry = services.create_inquiry(

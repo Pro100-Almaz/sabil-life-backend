@@ -25,7 +25,9 @@ def make_user(email, role=UserRole.FAMILY, **kwargs):
 
 def make_tutor_detail(email, **kwargs):
     user = make_user(email, UserRole.TUTOR)
-    return TutorDetail.objects.create(user=user, **kwargs)
+    tutor_detail = TutorDetail.objects.create(user=user, **kwargs)
+    print("tutor_detail", tutor_detail)
+    return tutor_detail
 
 
 class InquiryCreateViewTests(APITestCase):
@@ -54,6 +56,7 @@ class InquiryCreateViewTests(APITestCase):
 
     def test_family_can_create_inquiry(self):
         self._auth(self.family)
+        print("THE URLLLL", self.url, self.tutor)
         resp = self.client.post(
             self.url,
             {"tutor_id": self.tutor.id, "message": "I am interested."},

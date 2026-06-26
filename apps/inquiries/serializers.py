@@ -18,6 +18,7 @@ Contact redaction pattern (Phase 5):
 """
 
 from rest_framework import serializers
+from rest_framework.generics import get_object_or_404
 
 from apps.inquiries.models import Inquiry, InquiryStatus
 from apps.inquiries.services import TUTOR_SETTABLE_STATUSES
@@ -133,8 +134,8 @@ class InquiryCreateSerializer(serializers.Serializer):
 
     def validate_tutor_id(self, value: int) -> int:
         request = self.context.get("request")
-        tutor_detail = TutorDetail.objects.filter(id=value).first()
-        if tutor_detail is None or (request is not None and tutor_detail.user == request.user):
+        tutor_detail = get_object_or_404(TutorDetail, id=value)
+        if request is not None and tutor_detail.user == request.user:
             raise serializers.ValidationError(
                 "You cannot send an inquiry to your own tutor profile."
             )
