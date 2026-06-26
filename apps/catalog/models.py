@@ -37,7 +37,6 @@ class Listing(models.Model):
     lng = models.FloatField(null=True, blank=True)
     price_from_qar = models.PositiveIntegerField(default=0)
     age_groups = models.JSONField(default=list, blank=True)
-    image_urls = models.JSONField(default=list, blank=True)
     description = models.TextField(blank=True)
     highlights = models.JSONField(default=list, blank=True)
     rating = models.DecimalField(max_digits=2, decimal_places=1, default=Decimal("0.0"))
@@ -69,3 +68,27 @@ class Listing(models.Model):
 
     def __str__(self) -> str:
         return f"{self.title} ({self.category})"
+    
+
+class ListingImage(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    listing = models.ForeignKey(
+        Listing,
+        on_delete=models.CASCADE,
+        related_name="images" 
+    )
+    key = models.CharField(max_length=512, unique=True) #identity 
+    position = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["position", "created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["listing", "position"],
+                name="unique_listing_image",
+            )
+        ]
+
+    def __str__(self):
+        return self.key

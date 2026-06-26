@@ -14,7 +14,9 @@ from django.utils.translation import gettext_lazy as _
 from unfold.admin import ModelAdmin
 from unfold.decorators import action, display
 
-from apps.catalog.models import Listing, ListingStatus
+from unfold.admin import ModelAdmin, TabularInline   # unfold-styled inline
+
+from apps.catalog.models import Listing, ListingImage, ListingStatus
 
 # ---------------------------------------------------------------------------
 # Bulk moderation actions
@@ -128,10 +130,27 @@ def unmark_featured(modeladmin, request, queryset):
 # ListingAdmin
 # ---------------------------------------------------------------------------
 
+class ListingImageInline(TabularInline):
+    model = ListingImage
+    extra = 0 
+    fields = ("thumb", "key", "position")
+    readonly_fields = ("thumb", "key")
+    ordering = ("position", "created_at")
+
+    @admin.display(description=_("Preview"))
+    def thumb(self, obj: ListingImage) -> str:
+        if not obj.key:
+            return "-"
+        return format_html(
+            '<img src="{}" style="height:60px;width:90px;'
+            'object-fit:cover;border-radius:4px;"/>',
+            default_storage.url(obj.key),
+        )
 
 @admin.register(Listing)
 class ListingAdmin(ModelAdmin):
     form = ListingAdminForm
+    inlines = [ListingImageInline]
     actions = [approve_listings, reject_listings, mark_featured, unmark_featured]
 
     # List view -----------------------------------------------------------
@@ -153,7 +172,7 @@ class ListingAdmin(ModelAdmin):
     empty_value_display = "—"
 
     # Detail form ---------------------------------------------------------
-    readonly_fields = ("id", "created_at", "updated_at", "image_preview")
+    readonly_fields = ("id", "created_at", "updated_at")
 
     fieldsets = (
         (
@@ -172,8 +191,6 @@ class ListingAdmin(ModelAdmin):
                     "highlights",
                     "age_groups",
                     "uploaded_images",
-                    "image_urls",
-                    "image_preview",
                     "session_schedule",
                     "exact_address",
                     "materials_required",
@@ -205,27 +222,6 @@ class ListingAdmin(ModelAdmin):
     def status_badge(self, obj: Listing):
         return obj.status, obj.get_status_display()
 
-    @admin.display(description=_("Images"))
-    def image_preview(self, obj: Listing) -> str:
-        urls = (obj.image_urls or [])[:3]
-        if not urls:
-            return "—"
-        imgs = "".join(
-            format_html(
-                '<img src="{url}" style="'
-                "height:60px;"
-                "width:90px;"
-                "object-fit:cover;"
-                "border-radius:4px;"
-                "margin-right:6px;"
-                '"/>',
-                url=url,
-            )
-            for url in urls
-        )
-        wrapper = '<div style="display:flex;flex-wrap:wrap;gap:4px;">{}</div>'
-        return format_html(wrapper, imgs)
-
     def save_model(self, request, obj: Listing, form: ListingAdminForm, change: bool) -> None:
         super().save_model(request, obj, form, change)
 
@@ -233,12 +229,10 @@ class ListingAdmin(ModelAdmin):
         if not uploaded_images:
             return
 
-        image_urls = list(obj.image_urls or [])
-        for uploaded_image in uploaded_images:
+        start = obj.images.count()
+        created = []
+        for i, uploaded_image in enumerate(uploaded_images):
             suffix = Path(uploaded_image.name).suffix.lower()
             object_name = f"listings/{obj.id}/{uuid.uuid4().hex}{suffix}"
-            saved_name = default_storage.save(object_name, uploaded_image)
-            image_urls.append(default_storage.url(saved_name))
-
-        obj.image_urls = image_urls
-        obj.save(update_fields=["image_urls", "updated_at"])
+            key = default_storage.save(object_name, uploaded_image)
+            ListingImage.objects.create(listing=obj, key=key, position=start + i)

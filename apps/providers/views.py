@@ -1,14 +1,18 @@
 import logging
+import uuid 
 
+from pathlib import Path
+from django.core.files.storage import default_storage
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema, extend_schema_view
-from rest_framework import generics, mixins, permissions, viewsets, status
+from rest_framework import generics, mixins, permissions, viewsets, status, views
 import rest_framework.exceptions
-import rest_framework.parsers
+from rest_framework import parsers
 import rest_framework.status
 from rest_framework.response import Response
 
-from apps.catalog.models import Listing, ListingStatus
+from apps.catalog.models import Listing, ListingStatus, ListingImage
+from apps.catalog.serializers import ListingImageSerializer
 from apps.users.enums import UserRole
 from apps.users.models import Role
 
@@ -59,9 +63,9 @@ class TutorDetailView(generics.CreateAPIView, generics.RetrieveUpdateAPIView):
     permission_classes = [permissions.IsAuthenticated]
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
     parser_classes = [
-        rest_framework.parsers.MultiPartParser,
-        rest_framework.parsers.FormParser,
-        rest_framework.parsers.JSONParser,
+        parsers.MultiPartParser,
+        parsers.FormParser,
+        parsers.JSONParser,
     ]
 
     def get_object(self) -> TutorDetail:
@@ -221,7 +225,7 @@ class ProviderListingViewSet(
     ]
 
     def get_queryset(self):
-        return Listing.objects.filter(owner=self.request.user)
+        return Listing.objects.filter(owner=self.request.user).prefetch_related("images")
 
     def get_permissions(self):
         if self.action in {"retrieve", "partial_update", "destroy"}:
@@ -450,3 +454,48 @@ class ProviderVerificationAdminViewSet(
         # Return the full read representation after a successful review.
         instance = self.get_object()
         return Response(VerifyProviderSerializer(instance).data)
+
+
+class ListingImageView(views.APIView):
+    """POST /provider/listings/<listing_id>/images/ -upload one or more"""
+    permission_classes = [permissions.IsAuthenticated, IsMasterclassManagerOrAdmin]
+    parser_classes = [parsers.MultiPartParser, parsers.FormParser]
+
+    def _get_listing(self, request, listing_id):
+        try:
+            obj = Listing.objects.get(id=listing_id, owner=request.user)
+        except Listing.DoesNotExist:
+            raise rest_framework.exceptions.NotFound("Listing not found")
+        
+        return obj 
+    
+    def post(self, request, listing_id):
+        listing = self._get_listing(request=request, listing_id=listing_id)
+        files = request.FILES.getlist("images")
+        created = []
+        start = listing.images.count()
+        for i, f in enumerate(files):
+            suffix = Path(f.name).suffix.lower()
+            object_name = f"listings/{listing_id}/{uuid.uuid4().hex}{suffix}"
+            key = default_storage.save(object_name, f)
+            created.append(ListingImage.objects.create(listing=listing, key=key, position=start + i))
+        return Response(ListingImageSerializer(created, many=True).data, status=201)
+    
+
+class ListingImageDetailView(generics.DestroyAPIView):
+    """DELETE /provider/listing/<listing_id>/images/<image_id>"""
+    permission_classes = [permissions.IsAuthenticated, IsMasterclassManagerOrAdmin]
+
+    def _get_listing(self, request, listing_id, image_id):
+        try:
+            listing = Listing.objects.get(id=listing_id, owner=request.user)
+            obj = ListingImage.objects.get(id=image_id, listing=listing)
+        except (ListingImage.DoesNotExist, Listing.DoesNotExist):
+            raise rest_framework.exceptions.NotFound("Image or Listing not found.")
+        
+        return obj 
+
+    def delete(self, request, listing_id, image_id):
+        image = self._get_listing(request, listing_id, image_id)
+        image.delete()
+        return Response(status=204)
