@@ -1,13 +1,15 @@
 """
-Inquiry model — Phase 5 TUTORING flow.
+Inquiry model — family-to-tutor request flow.
 
-An Inquiry represents a family's request to connect with a TUTORING listing's
-provider. Only TUTORING listings participate in the inquiry flow; MASTERCLASSES
-use MasterclassSubscription instead.
+An Inquiry represents a family's request to connect with a *tutor*. It is not
+tied to a listing or a masterclass: the family addresses a specific tutor
+directly via that tutor's TutorDetail profile. Masterclass providers do not
+participate in the inquiry flow at all (they use MasterclassSubscription).
 
-Snapshot semantics: `provider` is denormalized from listing.owner at creation
-time. If an admin later reassigns the listing to a different owner, existing
-inquiries still point at the original provider so the audit trail stays intact.
+Roles:
+    FAMILY — creates an inquiry (with a message) and may cancel it.
+    TUTOR  — sees inquiries addressed to them and updates their status.
+    MASTERCLASS / ADMIN / MANAGER — no inquiry endpoints.
 
 # commission FK added in Phase 6 billing app
 """
@@ -25,17 +27,21 @@ class InquiryStatus(models.TextChoices):
     ACCEPTED = "ACCEPTED", _("Accepted")
     DECLINED = "DECLINED", _("Declined")
     COMPLETED = "COMPLETED", _("Completed")
+    CANCELLED = "CANCELLED", _("Cancelled")
 
 
 class Inquiry(models.Model):
     """
-    Represents a family's inquiry to a TUTORING listing provider.
+    Represents a family's inquiry addressed to a tutor.
 
     State machine (managed by services.transition):
-        NEW → CONTACTED, ACCEPTED, DECLINED
-        CONTACTED → ACCEPTED, DECLINED
-        ACCEPTED → COMPLETED
-        DECLINED, COMPLETED → terminal
+        NEW       → CONTACTED, ACCEPTED, DECLINED, CANCELLED
+        CONTACTED → ACCEPTED, DECLINED, CANCELLED
+        ACCEPTED  → COMPLETED
+        DECLINED, COMPLETED, CANCELLED → terminal
+
+    Tutor-driven transitions: CONTACTED, ACCEPTED, DECLINED, COMPLETED.
+    Family-driven transition:  CANCELLED.
 
     The `contact_revealed` flag is always False in Phase 5.
     Phase 6 (billing/subscription gate) will flip it when the family's
@@ -48,16 +54,10 @@ class Inquiry(models.Model):
         on_delete=models.PROTECT,
         related_name="inquiries",
     )
-    listing = models.ForeignKey(
-        "catalog.Listing",
+    tutor = models.ForeignKey(
+        "providers.TutorDetail",
         on_delete=models.PROTECT,
         related_name="inquiries",
-    )
-    # Denormalized snapshot of listing.owner at creation time — see module docstring.
-    provider = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.PROTECT,
-        related_name="received_inquiries",
     )
     message = models.TextField()
     status = models.CharField(

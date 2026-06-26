@@ -1,10 +1,13 @@
 """
-Inquiry serializers — Phase 5.
+Inquiry serializers.
 
-Two serializer shapes:
-  FamilyInquirySerializer   — family viewing their own inquiry (no contact data).
-  ProviderInquirySerializer — provider viewing received inquiry with redacted
-                               family contact block.
+Serializer shapes:
+  FamilyInquirySerializer   — family viewing their own inquiry. Includes a small
+                              `tutor` block so the family knows who they wrote to.
+  TutorInquirySerializer    — tutor viewing a received inquiry with a redacted
+                              family contact block.
+  InquiryCreateSerializer   — family input for creating an inquiry.
+  InquiryStatusUpdateSerializer — tutor input for updating an inquiry's status.
 
 Contact redaction pattern (Phase 5):
   family.full_name, phone, email are always null because contact_revealed is
@@ -16,7 +19,20 @@ Contact redaction pattern (Phase 5):
 
 from rest_framework import serializers
 
-from apps.inquiries.models import Inquiry
+from apps.inquiries.models import Inquiry, InquiryStatus
+from apps.inquiries.services import TUTOR_SETTABLE_STATUSES
+from apps.providers.models import TutorDetail
+
+
+def _tutor_block(obj: Inquiry) -> dict:
+    """Small, public tutor summary embedded in inquiry responses."""
+    tutor = obj.tutor
+    return {
+        "id": tutor.id,
+        "full_name": tutor.user.full_name,
+        "subjects": tutor.subjects,
+        "is_verified": tutor.is_verified,
+    }
 
 
 class FamilyInquirySerializer(serializers.ModelSerializer):
@@ -24,18 +40,19 @@ class FamilyInquirySerializer(serializers.ModelSerializer):
     Serializer for the family-side inquiry endpoints.
 
     Returns inquiry data from the family's perspective. No family contact
-    information is included (the family is looking at their own data).
+    information is included (the family is looking at their own data); a small
+    `tutor` block identifies the addressed tutor.
     """
 
-    listing_id = serializers.UUIDField(read_only=True)
-    provider_id = serializers.SerializerMethodField()
+    tutor_id = serializers.IntegerField(source="tutor.id", read_only=True)
+    tutor = serializers.SerializerMethodField()
 
     class Meta:
         model = Inquiry
         fields = [
             "id",
-            "listing_id",
-            "provider_id",
+            "tutor_id",
+            "tutor",
             "status",
             "message",
             "contact_revealed",
@@ -44,14 +61,13 @@ class FamilyInquirySerializer(serializers.ModelSerializer):
         ]
         read_only_fields = fields
 
-    def get_provider_id(self, obj: Inquiry) -> str | None:
-        pk = obj.provider_id
-        return str(pk) if pk is not None else None
+    def get_tutor(self, obj: Inquiry) -> dict:
+        return _tutor_block(obj)
 
 
-class ProviderInquirySerializer(serializers.ModelSerializer):
+class TutorInquirySerializer(serializers.ModelSerializer):
     """
-    Serializer for the provider-side inquiry endpoints.
+    Serializer for the tutor-side inquiry endpoints.
 
     Includes a nested `family` block with contact fields. In Phase 5 contact
     fields are always null regardless of contact_revealed value — the key shape
@@ -61,16 +77,14 @@ class ProviderInquirySerializer(serializers.ModelSerializer):
     # from obj.family (full_name, phone, email).
     """
 
-    listing_id = serializers.UUIDField(read_only=True)
-    provider_id = serializers.SerializerMethodField()
+    tutor_id = serializers.IntegerField(source="tutor.id", read_only=True)
     family = serializers.SerializerMethodField()
 
     class Meta:
         model = Inquiry
         fields = [
             "id",
-            "listing_id",
-            "provider_id",
+            "tutor_id",
             "family",
             "status",
             "message",
@@ -79,10 +93,6 @@ class ProviderInquirySerializer(serializers.ModelSerializer):
             "updated_at",
         ]
         read_only_fields = fields
-
-    def get_provider_id(self, obj: Inquiry) -> str | None:
-        pk = obj.provider_id
-        return str(pk) if pk is not None else None
 
     def get_family(self, obj: Inquiry) -> dict:
         """
@@ -111,7 +121,38 @@ class ProviderInquirySerializer(serializers.ModelSerializer):
 
 
 class InquiryCreateSerializer(serializers.Serializer):
-    """Input serializer for POST /api/v1/inquiries/."""
+    """Input serializer for POST /api/v1/inquiries/.
 
-    listing_id = serializers.UUIDField()
+    `tutor_id` is the id of the tutor's *user*. The view passes
+    ``context={"request": request}`` so we can reject a family inquiring to
+    their own tutor profile.
+    """
+
+    tutor_id = serializers.IntegerField()
     message = serializers.CharField(min_length=1)
+
+    def validate_tutor_id(self, value: int) -> int:
+        request = self.context.get("request")
+        tutor_detail = TutorDetail.objects.filter(id=value).first()
+        if tutor_detail is None or (request is not None and tutor_detail.user == request.user):
+            raise serializers.ValidationError(
+                "You cannot send an inquiry to your own tutor profile."
+            )
+        return value
+
+
+class InquiryStatusUpdateSerializer(serializers.Serializer):
+    """
+    Input serializer for PATCH /api/v1/tutor/inquiries/{id}/.
+
+    A tutor may move an inquiry into CONTACTED, ACCEPTED, DECLINED or COMPLETED.
+    CANCELLED is family-only and NEW is the creation default, so neither is
+    selectable here. The state machine in services.transition enforces which
+    of these are legal from the inquiry's current status.
+    """
+
+    status = serializers.ChoiceField(
+        choices=[
+            (s, InquiryStatus(s).label) for s in sorted(TUTOR_SETTABLE_STATUSES)
+        ]
+    )

@@ -4,7 +4,7 @@ from django.contrib import admin
 from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
-from apps.inquiries.urls import provider_urlpatterns as inquiry_provider_urls
+from apps.inquiries.urls import tutor_urlpatterns as inquiry_tutor_urls
 from apps.subscriptions.urls import provider_urlpatterns as subscription_provider_urls
 
 urlpatterns = [
@@ -19,8 +19,8 @@ urlpatterns = [
                     path("", include("apps.catalog.urls")),
                     path("provider/", include("apps.providers.urls")),
                     path(
-                        "provider/",
-                        include((inquiry_provider_urls, "provider-inquiries")),
+                        "tutor/",
+                        include((inquiry_tutor_urls, "tutor-inquiries")),
                     ),
                     path(
                         "provider/",

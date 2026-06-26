@@ -40,15 +40,17 @@ class TestReviewCreateTutoring:
     """Engagement gate for TUTORING listings."""
 
     def setup_method(self):
+        from apps.providers.models import TutorDetail
+
         self.client = APIClient()
         self.tutor = _user("cr_tutor@test.com", UserRole.TUTOR)
+        self.tutor_detail = TutorDetail.objects.create(user=self.tutor)
         self.listing = _listing(ListingCategory.TUTORING, owner=self.tutor)
 
     def _make_inquiry(self, family, status_val):
         return Inquiry.objects.create(
             family=family,
-            listing=self.listing,
-            provider=self.tutor,
+            tutor=self.tutor_detail,
             message="Test",
             status=status_val,
         )

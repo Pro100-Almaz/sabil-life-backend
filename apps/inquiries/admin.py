@@ -1,5 +1,5 @@
 """
-Inquiry admin — Phase 5.
+Inquiry admin.
 """
 
 from django.contrib import admin
@@ -15,13 +15,13 @@ class InquiryAdmin(ModelAdmin):
         "id",
         "status",
         "family_email",
-        "listing_title",
+        "tutor_name",
         "contact_revealed",
         "created_at",
     )
     list_filter = ("status", "contact_revealed")
-    search_fields = ("family__email", "listing__title", "message")
-    readonly_fields = ("id", "family", "listing", "provider", "created_at", "updated_at")
+    search_fields = ("family__email", "tutor__user__email", "message")
+    readonly_fields = ("id", "family", "tutor", "created_at", "updated_at")
     ordering = ("-created_at",)
 
     fieldsets = (
@@ -31,7 +31,7 @@ class InquiryAdmin(ModelAdmin):
         ),
         (
             _("Parties"),
-            {"fields": ("family", "listing", "provider")},
+            {"fields": ("family", "tutor")},
         ),
         (
             _("Timestamps"),
@@ -43,6 +43,6 @@ class InquiryAdmin(ModelAdmin):
     def family_email(self, obj: Inquiry) -> str:
         return obj.family.email if obj.family_id else "—"
 
-    @admin.display(description=_("Listing"))
-    def listing_title(self, obj: Inquiry) -> str:
-        return obj.listing.title if obj.listing_id else "—"
+    @admin.display(description=_("Tutor"))
+    def tutor_name(self, obj: Inquiry) -> str:
+        return obj.tutor.user.email if obj.tutor_id else "—"

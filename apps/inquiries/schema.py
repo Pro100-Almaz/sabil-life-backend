@@ -8,16 +8,23 @@ from drf_spectacular.utils import OpenApiExample, OpenApiParameter, OpenApiRespo
 
 from apps.core.schema import UNAUTHORIZED_EXAMPLES, ErrorResponseSerializer
 
-from apps.inquiries.serializers import FamilyInquirySerializer, ProviderInquirySerializer
+from apps.inquiries.serializers import FamilyInquirySerializer, TutorInquirySerializer
 
 # ---------------------------------------------------------------------------
 # Reusable example values
 # ---------------------------------------------------------------------------
 
+_TUTOR_BLOCK_EXAMPLE = {
+    "id": 42,
+    "full_name": "Sara Al-Thani",
+    "subjects": ["MATH", "PHYSICS"],
+    "is_verified": True,
+}
+
 _FAMILY_INQUIRY_EXAMPLE = {
     "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-    "listing_id": "550e8400-e29b-41d4-a716-446655440000",
-    "provider_id": "7",
+    "tutor_id": 42,
+    "tutor": _TUTOR_BLOCK_EXAMPLE,
     "status": "NEW",
     "message": "I am interested in IGCSE maths tutoring for my daughter.",
     "contact_revealed": False,
@@ -25,14 +32,20 @@ _FAMILY_INQUIRY_EXAMPLE = {
     "updated_at": "2026-06-01T10:00:00Z",
 }
 
-_PROVIDER_INQUIRY_EXAMPLE = {
-    **_FAMILY_INQUIRY_EXAMPLE,
+_TUTOR_INQUIRY_EXAMPLE = {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "tutor_id": 42,
     "family": {
         "id": "user-uuid-here",
         "full_name": None,
         "phone": None,
         "email": None,
     },
+    "status": "NEW",
+    "message": "I am interested in IGCSE maths tutoring for my daughter.",
+    "contact_revealed": False,
+    "created_at": "2026-06-01T10:00:00Z",
+    "updated_at": "2026-06-01T10:00:00Z",
 }
 
 _FORBIDDEN_FAMILY = [
@@ -43,31 +56,30 @@ _FORBIDDEN_FAMILY = [
     )
 ]
 
-_FORBIDDEN_PROVIDER = [
+_FORBIDDEN_TUTOR = [
     OpenApiExample(
-        "Not a provider",
-        value={
-            "detail": (
-                "You must be a provider (TUTOR or MASTERCLASS) to access this resource."
-            )
-        },
+        "Not a tutor",
+        value={"detail": "Only users with the TUTOR role can access this resource."},
         status_codes=["403"],
     )
 ]
 
-_CONFLICT_EXAMPLE = [
+_CANCEL_CONFLICT_EXAMPLE = [
     OpenApiExample(
-        "Invalid transition",
+        "Already terminal",
         value={
             "detail": (
-                "Cannot transition inquiry from 'DECLINED' to 'COMPLETED'. "
+                "Cannot transition inquiry from 'COMPLETED' to 'CANCELLED'. "
                 "Allowed next statuses: none (terminal state)."
             )
         },
         status_codes=["409"],
     ),
+]
+
+_STATUS_CONFLICT_EXAMPLE = [
     OpenApiExample(
-        "Invalid transition — accepted to contacted",
+        "Invalid transition",
         value={
             "detail": (
                 "Cannot transition inquiry from 'ACCEPTED' to 'CONTACTED'. "
@@ -81,7 +93,8 @@ _CONFLICT_EXAMPLE = [
 _STATUS_PARAM = OpenApiParameter(
     name="status",
     description=(
-        "Filter by inquiry status (NEW, CONTACTED, ACCEPTED, DECLINED, COMPLETED)."
+        "Filter by inquiry status "
+        "(NEW, CONTACTED, ACCEPTED, DECLINED, COMPLETED, CANCELLED)."
     ),
     required=False,
     type=str,
@@ -129,14 +142,14 @@ INQUIRY_LIST_SCHEMA = {
 }
 
 INQUIRY_CREATE_SCHEMA = {
-    "summary": "Submit an inquiry",
+    "summary": "Submit an inquiry to a tutor",
     "description": (
-        "Submit a new inquiry on a TUTORING listing. Requires FAMILY role.\n\n"
-        "- Listing must be ACTIVE.\n"
-        "- Listing category must be TUTORING (use /subscriptions/ for MASTERCLASSES).\n"
-        "- Multiple inquiries on the same listing are permitted"
+        "Submit a new inquiry addressed to a tutor. Requires FAMILY role.\n\n"
+        "- `tutor_id` is the TutorDetail id of the addressed tutor.\n"
+        "- The tutor must not be soft-deleted.\n"
+        "- Multiple inquiries to the same tutor are permitted"
         " (no duplicate prevention).\n"
-        "- Status defaults to NEW; provider is snapshotted from listing.owner."
+        "- Status defaults to NEW."
     ),
     "responses": {
         201: OpenApiResponse(
@@ -152,23 +165,11 @@ INQUIRY_CREATE_SCHEMA = {
         ),
         400: OpenApiResponse(
             response=ErrorResponseSerializer,
-            description=(
-                "Validation error — listing not found, not active, or wrong category."
-            ),
+            description="Validation error — tutor unavailable or bad input.",
             examples=[
                 OpenApiExample(
-                    "Wrong category",
-                    value={
-                        "detail": (
-                            "Inquiries only allowed on TUTORING listings; "
-                            "use /subscriptions/ for masterclasses."
-                        )
-                    },
-                    status_codes=["400"],
-                ),
-                OpenApiExample(
-                    "Listing not active",
-                    value={"detail": "Listing is not active."},
+                    "Tutor unavailable",
+                    value={"detail": "This tutor is no longer available."},
                     status_codes=["400"],
                 ),
             ],
@@ -183,6 +184,7 @@ INQUIRY_CREATE_SCHEMA = {
             description="Not a family account.",
             examples=_FORBIDDEN_FAMILY,
         ),
+        404: OpenApiResponse(description="Tutor not found."),
     },
 }
 
@@ -217,21 +219,61 @@ INQUIRY_RETRIEVE_SCHEMA = {
     },
 }
 
+INQUIRY_CANCEL_SCHEMA = {
+    "summary": "Cancel own inquiry",
+    "description": (
+        "Cancels an inquiry owned by the authenticated family. "
+        "Transition: NEW|CONTACTED → CANCELLED. "
+        "Returns 409 if the inquiry is already in a terminal state."
+    ),
+    "request": None,
+    "responses": {
+        200: OpenApiResponse(
+            response=FamilyInquirySerializer,
+            description="Inquiry after cancellation.",
+            examples=[
+                OpenApiExample(
+                    "Cancelled",
+                    value={**_FAMILY_INQUIRY_EXAMPLE, "status": "CANCELLED"},
+                    status_codes=["200"],
+                )
+            ],
+        ),
+        401: OpenApiResponse(
+            response=ErrorResponseSerializer,
+            description="Authentication required.",
+            examples=UNAUTHORIZED_EXAMPLES,
+        ),
+        403: OpenApiResponse(
+            response=ErrorResponseSerializer,
+            description="Not a family account.",
+            examples=_FORBIDDEN_FAMILY,
+        ),
+        404: OpenApiResponse(
+            description="Inquiry not found or not owned by this family."
+        ),
+        409: OpenApiResponse(
+            response=ErrorResponseSerializer,
+            description="Inquiry cannot be cancelled from its current status.",
+            examples=_CANCEL_CONFLICT_EXAMPLE,
+        ),
+    },
+}
+
 # ---------------------------------------------------------------------------
-# Provider endpoint schemas
+# Tutor endpoint schemas
 # ---------------------------------------------------------------------------
 
-PROVIDER_INQUIRY_LIST_SCHEMA = {
+TUTOR_INQUIRY_LIST_SCHEMA = {
     "summary": "List received inquiries",
     "description": (
-        "Returns all inquiries where the authenticated provider is the recipient. "
-        "Filter by ?status=. MASTERCLASS providers will see an empty list "
-        "(their flow uses subscriptions, not inquiries)."
+        "Returns all inquiries addressed to the authenticated tutor. "
+        "Filter by ?status=. Requires TUTOR role."
     ),
     "parameters": [_STATUS_PARAM],
     "responses": {
         200: OpenApiResponse(
-            response=ProviderInquirySerializer(many=True),
+            response=TutorInquirySerializer(many=True),
             description="Paginated list of received inquiries.",
             examples=[
                 OpenApiExample(
@@ -240,7 +282,7 @@ PROVIDER_INQUIRY_LIST_SCHEMA = {
                         "count": 1,
                         "next": None,
                         "previous": None,
-                        "results": [_PROVIDER_INQUIRY_EXAMPLE],
+                        "results": [_TUTOR_INQUIRY_EXAMPLE],
                     },
                     status_codes=["200"],
                 )
@@ -253,24 +295,24 @@ PROVIDER_INQUIRY_LIST_SCHEMA = {
         ),
         403: OpenApiResponse(
             response=ErrorResponseSerializer,
-            description="Not a provider.",
-            examples=_FORBIDDEN_PROVIDER,
+            description="Not a tutor.",
+            examples=_FORBIDDEN_TUTOR,
         ),
     },
 }
 
-PROVIDER_INQUIRY_RETRIEVE_SCHEMA = {
+TUTOR_INQUIRY_RETRIEVE_SCHEMA = {
     "summary": "Retrieve received inquiry",
     "description": (
-        "Returns detail of a single inquiry received by the authenticated provider."
+        "Returns detail of a single inquiry addressed to the authenticated tutor."
     ),
     "responses": {
         200: OpenApiResponse(
-            response=ProviderInquirySerializer,
+            response=TutorInquirySerializer,
             description="Inquiry detail with redacted family contact block.",
             examples=[
                 OpenApiExample(
-                    "Detail", value=_PROVIDER_INQUIRY_EXAMPLE, status_codes=["200"]
+                    "Detail", value=_TUTOR_INQUIRY_EXAMPLE, status_codes=["200"]
                 )
             ],
         ),
@@ -281,58 +323,62 @@ PROVIDER_INQUIRY_RETRIEVE_SCHEMA = {
         ),
         403: OpenApiResponse(
             response=ErrorResponseSerializer,
-            description="Not a provider.",
-            examples=_FORBIDDEN_PROVIDER,
+            description="Not a tutor.",
+            examples=_FORBIDDEN_TUTOR,
         ),
         404: OpenApiResponse(
-            description="Inquiry not found or not received by this provider."
+            description="Inquiry not found or not addressed to this tutor."
         ),
     },
 }
 
-_TRANSITION_RESPONSES = {
-    200: OpenApiResponse(
-        response=ProviderInquirySerializer,
-        description="Inquiry after transition.",
+TUTOR_INQUIRY_UPDATE_SCHEMA = {
+    "summary": "Update inquiry status",
+    "description": (
+        "Update the status of an inquiry addressed to the authenticated tutor.\n\n"
+        "Body: `{\"status\": \"<TARGET>\"}` where TARGET is one of "
+        "CONTACTED, ACCEPTED, DECLINED, COMPLETED.\n\n"
+        "Allowed transitions:\n"
+        "- NEW → CONTACTED, ACCEPTED, DECLINED\n"
+        "- CONTACTED → ACCEPTED, DECLINED\n"
+        "- ACCEPTED → COMPLETED\n\n"
+        "Returns 409 if the transition is not allowed from the current status."
     ),
-    401: OpenApiResponse(
-        response=ErrorResponseSerializer,
-        description="Authentication required.",
-        examples=UNAUTHORIZED_EXAMPLES,
-    ),
-    403: OpenApiResponse(
-        response=ErrorResponseSerializer,
-        description="Not a provider.",
-        examples=_FORBIDDEN_PROVIDER,
-    ),
-    404: OpenApiResponse(description="Inquiry not found."),
-    409: OpenApiResponse(
-        response=ErrorResponseSerializer,
-        description="Invalid state transition.",
-        examples=_CONFLICT_EXAMPLE,
-    ),
-}
-
-PROVIDER_INQUIRY_CONTACTED_SCHEMA = {
-    "summary": "Mark inquiry as Contacted",
-    "description": "Transition: NEW → CONTACTED. Returns 409 if not in NEW status.",
-    "responses": _TRANSITION_RESPONSES,
-}
-
-PROVIDER_INQUIRY_ACCEPT_SCHEMA = {
-    "summary": "Accept inquiry",
-    "description": "Transition: NEW|CONTACTED → ACCEPTED. Returns 409 if invalid status.",
-    "responses": _TRANSITION_RESPONSES,
-}
-
-PROVIDER_INQUIRY_DECLINE_SCHEMA = {
-    "summary": "Decline inquiry",
-    "description": "Transition: NEW|CONTACTED → DECLINED. Returns 409 if invalid status.",
-    "responses": _TRANSITION_RESPONSES,
-}
-
-PROVIDER_INQUIRY_COMPLETE_SCHEMA = {
-    "summary": "Complete inquiry",
-    "description": "Transition: ACCEPTED → COMPLETED. Returns 409 if not ACCEPTED.",
-    "responses": _TRANSITION_RESPONSES,
+    "responses": {
+        200: OpenApiResponse(
+            response=TutorInquirySerializer,
+            description="Inquiry after the status update.",
+            examples=[
+                OpenApiExample(
+                    "Accepted",
+                    value={
+                        **_TUTOR_INQUIRY_EXAMPLE,
+                        "status": "ACCEPTED",
+                        "contact_revealed": True,
+                    },
+                    status_codes=["200"],
+                )
+            ],
+        ),
+        400: OpenApiResponse(
+            response=ErrorResponseSerializer,
+            description="Invalid status value in request body.",
+        ),
+        401: OpenApiResponse(
+            response=ErrorResponseSerializer,
+            description="Authentication required.",
+            examples=UNAUTHORIZED_EXAMPLES,
+        ),
+        403: OpenApiResponse(
+            response=ErrorResponseSerializer,
+            description="Not a tutor.",
+            examples=_FORBIDDEN_TUTOR,
+        ),
+        404: OpenApiResponse(description="Inquiry not found."),
+        409: OpenApiResponse(
+            response=ErrorResponseSerializer,
+            description="Invalid state transition.",
+            examples=_STATUS_CONFLICT_EXAMPLE,
+        ),
+    },
 }

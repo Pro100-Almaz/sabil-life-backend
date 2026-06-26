@@ -28,6 +28,7 @@ from apps.catalog.serializers import (
     TutorCardSerializer,
 )
 from apps.catalog.services import annotate_distance_km
+from apps.users.enums import UserRole
 from apps.users.permissions import IsFamily, IsMasterclass
 
 logger = logging.getLogger(__name__)
@@ -164,7 +165,8 @@ class TutorListViewSet(viewsets.ReadOnlyModelViewSet):
         return (
             TutorDetail.objects
             .select_related("user")
-            .filter(user__role="TUTOR", is_verified=True)
+            .filter(user__roles__name=UserRole.TUTOR)
+            .exclude(user=self.request.user)
             .order_by("-rating", "-review_count")
         )
 
