@@ -17,7 +17,7 @@ from unfold.decorators import action, display
 from unfold.admin import ModelAdmin, TabularInline   # unfold-styled inline
 
 from apps.catalog.models import Listing, ListingImage, ListingStatus
-
+from apps.catalog.services import delete_listing, delete_listing_image
 # ---------------------------------------------------------------------------
 # Bulk moderation actions
 # ---------------------------------------------------------------------------
@@ -230,9 +230,27 @@ class ListingAdmin(ModelAdmin):
             return
 
         start = obj.images.count()
-        created = []
         for i, uploaded_image in enumerate(uploaded_images):
             suffix = Path(uploaded_image.name).suffix.lower()
             object_name = f"listings/{obj.id}/{uuid.uuid4().hex}{suffix}"
             key = default_storage.save(object_name, uploaded_image)
             ListingImage.objects.create(listing=obj, key=key, position=start + i)
+
+    def save_formset(self, request, form, formset, change):
+        if formset.model is ListingImage:
+            instances = formset.save(commit=False)
+            for obj in formset.deleted_objects:
+                delete_listing_image(obj)
+            for instance in instances:
+                instance.save()
+
+            formset.save_m2m()
+        else:
+            super().save_formset(request, form, formset, change)
+
+    def delete_model(self, request, obj):
+        delete_listing(obj)
+
+    def delete_queryset(self, request, queryset):
+        for listing in queryset:
+            delete_listing(listing)
