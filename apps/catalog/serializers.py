@@ -98,7 +98,6 @@ class TutorSubjectSerializer(serializers.ModelSerializer):
 
 
 class TutorCardSerializer(serializers.ModelSerializer):
-    id = serializers.IntegerField(source="user.id", read_only=True)
     full_name = serializers.CharField(source="user.full_name", read_only=True)
 
     class Meta:

@@ -7,9 +7,19 @@ that views stay thin and the transitions are easy to unit-test in isolation.
 
 from django.conf import settings
 
-from apps.catalog.models import Listing, ListingCategory, ListingStatus
+from apps.providers.models import TutorDetail
 
 from apps.inquiries.models import Inquiry, InquiryStatus
+
+# Statuses a TUTOR is allowed to move an inquiry into.
+TUTOR_SETTABLE_STATUSES: frozenset[str] = frozenset(
+    {
+        InquiryStatus.CONTACTED,
+        InquiryStatus.ACCEPTED,
+        InquiryStatus.DECLINED,
+        InquiryStatus.COMPLETED,
+    }
+)
 
 
 class InvalidTransition(Exception):
@@ -21,41 +31,38 @@ class InvalidTransition(Exception):
 # ---------------------------------------------------------------------------
 _ALLOWED: dict[str, frozenset[str]] = {
     InquiryStatus.NEW: frozenset(
-        {InquiryStatus.CONTACTED, InquiryStatus.ACCEPTED, InquiryStatus.DECLINED}
+        {
+            InquiryStatus.CONTACTED,
+            InquiryStatus.ACCEPTED,
+            InquiryStatus.DECLINED,
+            InquiryStatus.CANCELLED,
+        }
     ),
-    InquiryStatus.CONTACTED: frozenset({InquiryStatus.ACCEPTED, InquiryStatus.DECLINED}),
+    InquiryStatus.CONTACTED: frozenset(
+        {InquiryStatus.ACCEPTED, InquiryStatus.DECLINED, InquiryStatus.CANCELLED}
+    ),
     InquiryStatus.ACCEPTED: frozenset({InquiryStatus.COMPLETED}),
     InquiryStatus.DECLINED: frozenset(),
     InquiryStatus.COMPLETED: frozenset(),
+    InquiryStatus.CANCELLED: frozenset(),
 }
 
 
-def create_inquiry(family, listing: Listing, message: str) -> Inquiry:
+def create_inquiry(family, tutor: TutorDetail, message: str) -> Inquiry:
     """
-    Create a new Inquiry for a TUTORING listing.
+    Create a new Inquiry addressed to a tutor.
 
     Validates:
-    - listing is ACTIVE
-    - listing category is TUTORING
+    - tutor profile is not soft-deleted.
 
-    Snapshots provider = listing.owner at creation time.
-    No duplicate-prevention: families may re-inquire after a DECLINED inquiry.
+    No duplicate-prevention: families may re-inquire after a DECLINED or
+    CANCELLED inquiry.
     """
-    if listing.status != ListingStatus.ACTIVE:
-        raise ValueError("Listing is not active.")
-    if listing.category != ListingCategory.TUTORING:
-        raise ValueError(
-            "Inquiries only allowed on TUTORING listings; "
-            "use /subscriptions/ for masterclasses."
-        )
-    if listing.owner_id is None:
-        raise ValueError(
-            "Listing has no provider assigned and cannot accept inquiries."
-        )
+    if tutor.deleted_at is not None:
+        raise ValueError("This tutor is no longer available.")
     return Inquiry.objects.create(
         family=family,
-        listing=listing,
-        provider=listing.owner,
+        tutor=tutor,
         message=message,
         status=InquiryStatus.NEW,
     )
