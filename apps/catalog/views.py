@@ -3,7 +3,7 @@ import logging
 from django.db.models import Count, QuerySet
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema, extend_schema_view
-from rest_framework import filters, permissions, viewsets
+from rest_framework import filters, permissions, viewsets, mixins
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -11,7 +11,7 @@ from rest_framework.response import Response
 from apps.catalog.filters import ListingFilter
 from apps.providers.models import TutorDetail, TutorSubject
 
-from apps.catalog.models import Listing, ListingCategory, ListingStatus
+from apps.catalog.models import Listing, ListingCategory, ListingStatus, ListingClientStatus, ListingClient
 from apps.catalog.schema import (
     CATEGORIES_SCHEMA,
     LISTING_DETAIL_SCHEMA,
@@ -21,10 +21,15 @@ from apps.catalog.schema import (
 from apps.catalog.serializers import (
     CategoryCountSerializer,
     ListingCardSerializer,
+    ListingClientListSerializer,
+    ListingClientOwnerSerializer,
+    ListingClientSerializer,
     ListingDetailSerializer,
     TutorCardSerializer,
 )
 from apps.catalog.services import annotate_distance_km
+from apps.users.enums import UserRole
+from apps.users.permissions import IsFamily, IsMasterclass
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +68,8 @@ class ListingViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self) -> QuerySet:
         qs = Listing.objects.filter(status=ListingStatus.ACTIVE).prefetch_related("images")
+        if self.request.user.is_authenticated:
+            qs = qs.exclude(owner=self.request.user)
 
         # ------------------------------------------------------------------
         # Distance annotation
@@ -158,7 +165,8 @@ class TutorListViewSet(viewsets.ReadOnlyModelViewSet):
         return (
             TutorDetail.objects
             .select_related("user")
-            .filter(user__role="TUTOR", is_verified=True)
+            .filter(user__roles__name=UserRole.TUTOR)
+            .exclude(user=self.request.user)
             .order_by("-rating", "-review_count")
         )
 
@@ -168,3 +176,112 @@ class TutorListViewSet(viewsets.ReadOnlyModelViewSet):
 def tutor_subjects_view(request: Request) -> Response:
     names = list(TutorSubject.objects.values_list("name", flat=True))
     return Response(names)
+
+
+@extend_schema_view(
+    list=extend_schema(
+        summary="List the caller's listing requests (client / FAMILY)",
+        description=(
+            "Returns the listings the authenticated family user has requested, "
+            "each embedding the full listing card alongside the request status."
+        ),
+    ),
+    create=extend_schema(
+        summary="Request a listing (client / FAMILY)",
+        description=(
+            "Creates a ListingClient linking the authenticated family user to a "
+            "listing. The status is auto-set to ACCEPTED for now (the PENDING "
+            "approval flow is reserved for tutor Inquiries)."
+        ),
+    ),
+    destroy=extend_schema(
+        summary="Cancel a listing request (client / FAMILY)",
+        description="Deletes the caller's own ListingClient by its id.",
+    ),
+)
+class ListingClientViewSet(
+    mixins.ListModelMixin,
+    mixins.CreateModelMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet,
+):
+    """
+    Client-side endpoints for FAMILY users to request / list / cancel a listing.
+
+    list:    GET    /api/v1/listing-enrollment/
+    create:  POST   /api/v1/listing-enrollment/
+    destroy: DELETE /api/v1/listing-enrollment/{id}/
+
+    The queryset is scoped to the caller, so a user only ever sees / deletes
+    their own requests.
+    """
+
+    permission_classes = [IsFamily]
+    lookup_field = "id"
+
+    def get_serializer_class(self):
+        if self.action == "list":
+            return ListingClientListSerializer
+        return ListingClientSerializer
+
+    def get_queryset(self) -> QuerySet:
+        return (
+            ListingClient.objects
+            .select_related("listing")
+            .filter(user=self.request.user)
+        )
+
+    def perform_create(self, serializer):
+        # Auto-accept for now; the PENDING → ACCEPTED/REJECTED owner flow is
+        # wired up below for future use.
+        serializer.save(
+            user=self.request.user,
+            status=ListingClientStatus.ACCEPTED,
+        )
+
+
+@extend_schema_view(
+    list=extend_schema(
+        summary="List clients who requested an owned listing (owner / MASTERCLASS)",
+        description=(
+            "Returns the ListingClient records for listings owned by the "
+            "authenticated provider, including each client's user info and the "
+            "request status. Filter to a single listing with ?listing={uuid}."
+        ),
+    ),
+    partial_update=extend_schema(
+        summary="Change a client request status (owner / MASTERCLASS)",
+        description="PATCH the status of a request (ACCEPTED / REJECTED / PENDING).",
+    ),
+)
+class ListingOwnerViewSet(
+    mixins.ListModelMixin,
+    mixins.UpdateModelMixin,
+    viewsets.GenericViewSet,
+):
+    """
+    Owner-side endpoints for MASTERCLASS providers to manage requests on the
+    listings they own.
+
+    list:           GET   /api/v1/listing-clients/
+    partial_update: PATCH /api/v1/listing-clients/{id}/
+
+    Ownership is enforced by scoping the queryset to listings owned by the
+    caller, so a provider can only see / modify requests on their own listings.
+    """
+
+    permission_classes = [IsMasterclass]
+    serializer_class = ListingClientOwnerSerializer
+    lookup_field = "id"
+    http_method_names = ["get", "patch", "head", "options"]
+
+    def get_queryset(self) -> QuerySet:
+        qs = (
+            ListingClient.objects
+            .select_related("user", "listing")
+            .filter(listing__owner=self.request.user)
+        )
+        listing_id = self.request.query_params.get("listing")
+        if listing_id:
+            qs = qs.filter(listing_id=listing_id)
+        return qs

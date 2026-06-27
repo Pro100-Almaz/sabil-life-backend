@@ -40,9 +40,15 @@ def can_review(user, listing) -> bool:
     if listing.category == ListingCategory.TUTORING:
         from apps.inquiries.models import Inquiry, InquiryStatus
 
+        # Inquiries are addressed to a tutor (TutorDetail), not a listing.
+        # A TUTORING listing maps to its tutor via listing.owner, so the gate
+        # checks for an accepted/completed inquiry with that tutor.
+        if listing.owner_id is None:
+            return False
+
         return Inquiry.objects.filter(
             family=user,
-            listing=listing,
+            tutor__user_id=listing.owner_id,
             status__in=[InquiryStatus.ACCEPTED, InquiryStatus.COMPLETED],
         ).exists()
 
