@@ -13,6 +13,7 @@ from rest_framework.response import Response
 
 from apps.catalog.models import Listing, ListingStatus, ListingImage
 from apps.catalog.serializers import ListingImageSerializer
+from apps.catalog.services import delete_listing, delete_listing_image
 from apps.users.enums import UserRole
 from apps.users.models import Role
 
@@ -226,6 +227,11 @@ class ProviderListingViewSet(
 
     def get_queryset(self):
         return Listing.objects.filter(owner=self.request.user).prefetch_related("images")
+
+    def perform_destroy(self, instance):
+        # Explicit storage cleanup: remove the listing and its images' MinIO
+        # objects together (replaces the old post_delete signal).
+        delete_listing(instance)
 
     def get_permissions(self):
         if self.action in {"retrieve", "partial_update", "destroy"}:
@@ -497,5 +503,5 @@ class ListingImageDetailView(generics.DestroyAPIView):
 
     def delete(self, request, listing_id, image_id):
         image = self._get_listing(request, listing_id, image_id)
-        image.delete()
+        delete_listing_image(image)
         return Response(status=204)

@@ -1,13 +1,17 @@
 """
-Tests for MinIO image cleanup on Listing delete/update.
+Tests for MinIO image cleanup (Option C — images as a ListingImage relation).
 
 Two layers:
   1. url_to_storage_key() — pure unit tests for the URL -> storage-key reversal.
-  2. Signals — pre_delete deletes all images; pre_save deletes only the
-     URLs removed from image_urls. We patch the Celery task and assert which
-     keys get enqueued, so no real storage is touched.
+     The helper is retained only for the data-migration backfill; runtime
+     cleanup no longer parses URLs (it deletes by stored key).
+  2. Service layer — delete_listing_image() enqueues the image's key;
+     delete_listing() collects every child image's key and enqueues them as a
+     single batch. We patch the Celery task and assert which keys get enqueued,
+     so no real storage is touched. (Storage cleanup is explicit in the service
+     layer — there is no longer a post_delete signal.)
 
-The on_commit callbacks only fire when the transaction commits, so the signal
+The on_commit callbacks only fire when the transaction commits, so the service
 tests use the `django_capture_on_commit_callbacks` fixture with execute=True.
 """
 
@@ -16,12 +20,21 @@ from unittest.mock import patch
 import pytest
 from django.test import override_settings
 
-from apps.catalog.models import Listing, ListingCategory, ListingStatus
-from apps.catalog.services import url_to_storage_key
+from apps.catalog.models import (
+    Listing,
+    ListingCategory,
+    ListingImage,
+    ListingStatus,
+)
+from apps.catalog.services import (
+    delete_listing,
+    delete_listing_image,
+    url_to_storage_key,
+)
 
-# Patch the name as imported into the signals module's namespace, not where
+# Patch the name as imported into the services module's namespace, not where
 # the task is defined — that's the reference the on_commit lambda resolves.
-TASK = "apps.catalog.signals.delete_storage_objects"
+TASK = "apps.catalog.services.delete_storage_objects"
 
 
 def make_listing(**kwargs) -> Listing:
@@ -34,8 +47,21 @@ def make_listing(**kwargs) -> Listing:
     return Listing.objects.create(**defaults)
 
 
+def make_image(listing: Listing, key: str, position: int = 0) -> ListingImage:
+    return ListingImage.objects.create(listing=listing, key=key, position=position)
+
+
+def _enqueued_keys(task) -> set[str]:
+    """Flatten every key passed across all task.delay([...]) calls."""
+    keys: set[str] = set()
+    for call in task.delay.call_args_list:
+        (batch,) = call.args
+        keys.update(batch)
+    return keys
+
+
 # ---------------------------------------------------------------------------
-# 1. url_to_storage_key — pure function, no DB
+# 1. url_to_storage_key — pure function, no DB (used by the backfill migration)
 # ---------------------------------------------------------------------------
 class TestUrlToStorageKey:
     def test_local_absolute_url(self):
@@ -43,7 +69,6 @@ class TestUrlToStorageKey:
         assert url_to_storage_key(url) == "listings/abc/img.jpg"
 
     def test_local_relative_url(self):
-        # default_storage.url() can return a path-only URL when not absolutized.
         assert url_to_storage_key("/media/listings/abc/img.jpg") == "listings/abc/img.jpg"
 
     @override_settings(MEDIA_URL="https://minio.local/sabil-bucket/")
@@ -53,7 +78,6 @@ class TestUrlToStorageKey:
 
     @override_settings(MEDIA_URL="https://minio.local/sabil-bucket/")
     def test_minio_url_with_querystring_auth(self):
-        # AWS_QUERYSTRING_AUTH=True appends ?X-Amz-... — must be dropped.
         url = "https://minio.local/sabil-bucket/listings/abc/img.jpg?X-Amz-Signature=deadbeef"
         assert url_to_storage_key(url) == "listings/abc/img.jpg"
 
@@ -65,81 +89,56 @@ class TestUrlToStorageKey:
     def test_empty_returns_none(self, value):
         assert url_to_storage_key(value) is None
 
-    def test_round_trip_with_default_storage(self):
-        """The contract: url_to_storage_key(default_storage.url(name)) == name."""
-        from django.core.files.storage import default_storage
-
-        name = "listings/abc/round-trip.jpg"
-        assert url_to_storage_key(default_storage.url(name)) == name
-
 
 # ---------------------------------------------------------------------------
-# 2. Signals — which keys get enqueued on delete/update
+# 2. Service layer — which keys get enqueued on image / listing delete
 # ---------------------------------------------------------------------------
 @pytest.mark.django_db
-class TestImageCleanupSignals:
-    def test_delete_enqueues_all_keys(self, django_capture_on_commit_callbacks):
-        listing = make_listing(
-            image_urls=[
-                "/media/listings/a/one.jpg",
-                "/media/listings/a/two.jpg",
-            ]
-        )
-        with patch(TASK) as task:
-            with django_capture_on_commit_callbacks(execute=True):
-                listing.delete()
-
-        task.delay.assert_called_once()
-        (keys,) = task.delay.call_args.args
-        assert set(keys) == {"listings/a/one.jpg", "listings/a/two.jpg"}
-
-    def test_update_removing_url_enqueues_only_removed(
+class TestImageCleanupServices:
+    def test_delete_listing_image_enqueues_its_key(
         self, django_capture_on_commit_callbacks
     ):
-        listing = make_listing(
-            image_urls=[
-                "/media/listings/a/keep.jpg",
-                "/media/listings/a/drop.jpg",
-            ]
-        )
+        listing = make_listing()
+        image = make_image(listing, "listings/a/one.jpg")
         with patch(TASK) as task:
             with django_capture_on_commit_callbacks(execute=True):
-                listing.image_urls = ["/media/listings/a/keep.jpg"]
-                listing.save()
+                delete_listing_image(image)
 
-        task.delay.assert_called_once()
-        (keys,) = task.delay.call_args.args
-        assert keys == ["listings/a/drop.jpg"]
+        task.delay.assert_called_once_with(["listings/a/one.jpg"])
+        assert not ListingImage.objects.filter(pk=image.pk).exists()
 
-    def test_update_appending_url_does_not_enqueue(
+    def test_delete_listing_enqueues_all_image_keys_in_one_batch(
         self, django_capture_on_commit_callbacks
     ):
-        """The append flow from _store_uploaded_images must never delete."""
-        listing = make_listing(image_urls=["/media/listings/a/one.jpg"])
+        listing = make_listing()
+        make_image(listing, "listings/a/one.jpg", position=0)
+        make_image(listing, "listings/a/two.jpg", position=1)
         with patch(TASK) as task:
             with django_capture_on_commit_callbacks(execute=True):
-                listing.image_urls = [
-                    "/media/listings/a/one.jpg",
-                    "/media/listings/a/new.jpg",
-                ]
-                listing.save()
+                delete_listing(listing)
+
+        # All of the listing's image keys are enqueued in a single batch.
+        assert task.delay.call_count == 1
+        assert _enqueued_keys(task) == {"listings/a/one.jpg", "listings/a/two.jpg"}
+        assert not Listing.objects.filter(pk=listing.pk).exists()
+
+    def test_delete_listing_with_no_images_enqueues_nothing(
+        self, django_capture_on_commit_callbacks
+    ):
+        listing = make_listing()
+        with patch(TASK) as task:
+            with django_capture_on_commit_callbacks(execute=True):
+                delete_listing(listing)
 
         task.delay.assert_not_called()
 
-    def test_create_does_not_enqueue(self, django_capture_on_commit_callbacks):
-        with patch(TASK) as task:
-            with django_capture_on_commit_callbacks(execute=True):
-                make_listing(image_urls=["/media/listings/a/one.jpg"])
-
-        task.delay.assert_not_called()
-
-    def test_update_unrelated_field_does_not_enqueue(
+    def test_delete_listing_image_with_blank_key_enqueues_nothing(
         self, django_capture_on_commit_callbacks
     ):
-        listing = make_listing(image_urls=["/media/listings/a/one.jpg"])
+        listing = make_listing()
+        image = make_image(listing, "")
         with patch(TASK) as task:
             with django_capture_on_commit_callbacks(execute=True):
-                listing.title = "Renamed"
-                listing.save()
+                delete_listing_image(image)
 
         task.delay.assert_not_called()
