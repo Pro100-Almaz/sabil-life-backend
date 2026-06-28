@@ -56,7 +56,7 @@ def _get_or_create_seed_provider(email: str, role: str, label: str) -> CustomUse
 
 async def _img(slug: str, n: int = 2) -> list[ListingImage]:
     """Return n ListingImage objects"""
-    url = f"https://picsum.photos/seed/{slug}-{i}/800/600"
+    url = f"https://picsum.photos/seed/{slug}-{1}/800/600"
     try:
         return requests.get(url).content 
     except:
