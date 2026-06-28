@@ -47,7 +47,7 @@ def approve_listings(modeladmin, request, queryset):
 
 
 @action(
-    description=_("Reject selected listings (→ REJECTED)"),
+    description=_("Reject selected listings (DRAFT/PENDING/ACTIVE → REJECTED)"),
     icon="cancel",
 )
 def reject_listings(modeladmin, request, queryset):
