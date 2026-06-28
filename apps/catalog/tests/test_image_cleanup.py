@@ -64,10 +64,12 @@ def _enqueued_keys(task) -> set[str]:
 # 1. url_to_storage_key — pure function, no DB (used by the backfill migration)
 # ---------------------------------------------------------------------------
 class TestUrlToStorageKey:
+    @override_settings(MEDIA_URL = "/media/")
     def test_local_absolute_url(self):
         url = "http://testserver/media/listings/abc/img.jpg"
         assert url_to_storage_key(url) == "listings/abc/img.jpg"
 
+    @override_settings(MEDIA_URL = "/media/")
     def test_local_relative_url(self):
         assert url_to_storage_key("/media/listings/abc/img.jpg") == "listings/abc/img.jpg"
 
@@ -81,6 +83,7 @@ class TestUrlToStorageKey:
         url = "https://minio.local/sabil-bucket/listings/abc/img.jpg?X-Amz-Signature=deadbeef"
         assert url_to_storage_key(url) == "listings/abc/img.jpg"
 
+    @override_settings(MEDIA_URL = "/media/")
     def test_url_encoded_path_is_decoded(self):
         url = "http://testserver/media/listings/abc/my%20file.jpg"
         assert url_to_storage_key(url) == "listings/abc/my file.jpg"

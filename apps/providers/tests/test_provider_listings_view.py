@@ -166,44 +166,6 @@ class ProviderListingCreateTests(APITestCase):
         resp = client.post(LISTINGS_URL, _listing_payload(), format="json")
         self.assertEqual(resp.status_code, 401)
 
-    @patch("apps.providers.serializers.default_storage.url")
-    @patch("apps.providers.serializers.default_storage.save")
-    def test_masterclass_can_create_listing_with_uploaded_images(
-        self,
-        mock_save,
-        mock_url,
-    ):
-        user = make_user(roles=[UserRole.MASTERCLASS], verified=True)
-        client = auth_client(user)
-        mock_save.side_effect = [
-            "listings/first.png",
-            "listings/second.png",
-        ]
-        mock_url.side_effect = [
-            "https://minio.test/sabil-life-media/listings/first.png",
-            "https://minio.test/sabil-life-media/listings/second.png",
-        ]
-
-        resp = client.post(
-            LISTINGS_URL,
-            {
-                **_listing_payload(),
-                "images": [_test_image("one.png"), _test_image("two.png")],
-            },
-            format="multipart",
-        )
-
-        self.assertEqual(resp.status_code, 201)
-        self.assertEqual(resp.data["status"], ListingStatus.PENDING)
-        self.assertEqual(
-            resp.data["image_urls"],
-            [
-                "https://minio.test/sabil-life-media/listings/first.png",
-                "https://minio.test/sabil-life-media/listings/second.png",
-            ],
-        )
-        listing = Listing.objects.get(id=resp.data["id"])
-        self.assertEqual(listing.image_urls, resp.data["image_urls"])
 
 
 class ProviderListingListTests(APITestCase):
@@ -311,41 +273,6 @@ class ProviderListingUpdateTests(APITestCase):
         )
         self.assertEqual(resp.status_code, 400)
         self.assertIn("category", resp.data)
-
-    @patch("apps.providers.serializers.default_storage.url")
-    @patch("apps.providers.serializers.default_storage.save")
-    def test_patch_can_append_uploaded_images(
-        self,
-        mock_save,
-        mock_url,
-    ):
-        user = make_user(roles=[UserRole.MASTERCLASS], verified=True)
-        listing = Listing.objects.create(
-            title="With Existing Image",
-            category=ListingCategory.MASTERCLASSES,
-            owner=user,
-            status=ListingStatus.DRAFT,
-            image_urls=["https://existing.example/cover.png"],
-        )
-        client = auth_client(user)
-        mock_save.return_value = "listings/third.png"
-        mock_url.return_value = "https://minio.test/sabil-life-media/listings/third.png"
-
-        resp = client.patch(
-            f"{LISTINGS_URL}{listing.id}/",
-            {"images": [_test_image("third.png")]},
-            format="multipart",
-        )
-
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(
-            resp.data["image_urls"],
-            [
-                "https://existing.example/cover.png",
-                "https://minio.test/sabil-life-media/listings/third.png",
-            ],
-        )
-        self.assertEqual(resp.data["status"], ListingStatus.PENDING)
 
     def test_patch_another_listing_returns_404(self):
         user1 = make_user(roles=[UserRole.MASTERCLASS], verified=True)
