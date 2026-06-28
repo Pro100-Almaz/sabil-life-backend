@@ -39,7 +39,7 @@ class CoreViewsTests(APITestCase):
     def test_media_retrieve_streams_storage_object(self, mock_exists, mock_open):
         response = self.client.get(
             self.media_url,
-            {"url": "http://localhost:9000/sabil-life-media/listings/demo/image.png"},
+            {"url": "http://localhost:9001/sabil-life-media/listings/demo/image.png"},
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         mock_exists.assert_called_once_with("listings/demo/image.png")
@@ -54,6 +54,6 @@ class CoreViewsTests(APITestCase):
     def test_media_retrieve_rejects_invalid_path(self):
         response = self.client.get(
             self.media_url,
-            {"url": "http://localhost:9000/sabil-life-media/../secret.txt"},
+            {"url": "http://localhost:9001/sabil-life-media/../secret.txt"},
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
