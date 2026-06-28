@@ -37,7 +37,7 @@ class CoreViewsTests(APITestCase):
 
     @patch("apps.core.views.default_storage.open")
     @patch("apps.core.views.default_storage.exists", return_value=True)
-    @override_settings(MEDIA_URL = "/media/")
+    # @override_settings(MEDIA_URL = "/media/")
     def test_media_retrieve_streams_storage_object(self, mock_exists, mock_open):
         response = self.client.get(
             self.media_url,
