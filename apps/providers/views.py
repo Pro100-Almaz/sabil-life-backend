@@ -227,14 +227,18 @@ class ProviderListingViewSet(
             ]
         return [permissions.IsAuthenticated(), IsMasterclassManagerOrAdmin()]
 
-    def _resolved_status(self) -> str:
+    def _resolved_status(self, status: ListingStatus) -> str:
         """Return the status that should be applied on every provider write."""
+        if status == ListingStatus.DRAFT:
+            return ListingStatus.DRAFT
+        
         if self.request.user.is_verified:
             return ListingStatus.PENDING
         return ListingStatus.DRAFT
 
     def perform_create(self, serializer) -> None:
-        forced_status = self._resolved_status()
+        status = self.request.query_params.get('status')
+        forced_status = self._resolved_status(status)
         listing = serializer.save(owner=self.request.user, status=forced_status)
         logger.info(
             "Provider %s created listing %s with status=%s.",

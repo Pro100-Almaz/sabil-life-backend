@@ -10,7 +10,7 @@ from apps.providers.models import ProviderVerification, StatusChoices, TutorDeta
 # ---------------------------------------------------------------------------
 
 _PROVIDER_CATEGORY_MAP: dict[str, str] = {
-    UserRole.TUTOR: ListingCategory.TUTORING,
+    # UserRole.TUTOR: ListingCategory.TUTORING,
     UserRole.MASTERCLASS: ListingCategory.MASTERCLASSES,
 }
 
@@ -98,10 +98,10 @@ class ProviderListingSerializer(serializers.ModelSerializer):
     Writable fields (what a provider can set):
         title, subtitle, neighborhood, lat, lng, price_from_qar,
         age_groups, image_urls, description, highlights, is_featured,
-        category.
+        category, status.
 
     Read-only (server-controlled):
-        id, owner_id, status, rating, review_count, created_at, updated_at.
+        id, owner_id, rating, review_count, created_at, updated_at.
 
     Category constraint:
         MASTERCLASS → must use MASTERCLASSES category.
@@ -149,7 +149,6 @@ class ProviderListingSerializer(serializers.ModelSerializer):
             "id",
             "rating",
             "review_count",
-            "status",
             "owner_id",
             "created_at",
             "updated_at",
