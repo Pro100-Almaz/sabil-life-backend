@@ -9,11 +9,16 @@ stable slug fed through uuid.uuid5() so the UUID is always the same.
 """
 
 import uuid
+import requests
+
+from pathlib import Path
 from decimal import Decimal
 
+from django.http import Http404
 from django.core.management.base import BaseCommand
+from django.core.files.storage import default_storage
 
-from apps.catalog.models import Listing, ListingCategory, ListingStatus
+from apps.catalog.models import Listing, ListingCategory, ListingStatus, ListingImage
 from apps.users.enums import UserRole
 from apps.users.models import CustomUser
 
@@ -49,10 +54,13 @@ def _get_or_create_seed_provider(email: str, role: str, label: str) -> CustomUse
     return user
 
 
-def _img(slug: str, n: int = 2) -> list[str]:
-    """Return n stable picsum URLs for the given slug."""
-    return [f"https://picsum.photos/seed/{slug}-{i}/800/600" for i in range(1, n + 1)]
-
+async def _img(slug: str, n: int = 2) -> list[ListingImage]:
+    """Return n ListingImage objects"""
+    url = f"https://picsum.photos/seed/{slug}-{1}/800/600"
+    try:
+        return requests.get(url).content 
+    except:
+        raise Http404("Image not found")
 
 # ---------------------------------------------------------------------------
 # Listing data — 24 entries, easy to scan / review
@@ -82,7 +90,7 @@ LISTINGS: list[dict] = [
         "rating": Decimal("4.7"),
         "review_count": 112,
         "is_featured": True,
-        "image_count": 3,
+        "image_count": 2,
     },
     {
         "slug": "schools-pearl-american-school",
@@ -722,7 +730,7 @@ class Command(BaseCommand):
                 "lng": data["lng"],
                 "price_from_qar": data["price_from_qar"],
                 "age_groups": data["age_groups"],
-                "image_urls": _img(slug, data.get("image_count", 2)),
+                "image": [],
                 "description": data["description"],
                 "highlights": data["highlights"],
                 "rating": data["rating"],
@@ -736,8 +744,18 @@ class Command(BaseCommand):
             )
             if created:
                 created_count += 1
+                suffix = Path("picsum_image").suffix.lower()
+                object_name = f"listings/{_uid(slug)}/{uuid.uuid4().hex}{suffix}"
+                key = default_storage.save(object_name, _img(slug, 1))
+
+                ListingImage.objects.create(
+                    listing=created,
+                    key=key,
+                    position=0
+                )
             else:
                 existed_count += 1
+
 
         # Summary breakdown
         from collections import Counter

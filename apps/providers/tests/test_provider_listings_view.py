@@ -1,5 +1,7 @@
 import uuid
+from unittest.mock import patch
 
+from django.core.files.uploadedfile import SimpleUploadedFile
 from knox.models import AuthToken
 from rest_framework.test import APIClient, APITestCase
 
@@ -48,6 +50,20 @@ def _listing_payload(**kwargs) -> dict:
     }
     defaults.update(kwargs)
     return defaults
+
+
+def _test_image(name: str = "test.png") -> SimpleUploadedFile:
+    return SimpleUploadedFile(
+        name,
+        (
+            b"\x89PNG\r\n\x1a\n"
+            b"\x00\x00\x00\rIHDR"
+            b"\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00"
+            b"\x90wS\xde\x00\x00\x00\x0cIDAT\x08\x99c`\x00\x00\x00\x02"
+            b"\x00\x01\xe2!\xbc3\x00\x00\x00\x00IEND\xaeB`\x82"
+        ),
+        content_type="image/png",
+    )
 
 
 class ProviderListingCreateTests(APITestCase):
@@ -149,6 +165,7 @@ class ProviderListingCreateTests(APITestCase):
         client = APIClient()
         resp = client.post(LISTINGS_URL, _listing_payload(), format="json")
         self.assertEqual(resp.status_code, 401)
+
 
 
 class ProviderListingListTests(APITestCase):

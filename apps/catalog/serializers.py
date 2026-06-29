@@ -1,10 +1,23 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
+from django.core.files.storage import default_storage
 
 from apps.providers.models import TutorDetail, TutorSubject
 
 from apps.catalog.models import Listing, ListingClient, ListingClientStatus
 
+from apps.catalog.models import Listing, ListingImage
+
+
+
+class ListingImageSerializer(serializers.ModelSerializer):
+    url = serializers.SerializerMethodField()
+    class Meta:
+        model = ListingImage
+        fields = ["id", "url", "position"]
+
+    def get_url(self, obj):
+        return default_storage.url(obj.key)
 
 class ListingCardSerializer(serializers.ModelSerializer):
     """
@@ -20,6 +33,7 @@ class ListingCardSerializer(serializers.ModelSerializer):
     """
 
     distance_km = serializers.SerializerMethodField()
+    image_urls = serializers.SerializerMethodField()
 
     class Meta:
         model = Listing
@@ -49,6 +63,9 @@ class ListingCardSerializer(serializers.ModelSerializer):
         except (TypeError, ValueError):
             return None
 
+    def get_image_urls(self, obj):
+        return [default_storage.url(img.key) for img in obj.images.all()]
+    
 
 class ListingDetailSerializer(ListingCardSerializer):
     """
@@ -62,6 +79,7 @@ class ListingDetailSerializer(ListingCardSerializer):
 
     owner_id = serializers.SerializerMethodField()
     reviews = serializers.SerializerMethodField()
+    images = ListingImageSerializer(many=True, read_only=True)
 
     class Meta(ListingCardSerializer.Meta):
         fields = ListingCardSerializer.Meta.fields + [
@@ -69,6 +87,7 @@ class ListingDetailSerializer(ListingCardSerializer):
             "highlights",
             "owner_id",
             "reviews",
+            "images"
         ]
 
     def get_owner_id(self, obj: Listing) -> str | None:
@@ -82,7 +101,7 @@ class ListingDetailSerializer(ListingCardSerializer):
             obj.reviews.select_related("author").order_by("-created_at")[:10],
             many=True,
         ).data
-
+    
 
 class CategoryCountSerializer(serializers.Serializer):
     """Serializer for GET /api/v1/categories/ — {key, count}."""
