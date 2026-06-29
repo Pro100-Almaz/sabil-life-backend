@@ -242,8 +242,9 @@ class ProviderListingViewSet(
             ]
         return [permissions.IsAuthenticated(), IsMasterclassManagerOrAdmin()]
 
-    def _resolved_status(self, status: ListingStatus) -> str:
+    def _resolved_status(self) -> str:
         """Return the status that should be applied on every provider write."""
+        status = self.request.query_params.get('status', 'DRAFT').upper()
         if status not in {'DRAFT', 'PENDING'}:
             raise serializers.ValidationError({"status": f"Unsupported status '{status}'."})
         
@@ -252,8 +253,7 @@ class ProviderListingViewSet(
         return ListingStatus.DRAFT
 
     def perform_create(self, serializer) -> None:
-        status = self.request.query_params.get('status', 'DRAFT').upper()
-        forced_status = self._resolved_status(status)
+        forced_status = self._resolved_status()
         listing = serializer.save(owner=self.request.user, status=forced_status)
         logger.info(
             "Provider %s created listing %s with status=%s.",
