@@ -8,7 +8,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.request import Request
 from rest_framework.response import Response
 
-from apps.catalog.filters import ListingFilter
+from apps.catalog.filters import ListingFilter, TutorFilter
 from apps.providers.models import TutorDetail, TutorSubject
 
 from apps.catalog.models import Listing, ListingCategory, ListingStatus, ListingClientStatus, ListingClient
@@ -161,14 +161,22 @@ class TutorListViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [permissions.AllowAny]
     serializer_class = TutorCardSerializer
 
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    filterset_class = TutorFilter
+
+    ordering_fields = ["rating", "price_per_hour_qar", "created_at", "years_experience"]
+
     def get_queryset(self):
-        return (
+        qs = (
             TutorDetail.objects
             .select_related("user")
             .filter(user__roles__name=UserRole.TUTOR)
-            .exclude(user=self.request.user)
             .order_by("-rating", "-review_count")
         )
+        if self.request.user.is_authenticated:
+            qs = qs.exclude(user=self.request.user)
+
+        return qs
 
 
 @api_view(["GET"])
