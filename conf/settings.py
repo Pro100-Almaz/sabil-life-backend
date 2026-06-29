@@ -230,7 +230,7 @@ UNFOLD = {
                 "separator": True,
                 "items": [
                     {
-                        "title": _("Provider Verifications"),
+                        "title": _("Provider verifications"),
                         "icon": "badge",
                         "link": reverse_lazy(
                             "admin:providers_providerverification_changelist"

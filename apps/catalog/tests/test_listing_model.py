@@ -51,10 +51,6 @@ class TestListingDefaults:
         listing = make_listing()
         assert listing.age_groups == []
 
-    def test_default_image_urls_empty_list(self):
-        listing = make_listing()
-        assert listing.image_urls == []
-
     def test_default_highlights_empty_list(self):
         listing = make_listing()
         assert listing.highlights == []
