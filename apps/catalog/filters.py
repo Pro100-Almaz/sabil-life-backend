@@ -87,6 +87,7 @@ class TutorFilter(BaseFilter):
         field_name="price_per_hour_qar", lookup_expr="lte"
     )
     trial_available = django_filters.BooleanFilter(field_name="trial_available")
+    city = django_filters.CharFilter(field_name="city")
 
     class Meta:
         model = TutorDetail
