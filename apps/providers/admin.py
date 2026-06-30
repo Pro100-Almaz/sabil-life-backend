@@ -146,6 +146,7 @@ class TutorDetailAdmin(ModelAdmin):
         return obj.user.full_name
 
 
+
 @admin.register(TutorSubject)
 class TutorSubjectAdmin(ModelAdmin):
     list_display = ("name",)
@@ -158,7 +159,7 @@ class ProviderVerificationAdmin(ModelAdmin):
     list_display = (
         "user_email",
         "provider_type",
-        "status",
+        "status_badge",
         "updated_at",
     )
     list_filter = ("status", "provider_type")
@@ -175,6 +176,7 @@ class ProviderVerificationAdmin(ModelAdmin):
         label={
             StatusChoices.APPROVED: "success",
             StatusChoices.PENDING: "warning",
+            StatusChoices.UPDATED: "warning",
             StatusChoices.CANCELLED: "info",
             StatusChoices.REJECTED: "danger",
         },
