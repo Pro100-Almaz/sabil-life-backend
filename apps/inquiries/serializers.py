@@ -79,7 +79,6 @@ class FamilyInquirySerializer(serializers.ModelSerializer):
         }
 
 
-
 class TutorInquirySerializer(serializers.ModelSerializer):
     """
     Serializer for the tutor-side inquiry endpoints.

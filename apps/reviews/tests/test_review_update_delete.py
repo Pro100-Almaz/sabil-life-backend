@@ -27,7 +27,7 @@ def _listing(title="Update Listing"):
 
 
 def _review_url(review_id):
-    return reverse("v1:review-detail", kwargs={"id": str(review_id)})
+    return reverse("v1:review-detail", kwargs={"review_id": str(review_id)})
 
 
 @pytest.mark.django_db
