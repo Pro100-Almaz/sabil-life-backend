@@ -4,7 +4,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-def apply_verification_outcome(verification: ProviderVerification, reviewer = None) -> None:
+def apply_verification_outcome(verification: ProviderVerification, reviewer = None) -> bool:
     approved = verification.status == StatusChoices.APPROVED
     user = verification.user
 
@@ -30,3 +30,4 @@ def apply_verification_outcome(verification: ProviderVerification, reviewer = No
         verification.status,
         "granted" if approved else "revoked",
     )
+    return approved

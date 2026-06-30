@@ -1,10 +1,30 @@
+from django import forms
 from django.contrib import admin, messages
+from django.contrib.admin.helpers import ACTION_CHECKBOX_NAME
+from django.template.response import TemplateResponse
 from django.utils.translation import gettext_lazy as _
 from unfold.admin import ModelAdmin
 from unfold.decorators import action, display
+from unfold.widgets import UnfoldAdminTextareaWidget
 
 from apps.providers.models import ProviderVerification, TutorDetail, TutorSubject, StatusChoices
 from apps.providers.services import apply_verification_outcome
+
+
+class RejectionForm(forms.Form):
+    """Message the reviewer must write for the applicant(s) when rejecting."""
+
+    comment = forms.CharField(
+        label=_("Message to the applicant"),
+        widget=UnfoldAdminTextareaWidget(attrs={"rows": 5}),
+        required=True,
+        strip=True,
+        help_text=_(
+            "Explain why the application was rejected. "
+            "The applicant will see this message. "
+            "The same message is sent to every selected applicant."
+        ),
+    )
 
 _MUTABLE_FOR_APPROVE = {StatusChoices.PENDING, StatusChoices.REJECTED}
 _MUTABLE_FOR_REJECT = {
@@ -50,31 +70,56 @@ def approve_provider_request(modeladmin, request, queryset):
     icon="cancel",
 )
 def reject_provider_request(modeladmin, request, queryset):
-    eligible = queryset.filter(status__in=_MUTABLE_FOR_REJECT)
-    skipped = queryset.exclude(status__in=_MUTABLE_FOR_REJECT).count()
-    
-    rejected = 0
-    for verification in eligible:
-        verification.status = StatusChoices.REJECTED
-        verification.comment = ""
-        verification.save(update_fields=["status", "comment", "updated_at"])
-        apply_verification_outcome(verification, request.user)
-        rejected += 1
+    # Phase 2: the reviewer submitted the intermediate page with their message.
+    if "apply" in request.POST:
+        form = RejectionForm(request.POST)
+        if form.is_valid():
+            comment = form.cleaned_data["comment"]
+            eligible = queryset.filter(status__in=_MUTABLE_FOR_REJECT)
+            skipped = queryset.exclude(status__in=_MUTABLE_FOR_REJECT).count()
 
+            rejected = 0
+            for verification in eligible:
+                verification.status = StatusChoices.REJECTED
+                verification.comment = comment
+                verification.save(update_fields=["status", "comment", "updated_at"])
+                apply_verification_outcome(verification, request.user)
+                rejected += 1
 
-    if rejected:
-        modeladmin.message_user(
-            request,
-            _("%(n)d verification(s) rejected.") % {"n": rejected},
-            messages.SUCCESS,
-        )
-    if skipped:
-        modeladmin.message_user(
-            request,
-            _("%(n)d verification(s) was already REJECTED")
-            % {"n": skipped},
-            messages.WARNING,
-        )
+            if rejected:
+                modeladmin.message_user(
+                    request,
+                    _("%(n)d verification(s) rejected.") % {"n": rejected},
+                    messages.SUCCESS,
+                )
+            if skipped:
+                modeladmin.message_user(
+                    request,
+                    _("%(n)d verification(s) were not eligible for rejection.")
+                    % {"n": skipped},
+                    messages.WARNING,
+                )
+            # Returning None redirects back to the changelist.
+            return None
+    else:
+        # Phase 1: first click — show the form pre-filtered to eligible rows.
+        form = RejectionForm()
+
+    return TemplateResponse(
+        request,
+        "admin/providers/reject_verification.html",
+        {
+            **modeladmin.admin_site.each_context(request),
+            "title": _("Reject provider verifications"),
+            "verifications": queryset,
+            "form": form,
+            "queryset": queryset,
+            "action_name": "reject_provider_request",
+            "action_checkbox_name": ACTION_CHECKBOX_NAME,
+            "media": modeladmin.media + form.media,
+            "opts": modeladmin.model._meta,
+        },
+    )
 
 
 @admin.register(TutorDetail)
