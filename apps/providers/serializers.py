@@ -143,7 +143,6 @@ class ProviderListingSerializer(serializers.ModelSerializer):
             "review_count",
             "status",
             "owner_id",
-            # Phase 5 private fields — writable by the provider, never in public API
             "session_schedule",
             "exact_address",
             "materials_required",
