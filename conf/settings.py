@@ -230,11 +230,6 @@ UNFOLD = {
                 "separator": True,
                 "items": [
                     {
-<<<<<<< HEAD
-                        "title": _("Provider verifications"),
-                        "icon": "badge",
-                        "link": reverse_lazy(
-=======
                         "title": _("Tutor details"),
                         "icon": "badge",
                         "link": reverse_lazy(
@@ -252,7 +247,6 @@ UNFOLD = {
                         "title": _("Provider verifications"),
                         "icon": "verified",
                         "link": reverse_lazy(
->>>>>>> 00f05f0ea3801952c8615d4ca48705fb1474e623
                             "admin:providers_providerverification_changelist"
                         ),
                     },
