@@ -3,14 +3,21 @@ Catalog admin — Phase 3: moderation actions, status badge, image preview,
 list display improvements, fieldsets, and empty-value display.
 """
 
+import uuid
+from pathlib import Path
+
+from django import forms
 from django.contrib import admin, messages
+from django.core.files.storage import default_storage
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 from unfold.admin import ModelAdmin
 from unfold.decorators import action, display
 
-from apps.catalog.models import Listing, ListingStatus
+from unfold.admin import ModelAdmin, TabularInline   # unfold-styled inline
 
+from apps.catalog.models import Listing, ListingImage, ListingStatus
+from apps.catalog.services import delete_listing, delete_listing_image
 # ---------------------------------------------------------------------------
 # Bulk moderation actions
 # ---------------------------------------------------------------------------
@@ -21,6 +28,36 @@ _MUTABLE_FOR_REJECT = {
     ListingStatus.PENDING,
     ListingStatus.ACTIVE,
 }
+
+
+class MultipleImageInput(forms.ClearableFileInput):
+    allow_multiple_selected = True
+
+
+class MultipleImageField(forms.ImageField):
+    widget = MultipleImageInput
+
+    def clean(self, data, initial=None):
+        single_clean = super().clean
+        if not data:
+            return []
+        if isinstance(data, (list, tuple)):
+            return [single_clean(item, initial) for item in data]
+        return [single_clean(data, initial)]
+
+
+class ListingAdminForm(forms.ModelForm):
+    uploaded_images = MultipleImageField(required=False, label=_("Upload images"))
+
+    class Meta:
+        model = Listing
+        fields = "__all__"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["uploaded_images"].widget.attrs.update(
+            {"multiple": True, "accept": "image/*"}
+        )
 
 
 @action(
@@ -93,9 +130,27 @@ def unmark_featured(modeladmin, request, queryset):
 # ListingAdmin
 # ---------------------------------------------------------------------------
 
+class ListingImageInline(TabularInline):
+    model = ListingImage
+    extra = 0 
+    fields = ("thumb", "key", "position")
+    readonly_fields = ("thumb", "key")
+    ordering = ("position", "created_at")
+
+    @admin.display(description=_("Preview"))
+    def thumb(self, obj: ListingImage) -> str:
+        if not obj.key:
+            return "-"
+        return format_html(
+            '<img src="{}" style="height:60px;width:90px;'
+            'object-fit:cover;border-radius:4px;"/>',
+            default_storage.url(obj.key),
+        )
 
 @admin.register(Listing)
 class ListingAdmin(ModelAdmin):
+    form = ListingAdminForm
+    inlines = [ListingImageInline]
     actions = [approve_listings, reject_listings, mark_featured, unmark_featured]
 
     # List view -----------------------------------------------------------
@@ -117,7 +172,7 @@ class ListingAdmin(ModelAdmin):
     empty_value_display = "—"
 
     # Detail form ---------------------------------------------------------
-    readonly_fields = ("id", "created_at", "updated_at", "image_preview")
+    readonly_fields = ("id", "created_at", "updated_at")
 
     fieldsets = (
         (
@@ -135,8 +190,7 @@ class ListingAdmin(ModelAdmin):
                     "description",
                     "highlights",
                     "age_groups",
-                    "image_urls",
-                    "image_preview",
+                    "uploaded_images",
                     "session_schedule",
                     "exact_address",
                     "materials_required",
@@ -168,23 +222,35 @@ class ListingAdmin(ModelAdmin):
     def status_badge(self, obj: Listing):
         return obj.status, obj.get_status_display()
 
-    @admin.display(description=_("Images"))
-    def image_preview(self, obj: Listing) -> str:
-        urls = (obj.image_urls or [])[:3]
-        if not urls:
-            return "—"
-        imgs = "".join(
-            format_html(
-                '<img src="{url}" style="'
-                "height:60px;"
-                "width:90px;"
-                "object-fit:cover;"
-                "border-radius:4px;"
-                "margin-right:6px;"
-                '"/>',
-                url=url,
-            )
-            for url in urls
-        )
-        wrapper = '<div style="display:flex;flex-wrap:wrap;gap:4px;">{}</div>'
-        return format_html(wrapper, imgs)
+    def save_model(self, request, obj: Listing, form: ListingAdminForm, change: bool) -> None:
+        super().save_model(request, obj, form, change)
+
+        uploaded_images = request.FILES.getlist("uploaded_images") or []
+        if not uploaded_images:
+            return
+
+        start = obj.images.count()
+        for i, uploaded_image in enumerate(uploaded_images):
+            suffix = Path(uploaded_image.name).suffix.lower()
+            object_name = f"listings/{obj.id}/{uuid.uuid4().hex}{suffix}"
+            key = default_storage.save(object_name, uploaded_image)
+            ListingImage.objects.create(listing=obj, key=key, position=start + i)
+
+    def save_formset(self, request, form, formset, change):
+        if formset.model is ListingImage:
+            instances = formset.save(commit=False)
+            for obj in formset.deleted_objects:
+                delete_listing_image(obj)
+            for instance in instances:
+                instance.save()
+
+            formset.save_m2m()
+        else:
+            super().save_formset(request, form, formset, change)
+
+    def delete_model(self, request, obj):
+        delete_listing(obj)
+
+    def delete_queryset(self, request, queryset):
+        for listing in queryset:
+            delete_listing(listing)

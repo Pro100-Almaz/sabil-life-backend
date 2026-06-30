@@ -34,7 +34,7 @@ _LISTING_CARD_EXAMPLE = {
     "rating": "4.8",
     "review_count": 24,
     "price_from_qar": 150,
-    "image_urls": ["https://picsum.photos/seed/bmt/400/300"],
+    "images": [],
     "age_groups": ["8-12", "12-16"],
     "is_featured": True,
     "distance_km": 1.23,

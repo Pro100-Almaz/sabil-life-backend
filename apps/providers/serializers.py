@@ -1,6 +1,8 @@
+from django.core.files.storage import default_storage
 from rest_framework import serializers
 
 from apps.catalog.models import Listing, ListingCategory
+from apps.catalog.serializers import ListingImageSerializer
 from apps.users.enums import UserRole
 
 from apps.providers.models import ProviderVerification, StatusChoices, TutorDetail
@@ -117,6 +119,8 @@ class ProviderListingSerializer(serializers.ModelSerializer):
     """
 
     owner_id = serializers.SerializerMethodField(read_only=True)
+    images = ListingImageSerializer(many=True, read_only=True)
+    image_urls = serializers.SerializerMethodField()
 
     class Meta:
         model = Listing
@@ -131,6 +135,7 @@ class ProviderListingSerializer(serializers.ModelSerializer):
             "price_from_qar",
             "age_groups",
             "image_urls",
+            "images",
             "description",
             "highlights",
             "is_featured",
@@ -182,7 +187,9 @@ class ProviderListingSerializer(serializers.ModelSerializer):
                 f"Your roles do not allow creating listings in the {value} category."
             )
         return value
-
+    
+    def get_image_urls(self, obj):
+        return [default_storage.url(img.key) for img in obj.images.all()]
 
 # ---------------------------------------------------------------------------
 # Provider Verification
