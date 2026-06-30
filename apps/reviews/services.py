@@ -64,6 +64,43 @@ def can_review(user, listing) -> bool:
     return True
 
 
+def can_review_tutor(user, tutor) -> bool:
+    """
+    Return True if the user may post a review on the given tutor.
+
+    Engagement gate: the family must have at least one Inquiry with this tutor
+    in CONTACTED, ACCEPTED, or COMPLETED. Callers should also verify
+    role=FAMILY at the view layer.
+    """
+    from apps.inquiries.models import Inquiry, InquiryStatus
+
+    return Inquiry.objects.filter(
+        family=user,
+        tutor=tutor,
+        status__in=[
+            InquiryStatus.CONTACTED,
+            InquiryStatus.ACCEPTED,
+            InquiryStatus.COMPLETED,
+        ],
+    ).exists()
+
+
+def recompute_tutor_rating(tutor) -> None:
+    """
+    Recompute denormalized rating + review_count on a TutorDetail.
+
+    Idempotent. Called after TutorReview save/delete via the
+    post_save/post_delete signal in signals.py.
+    """
+    aggregate = tutor.tutor_reviews.aggregate(
+        avg=Avg("rating"),
+        count=Count("id"),
+    )
+    tutor.rating = round(aggregate["avg"] or 0, 1)
+    tutor.review_count = aggregate["count"] or 0
+    tutor.save(update_fields=["rating", "review_count", "updated_at"])
+
+
 def recompute_listing_rating(listing) -> None:
     """
     Recompute denormalized rating + review_count on a Listing.

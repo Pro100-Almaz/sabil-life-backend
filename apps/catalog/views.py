@@ -162,13 +162,16 @@ class TutorListViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = TutorCardSerializer
 
     def get_queryset(self):
-        return (
+        qs = (
             TutorDetail.objects
             .select_related("user")
             .filter(user__roles__name=UserRole.TUTOR)
-            .exclude(user=self.request.user)
             .order_by("-rating", "-review_count")
         )
+        if self.request.user.is_authenticated:
+            qs = qs.exclude(user=self.request.user)
+
+        return qs
 
 
 @api_view(["GET"])
