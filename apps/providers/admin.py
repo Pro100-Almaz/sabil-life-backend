@@ -26,10 +26,15 @@ class RejectionForm(forms.Form):
         ),
     )
 
-_MUTABLE_FOR_APPROVE = {StatusChoices.PENDING, StatusChoices.REJECTED}
+_MUTABLE_FOR_APPROVE = {
+    StatusChoices.PENDING,
+    StatusChoices.REJECTED,
+    StatusChoices.UPDATED
+}
 _MUTABLE_FOR_REJECT = {
     StatusChoices.PENDING,
-    StatusChoices.APPROVED
+    StatusChoices.APPROVED,
+    StatusChoices.UPDATED,
 }
 
 @action(
