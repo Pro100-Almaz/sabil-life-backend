@@ -5,7 +5,7 @@ from pathlib import Path
 from django.core.files.storage import default_storage
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema, extend_schema_view
-from rest_framework import generics, mixins, permissions, viewsets, status, views
+from rest_framework import generics, mixins, permissions, viewsets, status, views, serializers
 import rest_framework.exceptions
 from rest_framework import parsers
 import rest_framework.status
@@ -245,7 +245,11 @@ class ProviderListingViewSet(
 
     def _resolved_status(self) -> str:
         """Return the status that should be applied on every provider write."""
-        if self.request.user.is_verified:
+        status = self.request.query_params.get('status', 'DRAFT').upper()
+        if status not in {'DRAFT', 'PENDING'}:
+            raise serializers.ValidationError({"status": f"Unsupported status '{status}'."})
+        
+        if self.request.user.is_verified and status != ListingStatus.DRAFT:
             return ListingStatus.PENDING
         return ListingStatus.DRAFT
 

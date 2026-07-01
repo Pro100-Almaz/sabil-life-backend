@@ -70,7 +70,7 @@ class ProviderListingCreateTests(APITestCase):
     def test_verified_masterclass_creates_masterclasses_listing(self):
         user = make_user(roles=[UserRole.MASTERCLASS], verified=True)
         client = auth_client(user)
-        resp = client.post(LISTINGS_URL, _listing_payload(), format="json")
+        resp = client.post(f"{LISTINGS_URL}?status=PENDING", _listing_payload(), format="json")
         self.assertEqual(resp.status_code, 201)
         self.assertEqual(resp.data["status"], ListingStatus.PENDING)
         self.assertEqual(resp.data["owner_id"], str(user.id))
@@ -142,7 +142,7 @@ class ProviderListingCreateTests(APITestCase):
         payload["status"] = ListingStatus.ACTIVE
         resp = client.post(LISTINGS_URL, payload, format="json")
         self.assertEqual(resp.status_code, 201)
-        self.assertEqual(resp.data["status"], ListingStatus.PENDING)
+        self.assertEqual(resp.data["status"], ListingStatus.DRAFT)
 
     def test_owner_in_body_is_ignored(self):
         """Any owner value in the body must be discarded; owner = caller."""
@@ -231,7 +231,7 @@ class ProviderListingUpdateTests(APITestCase):
         )
         client = auth_client(user)
         resp = client.patch(
-            f"{LISTINGS_URL}{listing.id}/",
+            f"{LISTINGS_URL}{listing.id}/?status=PENDING",
             {"title": "New Title"},
             format="json",
         )
@@ -325,7 +325,7 @@ class ProviderListingPublicVisibilityTests(APITestCase):
     def test_pending_listing_not_visible_in_public_api(self):
         user = make_user(roles=[UserRole.MASTERCLASS], verified=True)
         client = auth_client(user)
-        resp = client.post(LISTINGS_URL, _listing_payload(title="Hidden"), format="json")
+        resp = client.post(f"{LISTINGS_URL}?status=PENDING", _listing_payload(title="Hidden"), format="json")
         self.assertEqual(resp.status_code, 201)
         self.assertEqual(resp.data["status"], ListingStatus.PENDING)
 
