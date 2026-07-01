@@ -63,6 +63,7 @@ class TutorDetail(models.Model):
     deleted_at = models.DateTimeField(_("deleted at"), null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    city = models.CharField(_("city"), max_length=120, blank=True, null=True)
 
     class Meta:
         verbose_name = _("tutor detail")
