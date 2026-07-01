@@ -23,6 +23,7 @@ from rest_framework.generics import get_object_or_404
 from apps.inquiries.models import Inquiry, InquiryStatus
 from apps.inquiries.services import TUTOR_SETTABLE_STATUSES
 from apps.providers.models import TutorDetail
+from apps.reviews.models import TutorReview
 
 
 def _tutor_block(obj: Inquiry) -> dict:
@@ -47,6 +48,7 @@ class FamilyInquirySerializer(serializers.ModelSerializer):
 
     tutor_id = serializers.IntegerField(source="tutor.id", read_only=True)
     tutor = serializers.SerializerMethodField()
+    review = serializers.SerializerMethodField()
 
     class Meta:
         model = Inquiry
@@ -59,11 +61,22 @@ class FamilyInquirySerializer(serializers.ModelSerializer):
             "contact_revealed",
             "created_at",
             "updated_at",
+            "review",
         ]
         read_only_fields = fields
 
     def get_tutor(self, obj: Inquiry) -> dict:
         return _tutor_block(obj)
+
+    def get_review(self, obj: Inquiry) -> dict:
+        review = TutorReview.objects.filter(tutor=obj.tutor, author=obj.family).first()
+        if not review:
+            return {}
+        return {
+            "id": review.id,
+            "rating": review.rating,
+            "text": review.text,
+        }
 
 
 class TutorInquirySerializer(serializers.ModelSerializer):
