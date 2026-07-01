@@ -1,0 +1,63 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls unfold %}
+
+{% block extrahead %}
+    {{ block.super }}
+    {{ media }}
+{% endblock %}
+
+{% block bodyclass %}{{ block.super }} app-{{ opts.app_label }} model-{{ opts.model_name }}{% endblock %}
+
+{% block content %}
+    <form method="post">
+        {% csrf_token %}
+
+        {# Re-submit the rows selected on the changelist and re-target this action. #}
+        {% for verification in queryset %}
+            <input type="hidden" name="{{ action_checkbox_name }}" value="{{ verification.pk }}">
+        {% endfor %}
+        <input type="hidden" name="action" value="{{ action_name }}">
+        <input type="hidden" name="apply" value="1">
+
+        <div class="border border-base-200 rounded-default shadow-xs dark:border-base-800">
+            <p class="font-semibold p-4 text-font-important-light dark:text-font-important-dark">
+                {% blocktranslate count counter=queryset|length %}You are about to reject {{ counter }} application. The message below will be sent to the applicant.{% plural %}You are about to reject {{ counter }} applications. The same message below will be sent to every applicant.{% endblocktranslate %}
+            </p>
+
+            <div class="border-t border-base-200 p-4 dark:border-base-800">
+                <ul class="leading-relaxed text-sm">
+                    {% for verification in queryset %}
+                        <li>{{ verification.user.email }} — {{ verification.get_provider_type_display }} ({{ verification.get_status_display }})</li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <div class="border-t border-base-200 p-4 dark:border-base-800">
+                {% if form.comment.errors %}
+                    <p class="text-red-600 text-sm mb-2">{{ form.comment.errors|striptags }}</p>
+                {% endif %}
+
+                <label for="{{ form.comment.id_for_label }}" class="block font-semibold mb-2 text-font-important-light dark:text-font-important-dark">
+                    {{ form.comment.label }}
+                </label>
+                {{ form.comment }}
+                {% if form.comment.help_text %}
+                    <p class="text-font-subtle-light dark:text-font-subtle-dark text-sm mt-2">{{ form.comment.help_text }}</p>
+                {% endif %}
+            </div>
+
+            <div class="border-t border-base-200 px-4 py-3 dark:border-base-800">
+                <div class="flex flex-col gap-3 items-center w-full lg:flex-row">
+                    {% url opts|admin_urlname:'changelist' as changelist_url %}
+                    {% component "unfold/components/button.html" with href=changelist_url variant="default" class="w-full lg:mb-0 lg:w-auto" %}
+                        {% trans "No, take me back" %}
+                    {% endcomponent %}
+
+                    {% component "unfold/components/button.html" with submit=1 variant="danger" class="w-full lg:ml-auto lg:w-auto" %}
+                        {% trans "Reject and send message" %}
+                    {% endcomponent %}
+                </div>
+            </div>
+        </div>
+    </form>
+{% endblock %}
