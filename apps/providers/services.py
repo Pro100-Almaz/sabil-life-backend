@@ -30,4 +30,12 @@ def apply_verification_outcome(verification: ProviderVerification, reviewer = No
         verification.status,
         "granted" if approved else "revoked",
     )
+
+    # Fire-and-forget: notify the applicant of the outcome. Imported locally to
+    # avoid an app-loading circular import; .delay() keeps the admin action from
+    # blocking on (or breaking because of) push delivery.
+    from apps.notifications.tasks import notify_verification_result
+
+    notify_verification_result.delay(verification.id)
+
     return approved

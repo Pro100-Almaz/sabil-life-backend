@@ -28,6 +28,7 @@ dependencies = [
     "django-import-export>=4.3.0",
     "django-storages[s3]>=1.14.6",
     "Pillow>=11.0.0",
+    "firebase-admin>=6.5.0",
 ]
 
 [build-system]

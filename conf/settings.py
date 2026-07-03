@@ -119,6 +119,7 @@ INSTALLED_APPS = [
     "apps.suggestions",
     "apps.reviews",
     "apps.favorites",
+    "apps.notifications",
 ]
 
 MIDDLEWARE = [
@@ -445,6 +446,13 @@ CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = "UTC"
 CELERY_RESULT_EXTENDED = True
+
+# -----------------------------------------------------------------------------
+# Push notifications (Firebase Cloud Messaging)
+# -----------------------------------------------------------------------------
+PUSH_NOTIFICATIONS_ENABLED = env.bool("PUSH_NOTIFICATIONS_ENABLED", default=False)
+# Either an absolute path to the service-account JSON, or the raw JSON string.
+FIREBASE_CREDENTIALS = env("FIREBASE_CREDENTIALS", default="")
 
 # -----------------------------------------------------------------------------
 # Email
