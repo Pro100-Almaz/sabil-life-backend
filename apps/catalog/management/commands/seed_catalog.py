@@ -11,11 +11,10 @@ stable slug fed through uuid.uuid5() so the UUID is always the same.
 import uuid
 import requests
 
-from pathlib import Path
 from decimal import Decimal
 
-from django.http import Http404
 from django.core.management.base import BaseCommand
+from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 
 from apps.catalog.models import Listing, ListingCategory, ListingStatus, ListingImage
@@ -54,13 +53,20 @@ def _get_or_create_seed_provider(email: str, role: str, label: str) -> CustomUse
     return user
 
 
-async def _img(slug: str, n: int = 2) -> list[ListingImage]:
-    """Return n ListingImage objects"""
-    url = f"https://picsum.photos/seed/{slug}-{1}/800/600"
+def _fetch_image(slug: str, index: int) -> ContentFile | None:
+    """Best-effort fetch of a placeholder image for a seeded listing.
+
+    Returns a ContentFile ready for default_storage.save(), or None when the
+    image can't be fetched (e.g. seeding offline / in CI). Seeding must never
+    fail just because the network is unavailable, so callers skip on None.
+    """
+    url = f"https://picsum.photos/seed/{slug}-{index}/800/600"
     try:
-        return requests.get(url).content 
-    except:
-        raise Http404("Image not found")
+        resp = requests.get(url, timeout=10)
+        resp.raise_for_status()
+        return ContentFile(resp.content)
+    except requests.RequestException:
+        return None
 
 # ---------------------------------------------------------------------------
 # Listing data — 24 entries, easy to scan / review
@@ -730,7 +736,6 @@ class Command(BaseCommand):
                 "lng": data["lng"],
                 "price_from_qar": data["price_from_qar"],
                 "age_groups": data["age_groups"],
-                "image": [],
                 "description": data["description"],
                 "highlights": data["highlights"],
                 "rating": data["rating"],
@@ -739,20 +744,12 @@ class Command(BaseCommand):
                 "status": ListingStatus.ACTIVE,
                 "owner": category_owner.get(data["category"]),
             }
-            _, created = Listing.objects.update_or_create(
+            listing, created = Listing.objects.update_or_create(
                 id=listing_id, defaults=defaults
             )
             if created:
                 created_count += 1
-                suffix = Path("picsum_image").suffix.lower()
-                object_name = f"listings/{_uid(slug)}/{uuid.uuid4().hex}{suffix}"
-                key = default_storage.save(object_name, _img(slug, 1))
-
-                ListingImage.objects.create(
-                    listing=created,
-                    key=key,
-                    position=0
-                )
+                self._seed_images(listing, slug, data.get("image_count", 1))
             else:
                 existed_count += 1
 
@@ -780,6 +777,25 @@ class Command(BaseCommand):
                 f"— password '{SEED_PROVIDER_PASSWORD}' (dev only)."
             )
         )
+
+    def _seed_images(self, listing: Listing, slug: str, count: int) -> None:
+        """Attach up to `count` placeholder images to a freshly-created listing.
+
+        Best-effort: any image that can't be fetched is skipped so seeding
+        still succeeds offline. Positions stay contiguous from 0 to satisfy
+        the (listing, position) unique constraint.
+        """
+        position = 0
+        for index in range(1, count + 1):
+            content = _fetch_image(slug, index)
+            if content is None:
+                continue
+            object_name = f"listings/{listing.id}/{uuid.uuid4().hex}.jpg"
+            key = default_storage.save(object_name, content)
+            ListingImage.objects.create(
+                listing=listing, key=key, position=position
+            )
+            position += 1
 
     def _handle_count(self):
         existing_ids = set(

@@ -10,7 +10,7 @@ Database seeding is the process of populating a database with initial data. This
 
 ## The `seed` Management Command
 
-This project includes a powerful custom Django management command, `seed`, located at `apps/core/management/commands/seed.py`. This command allows you to easily populate your database with sample user data.
+This project includes a powerful custom Django management command, `seed`, located at `apps/core/management/commands/seed.py`. This command populates your database with sample **users** and, by default, the full **catalog of listings** — every category (schools, nurseries, activities, entertainment, partnerships) plus provider-owned tutoring and masterclasses. Listing seeding is delegated to the idempotent `seed_catalog` command, so it is safe to run `seed` repeatedly.
 
 ### Usage
 
@@ -38,9 +38,13 @@ The `seed` command supports the following arguments:
 
     *   **Example:** `python manage.py seed --superuser` (Creates an admin user)
 
-*   `--clean`: A flag that, when present, deletes all existing non-superuser user data from the database before seeding. This is useful for starting with a fresh dataset.
+*   `--clean`: A flag that, when present, deletes all existing non-superuser user data (and previously-seeded listings) from the database before seeding. This is useful for starting with a fresh dataset.
 
     *   **Example:** `python manage.py seed --clean` (Deletes existing data before seeding)
+
+*   `--no-listings`: A flag that skips seeding the catalog listings, so only users are created.
+
+    *   **Example:** `python manage.py seed --no-listings` (Creates users only)
 
 ### Combined Examples
 
