@@ -199,3 +199,6 @@ cython_debug/
 .omc
 
 media_root/
+
+#secrets
+secrets/
