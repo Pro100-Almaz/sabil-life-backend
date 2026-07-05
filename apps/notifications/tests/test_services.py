@@ -46,7 +46,7 @@ class NotifyUserTests(TestCase):
             user=self.user, fcm_token="tok", platform=Platform.ANDROID
         )
         fake_messaging = MagicMock()
-        with patch("firebase_admin.messaging", fake_messaging, create=True):
+        with patch.object(services, "messaging", fake_messaging):
             services.send_push_to_user(self.user, "t", "b", {})
         fake_messaging.send_each_for_multicast.assert_not_called()
 
@@ -82,8 +82,8 @@ class SendPushTests(TestCase):
                 ),
             ]
         )
-        with patch.object(services, "_get_firebase_app", return_value=object()), patch(
-            "firebase_admin.messaging", fake, create=True
+        with patch.object(services, "_get_firebase_app", return_value=object()), patch.object(
+            services, "messaging", fake
         ):
             services.send_push_to_user(self.user, "t", "b", {"k": 1})
 
@@ -97,8 +97,8 @@ class SendPushTests(TestCase):
                 SimpleNamespace(success=True, exception=None),
             ]
         )
-        with patch.object(services, "_get_firebase_app", return_value=object()), patch(
-            "firebase_admin.messaging", fake, create=True
+        with patch.object(services, "_get_firebase_app", return_value=object()), patch.object(
+            services, "messaging", fake
         ):
             services.send_push_to_user(self.user, "t", "b", {"k": 1})
         fake.send_each_for_multicast.assert_called_once()
@@ -106,8 +106,8 @@ class SendPushTests(TestCase):
     def test_no_active_devices_skips_send(self):
         Device.objects.filter(user=self.user).update(is_active=False)
         fake = MagicMock()
-        with patch.object(services, "_get_firebase_app", return_value=object()), patch(
-            "firebase_admin.messaging", fake, create=True
+        with patch.object(services, "_get_firebase_app", return_value=object()), patch.object(
+            services, "messaging", fake
         ):
             services.send_push_to_user(self.user, "t", "b", {})
         fake.send_each_for_multicast.assert_not_called()
