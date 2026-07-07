@@ -1,5 +1,13 @@
 from conf.settings import *  # noqa
 
+# Never attempt real FCM delivery in tests (feed rows are still written).
+PUSH_NOTIFICATIONS_ENABLED = False  # noqa
+
+# Run Celery tasks synchronously in-process — .delay() must never reach a broker
+# during tests, and task failures should surface as test failures.
+CELERY_TASK_ALWAYS_EAGER = True  # noqa
+CELERY_TASK_EAGER_PROPAGATES = True  # noqa
+
 # Use local memory cache so throttles don't persist across test runs
 CACHES = {
     "default": {

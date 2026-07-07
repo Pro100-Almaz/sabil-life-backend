@@ -54,9 +54,9 @@ def _make_listing(**kwargs):
     return Listing.objects.create(**defaults)
 
 
-def _request(rf, superuser):
+def _request(rf, superuser, data=None):
     """Build a fake POST request with the superuser attached."""
-    request = rf.post("/admin/")
+    request = rf.post("/admin/", data or {})
     request.user = superuser
     # Django's message framework requires session + _messages on the request.
     from django.contrib.messages.storage.fallback import FallbackStorage
@@ -110,24 +110,29 @@ class TestApproveListings:
 
 
 class TestRejectListings:
+    # Rejecting is a two-step flow: the confirmation form must be submitted
+    # with `apply` and a required `comment` message to the applicant.
+    REJECT_DATA = {"apply": "1", "comment": "Does not meet our guidelines."}
+
     def test_pending_becomes_rejected(self, rf, superuser, admin_instance):
         listing = _make_listing(status=ListingStatus.PENDING)
         qs = Listing.objects.filter(id=listing.id)
-        reject_listings(admin_instance, _request(rf, superuser), qs)
+        reject_listings(admin_instance, _request(rf, superuser, self.REJECT_DATA), qs)
         listing.refresh_from_db()
         assert listing.status == ListingStatus.REJECTED
+        assert listing.comment == self.REJECT_DATA["comment"]
 
     def test_active_becomes_rejected(self, rf, superuser, admin_instance):
         listing = _make_listing(status=ListingStatus.ACTIVE)
         qs = Listing.objects.filter(id=listing.id)
-        reject_listings(admin_instance, _request(rf, superuser), qs)
+        reject_listings(admin_instance, _request(rf, superuser, self.REJECT_DATA), qs)
         listing.refresh_from_db()
         assert listing.status == ListingStatus.REJECTED
 
     def test_already_rejected_unchanged(self, rf, superuser, admin_instance):
         listing = _make_listing(status=ListingStatus.REJECTED)
         qs = Listing.objects.filter(id=listing.id)
-        reject_listings(admin_instance, _request(rf, superuser), qs)
+        reject_listings(admin_instance, _request(rf, superuser, self.REJECT_DATA), qs)
         listing.refresh_from_db()
         assert listing.status == ListingStatus.REJECTED
 

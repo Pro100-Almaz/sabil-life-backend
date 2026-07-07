@@ -10,7 +10,7 @@ from django.conf import settings
 from apps.providers.models import TutorDetail
 
 from apps.inquiries.models import Inquiry, InquiryStatus
-
+from apps.notifications.tasks import notify_inquiry_result
 # Statuses a TUTOR is allowed to move an inquiry into.
 TUTOR_SETTABLE_STATUSES: frozenset[str] = frozenset(
     {
@@ -60,12 +60,17 @@ def create_inquiry(family, tutor: TutorDetail, message: str) -> Inquiry:
     """
     if tutor.deleted_at is not None:
         raise ValueError("This tutor is no longer available.")
-    return Inquiry.objects.create(
+    
+    inquiry = Inquiry.objects.create(
         family=family,
         tutor=tutor,
         message=message,
         status=InquiryStatus.NEW,
     )
+
+    notify_inquiry_result.delay(inquiry.id)
+
+    return inquiry
 
 
 def transition(inquiry: Inquiry, action: str, *, actor) -> Inquiry:
@@ -92,4 +97,6 @@ def transition(inquiry: Inquiry, action: str, *, actor) -> Inquiry:
     if action == InquiryStatus.ACCEPTED and not settings.BILLING_GATE_ENABLED:
         inquiry.contact_revealed = True
         inquiry.save(update_fields=["contact_revealed", "updated_at"])
+
+    notify_inquiry_result.delay(inquiry.id)
     return inquiry
