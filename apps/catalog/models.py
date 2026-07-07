@@ -61,6 +61,7 @@ class Listing(models.Model):
         on_delete=models.SET_NULL,
         related_name="listings",
     )
+    comment = models.TextField(blank=True)
     # --- Phase 5 private fields (never exposed on public catalog endpoints) ---
     session_schedule = models.TextField(blank=True, default="")
     exact_address = models.TextField(blank=True, default="")
@@ -68,6 +69,7 @@ class Listing(models.Model):
     # -------------------------------------------------------------------------
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
 
     class Meta:
         ordering = ["-is_featured", "-created_at"]

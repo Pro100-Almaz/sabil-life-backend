@@ -42,6 +42,10 @@ class Device(models.Model):
 class NotificationType(models.TextChoices):
     PROVIDER_APPROVED = "PROVIDER_APPROVED", _("Provider application approved")
     PROVIDER_REJECTED = "PROVIDER_REJECTED", _("Provider application rejected")
+    LISTING_APPROVED = "LISTING_APPROVED", _("Listing applicatoin approved") 
+    LISTING_REJECTED = "LISTING_REJECTED", _("Listing application rejected")
+    INQUIRY_RESPONSE = "INQUIRY_RESPONSE", _("Inquiry responded")
+    INQUIRY_REQUEST = "INQUIRY_REQUEST", _("Inquiry requested")
 
 
 class Notification(models.Model):
