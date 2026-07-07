@@ -25,12 +25,13 @@ def notify_inquiry_result(self, inquiryId: str) -> None:
     Notify Provider with iquiry and family user with inquiry results.
     """
     try:
-        inquiry = Inquiry.objects.select_related("user").get(
+        inquiry = Inquiry.objects.select_related("family", "tutor__user").get(
             id = inquiryId
         )
-    except Listing.DoesNotExist:
-        logger.warning("Inquiry %s does not exist; skippig", inquiryId)
-    
+    except Inquiry.DoesNotExist:
+        logger.warning("Inquiry %s does not exist; skipping", inquiryId)
+        return
+
     if inquiry.status in ProviderResponse:
         ntype = NotificationType.INQUIRY_RESPONSE
         title = _("Inquiry answered")
@@ -55,7 +56,7 @@ def notify_inquiry_result(self, inquiryId: str) -> None:
         title=title,
         body=body,
         data={
-            "inquiry_id": inquiry.id,
+            "inquiry_id": str(inquiry.id),
             "status": inquiry.status,
         }
     )
@@ -71,6 +72,10 @@ def notify_review_result(self, listingId: str, comment: str = None) -> None:
         )
     except Listing.DoesNotExist:
         logger.warning("Listing %s does not exist; skipping", listingId)
+        return
+
+    if listing.owner is None:
+        logger.warning("Listing %s has no owner; skipping notification", listingId)
         return
 
     if listing.status == ListingStatus.ACTIVE:

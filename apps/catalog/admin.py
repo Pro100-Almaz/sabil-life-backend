@@ -123,6 +123,7 @@ def reject_listings(modeladmin, request, queryset):
                 listing.comment = comment 
                 listing.save(update_fields=["status", "comment"])
                 notify_review_result.delay(listing.id, comment)
+                rejected += 1
 
             if rejected:
                 modeladmin.message_user(
