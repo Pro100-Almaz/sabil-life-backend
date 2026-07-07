@@ -42,6 +42,11 @@ def notify_inquiry_result(self, inquiryId: str) -> None:
         title = _("Inquiry recieved")
         body = _("You have recieved inquiry")
         user = inquiry.tutor.user
+    elif inquiry.status == InquiryStatus.CANCELLED:
+        ntype = NotificationType.INQUIRY_CANCELED
+        title = _("Inquiry canceled")
+        body = _("Client has cancelled their inquiry")
+        user = inquiry.tutor.user
     else: return
 
     notify_user(

@@ -89,7 +89,7 @@ def approve_listings(modeladmin, request, queryset):
         listing.status = ListingStatus.ACTIVE
         listing.save(update_fields=['status'])
         updated += 1
-        notify_review_result(listing.id)
+        notify_review_result.delay(listing.id)
 
     if updated:
         modeladmin.message_user(
@@ -122,7 +122,7 @@ def reject_listings(modeladmin, request, queryset):
                 listing.status = ListingStatus.REJECTED
                 listing.comment = comment 
                 listing.save(update_fields=["status", "comment"])
-                notify_review_result(listing.id, comment)
+                notify_review_result.delay(listing.id, comment)
 
             if rejected:
                 modeladmin.message_user(

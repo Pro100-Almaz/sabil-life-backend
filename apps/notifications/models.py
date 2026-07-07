@@ -46,6 +46,7 @@ class NotificationType(models.TextChoices):
     LISTING_REJECTED = "LISTING_REJECTED", _("Listing application rejected")
     INQUIRY_RESPONSE = "INQUIRY_RESPONSE", _("Inquiry responded")
     INQUIRY_REQUEST = "INQUIRY_REQUEST", _("Inquiry requested")
+    INQUIRY_CANCELED = "INQUIRY_CANCEL", _("Inquiry cancelled")
 
 
 class Notification(models.Model):
