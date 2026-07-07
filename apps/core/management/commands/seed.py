@@ -1,3 +1,4 @@
+from django.core.management import call_command
 from django.core.management.base import BaseCommand
 from django.db import IntegrityError, transaction
 
@@ -19,6 +20,11 @@ class Command(BaseCommand):
         parser.add_argument(
             "--clean", action="store_true", help="Delete all data before seeding"
         )
+        parser.add_argument(
+            "--no-listings",
+            action="store_true",
+            help="Skip seeding the catalog listings (users only).",
+        )
 
     def handle(self, *args, **options):
         if options["clean"]:
@@ -30,7 +36,18 @@ class Command(BaseCommand):
 
         self.create_users(options["users"])
 
+        if not options["no_listings"]:
+            self.create_listings(clean=options["clean"])
+
         self.stdout.write(self.style.SUCCESS("Successfully seeded database"))
+
+    def create_listings(self, clean=False):
+        """Seed the catalog with all listing categories — generic ones
+        (schools, nurseries, activities, entertainment, partnerships) plus
+        provider-owned tutoring and masterclasses — by delegating to the
+        idempotent `seed_catalog` command."""
+        self.stdout.write("Seeding catalog listings...")
+        call_command("seed_catalog", clean=clean)
 
     def create_superuser(self):
         try:
