@@ -21,7 +21,7 @@ class InquiryAdmin(ModelAdmin):
     )
     list_filter = ("status", "contact_revealed")
     search_fields = ("family__email", "tutor__user__email", "message")
-    readonly_fields = ("id", "family", "tutor", "created_at", "updated_at")
+    readonly_fields = ("id", "created_at", "updated_at")
     ordering = ("-created_at",)
 
     fieldsets = (
