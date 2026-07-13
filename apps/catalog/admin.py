@@ -17,7 +17,7 @@ from unfold.decorators import action, display
 from unfold.widgets import UnfoldAdminTextareaWidget
 from unfold.admin import ModelAdmin, TabularInline   # unfold-styled inline
 
-from apps.catalog.models import Listing, ListingImage, ListingStatus
+from apps.catalog.models import Listing, ListingImage, ListingStatus, ListingTag
 from apps.catalog.services import delete_listing, delete_listing_image
 from apps.notifications.tasks import notify_review_result
 # ---------------------------------------------------------------------------
@@ -307,3 +307,9 @@ class ListingAdmin(ModelAdmin):
     def delete_queryset(self, request, queryset):
         for listing in queryset:
             delete_listing(listing)
+
+@admin.register(ListingTag)
+class ListingTagAdmin(ModelAdmin):
+    list_display = ("name", "category")
+    list_filter = ("category",)
+    search_fields = ("name",)

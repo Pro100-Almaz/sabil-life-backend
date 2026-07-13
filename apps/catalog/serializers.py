@@ -34,6 +34,11 @@ class ListingCardSerializer(serializers.ModelSerializer):
 
     distance_km = serializers.SerializerMethodField()
     image_urls = serializers.SerializerMethodField()
+    tags = serializers.SlugRelatedField(
+        slug_field="name",
+        many=True,
+        read_only=True,
+    )
 
     class Meta:
         model = Listing
@@ -41,6 +46,7 @@ class ListingCardSerializer(serializers.ModelSerializer):
             "id",
             "title",
             "category",
+            "tags",
             "subtitle",
             "neighborhood",
             "lat",

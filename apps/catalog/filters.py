@@ -35,6 +35,8 @@ class ListingFilter(BaseFilter):
     """
 
     category = django_filters.CharFilter(method="filter_category")
+    tags = django_filters.CharFilter(method="filter_tags")
+
     price_max = django_filters.NumberFilter(
         field_name="price_from_qar", lookup_expr="lte"
     )
@@ -52,6 +54,14 @@ class ListingFilter(BaseFilter):
     def filter_category(self, queryset: QuerySet, name: str, value: str) -> QuerySet:
         """Case-insensitive category exact match."""
         return queryset.filter(category=value.upper())
+
+    def filter_tags(self, queryset: QuerySet, name: str, value: str) -> QuerySet:
+        names = [v.strip() for v in value.split(',') if v.strip()]
+        
+        if not names:
+            return queryset
+        
+        return queryset.filter(tags__name__in=names).distinct()
 
     def filter_age(self, queryset: QuerySet, name: str, value: str) -> QuerySet:
         """Match listings whose age_groups JSON list contains the given string."""

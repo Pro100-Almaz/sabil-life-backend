@@ -11,7 +11,7 @@ from rest_framework.response import Response
 from apps.catalog.filters import ListingFilter, TutorFilter
 from apps.providers.models import TutorDetail, TutorSubject
 
-from apps.catalog.models import Listing, ListingCategory, ListingStatus, ListingClientStatus, ListingClient
+from apps.catalog.models import Listing, ListingCategory, ListingStatus, ListingClientStatus, ListingClient, ListingTag
 from apps.catalog.schema import (
     CATEGORIES_SCHEMA,
     LISTING_DETAIL_SCHEMA,
@@ -67,7 +67,7 @@ class ListingViewSet(viewsets.ReadOnlyModelViewSet):
     ordering_fields = ["rating", "price_from_qar", "created_at"]
 
     def get_queryset(self) -> QuerySet:
-        qs = Listing.objects.filter(status=ListingStatus.ACTIVE).prefetch_related("images")
+        qs = Listing.objects.filter(status=ListingStatus.ACTIVE).prefetch_related("images").prefetch_related("tags")
         if self.request.user.is_authenticated:
             qs = qs.exclude(owner=self.request.user)
 
@@ -156,6 +156,21 @@ def categories_view(request: Request) -> Response:
     serializer = CategoryCountSerializer(data, many=True)
     return Response(serializer.data)
 
+
+@api_view(["GET"])
+@permission_classes([permissions.AllowAny])
+def listing_tags_view(request: Request) -> Response: 
+    """
+    GET /api/v1/tags/?category=CATEGORY
+    Returns all of the tags belonging to this category
+    """
+    qs = ListingTag.objects.all()
+    category = request.query_params.get("category")
+    if category:
+        qs = qs.filter(category=category.upper())
+    
+    names = list(qs.values_list("name", flat=True))
+    return Response(names)
 
 class TutorListViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [permissions.AllowAny]

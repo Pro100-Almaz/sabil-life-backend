@@ -227,7 +227,7 @@ class ProviderListingViewSet(
     ]
 
     def get_queryset(self):
-        return Listing.objects.filter(owner=self.request.user).prefetch_related("images")
+        return Listing.objects.filter(owner=self.request.user).prefetch_related("images").prefetch_related("tags")
 
     def perform_destroy(self, instance):
         # Explicit storage cleanup: remove the listing and its images' MinIO
