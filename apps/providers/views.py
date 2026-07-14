@@ -22,6 +22,7 @@ from apps.providers.models import (
     ProviderVerification,
     StatusChoices,
     TutorDetail,
+    AvatarImage
 )
 from apps.providers.permissions import IsListingOwner
 from apps.providers.schema import (
@@ -32,13 +33,13 @@ from apps.providers.schema import (
     PROVIDER_LISTING_UPDATE_SCHEMA,
 )
 from apps.providers.serializers import (
-    AvatarUploadSerializer,
+    AvatarImageSerializer,
     ProviderListingSerializer,
     ProviderVerificationReviewSerializer,
     TutorDetailSerializer,
     VerifyProviderSerializer,
 )
-from apps.providers.services import apply_verification_outcome
+from apps.providers.services import apply_verification_outcome, delete_avatar_image
 from apps.users.permissions import IsManagerOrAdmin, IsMasterclassManagerOrAdmin
 
 
@@ -140,37 +141,53 @@ class TutorDetailView(generics.CreateAPIView, generics.RetrieveUpdateAPIView):
 # ---------------------------------------------------------------------------
 
 
-class AvatarUploadView(generics.UpdateAPIView):
+class AvatarUploadView(views.APIView):
     """
     POST /api/v1/provider/avatar/ — upload/replace tutor avatar.
 
-    Returns {"avatar_url": "<full URL>"}.
+    Returns {"id", "url"}.
     """
-
-    serializer_class = AvatarUploadSerializer
     permission_classes = [permissions.IsAuthenticated]
-    http_method_names = ["post", "options"]
-    parser_classes = [
-        rest_framework.parsers.MultiPartParser,
-        rest_framework.parsers.FormParser,
-    ]
+    parser_classes = [parsers.MultiPartParser, parsers.FormParser]
 
-    def get_object(self) -> TutorDetail:
-        obj, _ = TutorDetail.objects.get_or_create(user=self.request.user)
+    def _get_tutor(self, request):
         try:
-            ProviderVerification.objects.get(user=self.request.user, provider_type=ProviderChoices.TUTOR)
-        except ProviderVerification.DoesNotExist:
-            ProviderVerification.objects.create(
-                user=self.request.user,
-                provider_type=ProviderChoices.TUTOR,
-                status=StatusChoices.PENDING,
-            )
+            obj, _ = TutorDetail.objects.get_or_create(user=request.user)
+        except TutorDetail.DoesNotExist:
+            raise rest_framework.exceptions.NotFound("Tutor not found")
+        
+        return obj 
+    
+    def post(self, request):
+        tutor = self._get_tutor(request=request)
+        ProviderVerification.objects.get_or_create(
+            user=request.user,
+            provider_type=ProviderChoices.TUTOR,
+            defaults={"status": StatusChoices.PENDING},
+        )
+        f = request.FILES.get("avatar")
+        if not f:
+            return Response({"avatar": ["No file provided."]}, status=400)
 
-        return obj
+        # replace existing avatar (row + storage object)
+        old = AvatarImage.objects.filter(tutor=tutor).first()
+        if old:
+            delete_avatar_image(old)
 
-    def post(self, request, *args, **kwargs):
-        return self.partial_update(request, *args, **kwargs)
+        suffix = Path(f.name).suffix.lower()
+        object_name = f"avatars/{tutor.id}/{uuid.uuid4().hex}{suffix}"
+        key = default_storage.save(object_name, f)
+        avatar = AvatarImage.objects.create(tutor=tutor, key=key)
+        return Response(AvatarImageSerializer(avatar).data, status=201)
+    
+    def delete(self, request):
+        tutor = self._get_tutor(request=request)
+        avatar = AvatarImage.objects.filter(tutor=tutor).first()
+        if avatar:
+            delete_avatar_image(avatar)
 
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    
 
 # ---------------------------------------------------------------------------
 # Provider-owned Listings

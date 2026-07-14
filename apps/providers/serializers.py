@@ -5,7 +5,7 @@ from apps.catalog.models import Listing, ListingCategory
 from apps.catalog.serializers import ListingImageSerializer
 from apps.users.enums import UserRole
 
-from apps.providers.models import ProviderVerification, StatusChoices, TutorDetail
+from apps.providers.models import ProviderVerification, StatusChoices, TutorDetail, AvatarImage
 
 # ---------------------------------------------------------------------------
 # Provider Listings — shared maps
@@ -29,34 +29,29 @@ _CATEGORY_ROLE_ERROR: dict[str, str] = {
 # ---------------------------------------------------------------------------
 
 
-class AvatarUploadSerializer(serializers.ModelSerializer):
-    avatar = serializers.ImageField()
-    avatar_url = serializers.SerializerMethodField(read_only=True)
-
+class AvatarImageSerializer(serializers.ModelSerializer):
+    url = serializers.SerializerMethodField()
     class Meta:
-        model = TutorDetail
-        fields = ["avatar", "avatar_url"]
-        extra_kwargs = {"avatar": {"write_only": True}}
+        model = AvatarImage
+        fields = ["id", "url"]
 
-    def get_avatar_url(self, obj: TutorDetail) -> str:
-        if not obj.avatar:
-            return ""
-        request = self.context.get("request")
-        return request.build_absolute_uri(obj.avatar.url) if request else obj.avatar.url
+    def get_url(self, obj):
+        return default_storage.url(obj.key)
 
 
 class TutorDetailSerializer(serializers.ModelSerializer):
     user_id = serializers.IntegerField(source="user.id", read_only=True)
     full_name = serializers.CharField(source="user.full_name", read_only=True)
     avatar_url = serializers.SerializerMethodField(read_only=True)
-
+    avatar = AvatarImageSerializer(many=False, read_only=True)
+    
     class Meta:
         model = TutorDetail
         fields = [
             "user_id",
             "full_name",
-            "avatar",
             "avatar_url",
+            "avatar",
             "affiliation_listing_id",
             "subjects",
             "formats",
@@ -83,10 +78,8 @@ class TutorDetailSerializer(serializers.ModelSerializer):
         ]
 
     def get_avatar_url(self, obj: TutorDetail) -> str:
-        if not obj.avatar:
-            return ""
-        request = self.context.get("request")
-        return request.build_absolute_uri(obj.avatar.url) if request else obj.avatar.url
+        avatar = getattr(obj, "avatar", None)
+        return default_storage.url(avatar.key) if avatar else ""
 
 
 # ---------------------------------------------------------------------------

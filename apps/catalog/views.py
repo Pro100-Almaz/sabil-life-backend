@@ -170,6 +170,7 @@ class TutorListViewSet(viewsets.ReadOnlyModelViewSet):
         qs = (
             TutorDetail.objects
             .select_related("user")
+            .select_related("avatar")
             .filter(user__roles__name=UserRole.TUTOR)
             .order_by("-rating", "-review_count")
         )

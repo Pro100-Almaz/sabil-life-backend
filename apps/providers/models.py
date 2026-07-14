@@ -1,3 +1,4 @@
+import uuid
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -26,9 +27,6 @@ class TutorDetail(models.Model):
         on_delete=models.CASCADE,
         related_name="tutor_detail",
         verbose_name=_("user"),
-    )
-    avatar = models.ImageField(
-        _("avatar"), upload_to="avatars/", blank=True,
     )
     affiliation_listing_id = models.CharField(
         _("affiliation listing ID"), max_length=120, blank=True,
@@ -76,13 +74,6 @@ class TutorDetail(models.Model):
 
     def save(self, *args, **kwargs) -> None:
         self.clean()
-        if self.pk:
-            try:
-                old = TutorDetail.objects.get(pk=self.pk)
-            except TutorDetail.DoesNotExist:
-                old = None
-            if old and old.avatar and old.avatar != self.avatar:
-                old.avatar.delete(save=False)
         super().save(*args, **kwargs)
 
     def __str__(self) -> str:
@@ -99,6 +90,23 @@ class TutorSubject(models.Model):
 
     def __str__(self) -> str:
         return self.name
+
+class AvatarImage(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    tutor = models.OneToOneField(
+        TutorDetail, 
+        on_delete=models.CASCADE,
+        related_name="avatar",
+        verbose_name=_("tutor")
+    )
+    key = models.CharField(max_length=512, unique=True) #identity 
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at"]
+
+    def __str__(self):
+        return self.key
 
 
 class ProviderVerification(models.Model):
