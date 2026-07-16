@@ -124,13 +124,14 @@ class TutorSubjectSerializer(serializers.ModelSerializer):
 
 class TutorCardSerializer(serializers.ModelSerializer):
     full_name = serializers.CharField(source="user.full_name", read_only=True)
+    avatar_url = serializers.SerializerMethodField()
 
     class Meta:
         model = TutorDetail
         fields = [
             "id",
             "full_name",
-            "avatar",
+            "avatar_url",
             "affiliation_listing_id",
             "subjects",
             "formats",
@@ -144,6 +145,11 @@ class TutorCardSerializer(serializers.ModelSerializer):
             "trial_available",
             "bio",
         ]
+    
+    def get_avatar_url(self, obj):
+        avatar = getattr(obj, "avatar", None)
+        return default_storage.url(avatar.key) if avatar else ""
+
 
 
 class ListingClientSerializer(serializers.ModelSerializer):
