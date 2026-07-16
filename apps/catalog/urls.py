@@ -8,6 +8,7 @@ from apps.catalog.views import (
     TutorListViewSet,
     categories_view,
     tutor_subjects_view,
+    listing_tags_view
 )
 
 router = DefaultRouter()
@@ -21,4 +22,5 @@ app_name = "catalog"
 urlpatterns = router.urls + [
     path("categories/", categories_view, name="categories"),
     path("subjects/", tutor_subjects_view, name="subjects"),
+    path("tags/", listing_tags_view, name="tags")
 ]

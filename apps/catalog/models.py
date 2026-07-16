@@ -28,6 +28,28 @@ class ListingClientStatus(models.TextChoices):
     ACCEPTED = "ACCEPTED", _("Accepted")
     REJECTED = "REJECTED", _("Rejected")
 
+class ListingTag(models.Model):
+    name = models.CharField(_("name"), max_length=200, unique=True)
+    category = models.CharField(
+        _("category"),
+        max_length=200,
+        choices=ListingCategory.choices,
+        db_index=True,
+    )
+
+    class Meta:
+        verbose_name = _("listing tag")
+        verbose_name_plural = _("listing tags")
+        ordering = ["name"]
+        constraints=[
+            models.UniqueConstraint(
+                fields=["name", "category"],
+                name="unique_tag_per_category",
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.name} ({self.category})"
 
 class Listing(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -36,6 +58,11 @@ class Listing(models.Model):
         max_length=32,
         choices=ListingCategory.choices,
         db_index=True,
+    )
+    tags = models.ManyToManyField(
+        ListingTag,
+        related_name="listings",
+        blank=True,
     )
     subtitle = models.CharField(max_length=300, blank=True)
     neighborhood = models.CharField(max_length=120, blank=True)
