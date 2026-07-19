@@ -76,11 +76,14 @@ class Command(BaseCommand):
         for _ in range(count):
             sid = transaction.savepoint()
             try:
+                first_name = fake.first_name()
+                last_name = fake.last_name()
                 user = CustomUser.objects.create_user(
                     email=fake.email(),
                     password="testpass123",
-                    first_name=fake.first_name(),
-                    last_name=fake.last_name(),
+                    first_name=first_name,
+                    last_name=last_name,
+                    full_name=f"{first_name} {last_name}",
                 )
                 transaction.savepoint_commit(sid)
                 self.stdout.write(f"Created user - {user.email}")
