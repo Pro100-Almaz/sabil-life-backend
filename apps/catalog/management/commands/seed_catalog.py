@@ -11,6 +11,7 @@ stable slug fed through uuid.uuid5() so the UUID is always the same.
 import uuid
 import requests
 
+from collections import Counter
 from decimal import Decimal
 
 from django.core.management.base import BaseCommand
@@ -18,6 +19,7 @@ from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 
 from apps.catalog.models import Listing, ListingCategory, ListingStatus, ListingImage
+from apps.catalog.services import delete_listing
 from apps.users.enums import UserRole
 from apps.users.models import CustomUser
 
@@ -660,7 +662,8 @@ LISTINGS: list[dict] = [
     },
 ]
 
-# Sanity-check the data at import time (not at runtime in production — only in tests)
+# Sanity-check the data at import time so a miscategorized or dropped listing
+# fails fast (import error) rather than silently drifting the dataset.
 _EXPECTED_TOTALS = {
     ListingCategory.SCHOOLS: 4,
     ListingCategory.NURSERIES: 3,
@@ -670,7 +673,14 @@ _EXPECTED_TOTALS = {
     ListingCategory.MASTERCLASSES: 3,
     ListingCategory.PARTNERSHIPS: 2,
 }
-assert len(LISTINGS) == 24, f"Expected 24 listings, got {len(LISTINGS)}"
+assert len(LISTINGS) == sum(_EXPECTED_TOTALS.values()), (
+    f"Expected {sum(_EXPECTED_TOTALS.values())} listings, got {len(LISTINGS)}"
+)
+_ACTUAL_TOTALS = Counter(d["category"] for d in LISTINGS)
+assert _ACTUAL_TOTALS == _EXPECTED_TOTALS, (
+    f"Category distribution drifted — expected {dict(_EXPECTED_TOTALS)}, "
+    f"got {dict(_ACTUAL_TOTALS)}"
+)
 
 
 class Command(BaseCommand):
@@ -702,9 +712,18 @@ class Command(BaseCommand):
 
         if options["clean"]:
             seed_ids = [_uid(d["slug"]) for d in LISTINGS]
-            deleted, _ = Listing.objects.filter(id__in=seed_ids).delete()
+            # Delete through the service layer (not queryset.delete()) so each
+            # listing's image storage objects are enqueued for cleanup. A bulk
+            # queryset delete cascades the ListingImage rows but leaves their
+            # MinIO/S3 blobs orphaned.
+            to_delete = list(Listing.objects.filter(id__in=seed_ids))
+            for listing in to_delete:
+                delete_listing(listing)
             self.stdout.write(
-                self.style.WARNING(f"Deleted {deleted} previously-seeded listing(s).")
+                self.style.WARNING(
+                    f"Deleted {len(to_delete)} previously-seeded listing(s) "
+                    "and enqueued their images for storage cleanup."
+                )
             )
 
         # Upsert the two seed provider users so TUTORING / MASTERCLASSES
@@ -749,14 +768,19 @@ class Command(BaseCommand):
             )
             if created:
                 created_count += 1
-                self._seed_images(listing, slug, data.get("image_count", 1))
             else:
                 existed_count += 1
 
+            # Backfill placeholder images whenever the listing has none. On
+            # first creation this attaches the full set; on a later run it fills
+            # in listings that were created offline (network unavailable ->
+            # zero images), making image seeding eventually consistent. No-op
+            # once any image exists, so it never duplicates on re-runs.
+            if not listing.images.exists():
+                self._seed_images(listing, slug, data.get("image_count", 1))
+
 
         # Summary breakdown
-        from collections import Counter
-
         cat_counts = Counter(d["category"] for d in LISTINGS)
         breakdown = ", ".join(
             f"{count} {cat}" for cat, count in sorted(cat_counts.items())
