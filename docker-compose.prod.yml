@@ -43,18 +43,17 @@ services:
     restart: unless-stopped
     command: >
       sh -c "python manage.py migrate --noinput &&
-             python manage.py collectstatic --noinput &&
-             gunicorn conf.wsgi:application
-               --bind 0.0.0.0:8000
-               --workers ${GUNICORN_WORKERS:-3}
-               --timeout ${GUNICORN_TIMEOUT:-60}
-               --access-logfile - --error-logfile -"
+      python manage.py collectstatic --noinput &&
+      gunicorn conf.wsgi:application
+      --bind 0.0.0.0:8000
+      --workers ${GUNICORN_WORKERS:-3}
+      --timeout ${GUNICORN_TIMEOUT:-60}
+      --access-logfile - --error-logfile -"
     expose:
       - "8000"
     env_file:
       - .env
     volumes:
-      - static_data:/app/static_root
       - ./secrets:/app/secrets:ro
     depends_on:
       db:
@@ -112,6 +111,5 @@ services:
 
 volumes:
   postgres_data:
-  static_data:
   caddy_data:
   caddy_config:
