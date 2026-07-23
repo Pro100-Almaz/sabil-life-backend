@@ -544,6 +544,18 @@ if USE_MINIO:
     AWS_DEFAULT_ACL = None
     AWS_QUERYSTRING_AUTH = env.bool("AWS_QUERYSTRING_AUTH", default=False)
 
+    # GCS's S3-compatible API rejects the data-integrity checksum trailers that
+    # botocore >= 1.36 sends by default, failing PutObject with
+    # SignatureDoesNotMatch. Only compute/verify checksums when the operation
+    # actually requires them.
+    from botocore.config import Config
+
+    AWS_S3_CLIENT_CONFIG = Config(
+        request_checksum_calculation="when_required",
+        response_checksum_validation="when_required",
+        s3={"addressing_style": AWS_S3_ADDRESSING_STYLE},
+    )
+
     STORAGES = {
         "default": {
             "BACKEND": "storages.backends.s3.S3Storage",
