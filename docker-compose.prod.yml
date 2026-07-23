@@ -1,0 +1,117 @@
+# --------------------------------------------------------------------------------
+# Production stack for a single Compute Engine VM.
+#
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+# Differences vs. docker-compose.yml (dev):
+#   - Django runs under gunicorn (not runserver), with migrate + collectstatic on boot.
+#   - No source-code bind mount: containers run the baked image.
+#   - Postgres/Redis are NOT published to the host — only Caddy exposes 80/443.
+#   - Caddy terminates TLS (automatic Let's Encrypt) and reverse-proxies to gunicorn.
+#   - Media lives in a Google Cloud Storage bucket (see .env.production.example),
+#     so it survives VM rebuilds. MinIO is a dev-only tool and is omitted here.
+# --------------------------------------------------------------------------------
+
+services:
+  db:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    env_file:
+      - .env
+    # No `ports:` — reachable only on the internal compose network.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:8-alpine
+    restart: unless-stopped
+    # No `ports:` — internal only.
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: .
+    image: sabil-life-backend:prod
+    restart: unless-stopped
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py collectstatic --noinput &&
+             gunicorn conf.wsgi:application
+               --bind 0.0.0.0:8000
+               --workers ${GUNICORN_WORKERS:-3}
+               --timeout ${GUNICORN_TIMEOUT:-60}
+               --access-logfile - --error-logfile -"
+    expose:
+      - "8000"
+    env_file:
+      - .env
+    volumes:
+      - static_data:/app/static_root
+      - ./secrets:/app/secrets:ro
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker:
+    image: sabil-life-backend:prod
+    pull_policy: never
+    restart: unless-stopped
+    command: sh -c "./scripts/wait-for-migrations.sh celery -A conf worker -l info"
+    env_file:
+      - .env
+    volumes:
+      - ./secrets:/app/secrets:ro
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      backend:
+        condition: service_started
+
+  beat:
+    image: sabil-life-backend:prod
+    pull_policy: never
+    restart: unless-stopped
+    command: sh -c "./scripts/wait-for-migrations.sh celery -A conf beat -l info"
+    env_file:
+      - .env
+    volumes:
+      - ./secrets:/app/secrets:ro
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      backend:
+        condition: service_started
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      backend:
+        condition: service_started
+
+volumes:
+  postgres_data:
+  static_data:
+  caddy_data:
+  caddy_config:
