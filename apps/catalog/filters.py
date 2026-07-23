@@ -98,7 +98,8 @@ class TutorFilter(BaseFilter):
     )
     trial_available = django_filters.BooleanFilter(field_name="trial_available")
     city = django_filters.CharFilter(field_name="city")
-
+    subject = django_filters.CharFilter(method="filter_subject")
+    
     class Meta:
         model = TutorDetail
         fields: list[str] = []
@@ -122,10 +123,7 @@ class TutorFilter(BaseFilter):
 
     def filter_search(self, queryset: QuerySet, name: str, value: str) -> QuerySet:
         """Full-text search: full_name OR subjects contains."""
-        return queryset.filter(
-            Q(user__full_name__icontains=value)
-            | Q(subjects__contains=[value.capitalize()])
-        )
+        return queryset.filter(Q(user__full_name__icontains=value))
 
     def filter_formats(self, queryset: QuerySet, name: str, value: str) -> QuerySet:
         """Filter by one or more formats: ONLINE, ONE_ON_ONE, AT_CENTRE etc."""
@@ -138,3 +136,6 @@ class TutorFilter(BaseFilter):
     def filter_languages(self, queryset: QuerySet, name: str, value: str) -> QuerySet:
         """Filter by one or more languages, e.g. EN, AR."""
         return self._filter_json_any(queryset, "languages", value)
+
+    def filter_subject(self, queryset: QuerySet, name: str, value: str) -> QuerySet:
+        return queryset.filter(subjects__contains=[value])        
