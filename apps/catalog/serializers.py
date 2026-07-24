@@ -93,7 +93,9 @@ class ListingDetailSerializer(ListingCardSerializer):
             "highlights",
             "owner_id",
             "reviews",
-            "images"
+            "images",
+            "is_online",
+            "meeting_url",
         ]
 
     def get_owner_id(self, obj: Listing) -> str | None:
@@ -144,6 +146,7 @@ class TutorCardSerializer(serializers.ModelSerializer):
             "languages",
             "trial_available",
             "bio",
+            "city",
         ]
     
     def get_avatar_url(self, obj):

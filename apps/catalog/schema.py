@@ -35,7 +35,7 @@ _LISTING_CARD_EXAMPLE = {
     "review_count": 24,
     "price_from_qar": 150,
     "images": [],
-    "age_groups": ["8-12", "12-16"],
+    "age_groups": ["6-9", "10-12"],
     "is_featured": True,
     "distance_km": 1.23,
 }
@@ -98,7 +98,7 @@ LISTING_LIST_PARAMETERS = [
         location=OpenApiParameter.QUERY,
         description=(
             "Return listings whose age_groups list contains this exact string. "
-            'Example: ?age=5-8 matches listings with "5-8" in their age_groups.'
+            'Example: ?age=6-9 matches listings with "6-9" in their age_groups.'
         ),
         required=False,
     ),
