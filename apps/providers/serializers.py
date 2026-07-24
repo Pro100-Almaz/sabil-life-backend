@@ -142,6 +142,8 @@ class ProviderListingSerializer(serializers.ModelSerializer):
             "materials_required",
             "created_at",
             "updated_at",
+            "is_online",
+            "meeting_url",
         ]
         read_only_fields = [
             "id",
@@ -180,6 +182,17 @@ class ProviderListingSerializer(serializers.ModelSerializer):
                 f"Your roles do not allow creating listings in the {value} category."
             )
         return value
+
+    def validate(self, attrs):
+        is_online = attrs.get("is_online", getattr(self.instance, "is_online", False))
+        meeting_url = attrs.get("meeting_url", getattr(self.instance, "meeting_url", ""))
+        neighborhood = attrs.get("neighborhood", getattr(self.instance, "neighborhood", ""))
+        if is_online and not meeting_url:
+            raise serializers.ValidationError({"meeting_url": "Required for online listings"})
+        if not is_online and not neighborhood:
+            raise serializers.ValidationError({"neighborhood": "Required for offline listings"})
+
+        return attrs
     
     def get_image_urls(self, obj):
         return [default_storage.url(img.key) for img in obj.images.all()]
