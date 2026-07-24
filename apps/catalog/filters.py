@@ -130,7 +130,7 @@ class TutorFilter(BaseFilter):
         return self._filter_json_any(queryset, "formats", value)
 
     def filter_age_groups(self, queryset: QuerySet, name: str, value: str) -> QuerySet:
-        """Filter by one or more age groups, e.g. 6-11, 12-15."""
+        """Filter by one or more age groups, e.g. 6-9, 10-12."""
         return self._filter_json_any(queryset, "age_groups", value)
 
     def filter_languages(self, queryset: QuerySet, name: str, value: str) -> QuerySet:
