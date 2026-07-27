@@ -1,0 +1,28 @@
+# Caddy reverse proxy with automatic HTTPS (Let's Encrypt).
+#
+# Replace api.example.com with your real domain, and set an email so Caddy can
+# register TLS certificates. Caddy provisions and renews the certificate for you
+# as long as ports 80 and 443 are reachable and DNS points at this VM.
+#
+# WhiteNoise (inside Django) serves /static/ itself, so Caddy just forwards
+# everything to gunicorn. Uploaded media is served directly from the GCS bucket,
+# not through this proxy.
+
+{
+	email you@example.com
+}
+
+api.example.com {
+	encode zstd gzip
+
+	# Allow large-ish uploads (avatars, listing photos). Tune as needed.
+	request_body {
+		max_size 25MB
+	}
+
+	reverse_proxy backend:8000 {
+		# gunicorn/Django reads these to know the original scheme/host.
+		header_up X-Forwarded-Proto {scheme}
+		header_up Host {host}
+	}
+}
