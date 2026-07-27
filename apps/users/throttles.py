@@ -35,3 +35,16 @@ class UserLoginRateThrottle(SimpleRateThrottle):
             ident = request.user.pk
 
         return self.cache_format % {"scope": self.scope, "ident": ident}
+
+
+class RegistrationCodeThrottle(SimpleRateThrottle):
+    """Throttle verification-code requests per email address, so nobody can
+    spam a victim's inbox with codes."""
+
+    scope = "register_request"
+
+    def get_cache_key(self, request, view):
+        email = (request.data.get("email") or "").strip().lower()
+        if not email:
+            return None  # no email → let the serializer return the 400
+        return self.cache_format % {"scope": self.scope, "ident": email}

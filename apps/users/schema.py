@@ -1,7 +1,6 @@
 from drf_spectacular.utils import OpenApiExample, OpenApiResponse
 
 from apps.core.schema import UNAUTHORIZED_EXAMPLES, ErrorResponseSerializer
-
 from apps.users.serializers import (
     CreateUserSerializer,
     LoginResponseSerializer,
@@ -35,10 +34,40 @@ LOGIN_RESPONSE_SCHEMA = {
     ),
 }
 
+REGISTER_REQUEST_RESPONSE_SCHEMA = {
+    200: OpenApiResponse(
+        response=ErrorResponseSerializer,
+        description="Verification code emailed. No account created yet.",
+        examples=[
+            OpenApiExample(
+                "Code Sent",
+                value={"detail": "Verification code sent."},
+                status_codes=["200"],
+            ),
+        ],
+    ),
+    400: OpenApiResponse(
+        response=ErrorResponseSerializer,
+        description="Validation error",
+        examples=[
+            OpenApiExample(
+                "Email Taken",
+                value={"email": ["A user with this email already exists."]},
+                status_codes=["400"],
+            ),
+            OpenApiExample(
+                "Weak Password",
+                value={"password": ["This password is too common."]},
+                status_codes=["400"],
+            ),
+        ],
+    ),
+}
+
 REGISTER_RESPONSE_SCHEMA = {
     201: OpenApiResponse(
         response=RegisterResponseSerializer,
-        description="User registered successfully. Returns a Knox bearer token.",
+        description="Code verified. Account created; returns a Knox bearer token.",
         examples=[
             OpenApiExample(
                 "Family Registration",
@@ -62,16 +91,16 @@ REGISTER_RESPONSE_SCHEMA = {
     ),
     400: OpenApiResponse(
         response=ErrorResponseSerializer,
-        description="Validation error",
+        description="Invalid or expired code",
         examples=[
             OpenApiExample(
-                "Admin Role Rejected",
-                value={"role": ["Cannot self-register with the ADMIN role."]},
+                "Invalid Code",
+                value={"code": ["Invalid code."]},
                 status_codes=["400"],
             ),
             OpenApiExample(
-                "Weak Password",
-                value={"password": ["This password is too common."]},
+                "Expired Code",
+                value={"code": ["Code expired or not found. Please request a new one."]},
                 status_codes=["400"],
             ),
         ],
