@@ -1,4 +1,4 @@
-.PHONY: help up down build rebuild shell migrate makemigrations test test-cov logs logs-worker logs-beat superuser seed seed-catalog seed-catalog-clean clean prune ps docs docs-serve docs-build docs-deploy bump update-deps add-dep remove-dep
+.PHONY: help up down build rebuild shell migrate makemigrations test test-cov logs logs-worker logs-beat superuser seed seed-catalog seed-catalog-clean clean prune ps docs docs-serve docs-build docs-deploy bump update-deps add-dep remove-dep import-tags import-schools import-catalog-data
 
 # Default target - show help
 help:
@@ -21,6 +21,9 @@ help:
 	@echo "  seed            Seed database (20 users + superuser)"
 	@echo "  seed-catalog    Seed 24 demo listings (idempotent)"
 	@echo "  seed-catalog-clean  Wipe seeded listings then re-seed"
+	@echo "  import-tags     Import the SCHOOLS tag vocabulary (57 tags, idempotent)"
+	@echo "  import-schools  Import the 84 Qatar schools (idempotent; needs import-tags)"
+	@echo "  import-catalog-data  Run import-tags then import-schools"
 	@echo ""
 	@echo "Testing & Debugging:"
 	@echo "  test            Run all tests"
@@ -84,6 +87,15 @@ seed-catalog:
 
 seed-catalog-clean:
 	docker compose exec backend python manage.py seed_catalog --clean
+
+import-tags:
+	docker compose exec backend python manage.py import_tags
+
+import-schools:
+	docker compose exec backend python manage.py import_schools
+
+# import_schools aborts if the tag vocabulary is missing, so seed tags first.
+import-catalog-data: import-tags import-schools
 
 # Testing & Debugging
 test:

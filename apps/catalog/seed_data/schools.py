@@ -4,10 +4,22 @@ Derived once from the markdown source and committed as data — the markdown
 lives outside this repo, so parsing it at runtime would make the importer
 depend on a file that is absent in CI and production.
 
-Fields absent from the source and therefore NOT invented here:
-  * ``lat`` / ``lng``  — no coordinates in the source. Left NULL, which means
-    these listings are excluded from ``?sort=distance`` and radius filters
-    until someone geocodes them.
+``lat`` / ``lng`` are DISTRICT CENTROIDS, not geocoded school addresses.
+The source has no coordinates, so each school inherits the centre point of
+its district, accurate to roughly 1-2 km. That is enough for "which schools
+are in my part of town" (``?sort=distance``, ``max_distance_km``) and wrong
+for anything finer: all five Al Waab schools share one point, so their order
+within the district is arbitrary. Replace with a real geocoding pass before
+the app promises precise distances.
+
+29 schools have ``lat``/``lng`` of None. 28 of them list only "Doha" as their
+location and the metro is ~25 km across, so a single city point would report
+a school 15 km away as 2 km away; the 29th lists "Doha / Lusail" and picking
+one would be a guess. NULL coordinates drop a listing out of distance-sorted
+results rather than misplacing it. Narrowing those locations in the source
+markdown is what fixes them.
+
+Also absent from the source and NOT invented here:
   * ``rating`` / ``review_count`` — left at model defaults (0.0 / 0).
 
 ``price_from_qar`` is the annual fee floor: the source gives open-ended
@@ -24,6 +36,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "ACS International School Doha",
         "subtitle": "IB / American pathways, Doha",
         "neighborhood": "Doha",
+        "lat": None,
+        "lng": None,
         "price_from_qar": 50000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -37,6 +51,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Al Arqam Academy",
         "subtitle": "British-based with Islamic studies, Abu Hamour",
         "neighborhood": "Abu Hamour",
+        "lat": 25.2286,
+        "lng": 51.4869,
         "price_from_qar": 15000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -50,6 +66,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Al Hekma International School",
         "subtitle": "American Curriculum, Al Mamoura",
         "neighborhood": "Al Mamoura",
+        "lat": 25.2419,
+        "lng": 51.5008,
         "price_from_qar": 20000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -63,6 +81,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Al Khor International School",
         "subtitle": "British / IB pathways, Al Khor",
         "neighborhood": "Al Khor",
+        "lat": 25.684,
+        "lng": 51.497,
         "price_from_qar": 25000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -76,6 +96,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Al Maha Academy for Boys",
         "subtitle": "British Curriculum, Al Waab",
         "neighborhood": "Al Waab",
+        "lat": 25.2606,
+        "lng": 51.4494,
         "price_from_qar": 22000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -89,6 +111,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Al Maha Academy for Girls",
         "subtitle": "British Curriculum, Al Waab",
         "neighborhood": "Al Waab",
+        "lat": 25.2606,
+        "lng": 51.4494,
         "price_from_qar": 22000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -102,6 +126,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Al Nebras International School",
         "subtitle": "Montessori / International, Doha / Lusail",
         "neighborhood": "Doha / Lusail",
+        "lat": None,
+        "lng": None,
         "price_from_qar": 30000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -115,6 +141,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Al Rowad International School",
         "subtitle": "American Curriculum, Abu Hamour",
         "neighborhood": "Abu Hamour",
+        "lat": 25.2286,
+        "lng": 51.4869,
         "price_from_qar": 18000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -128,6 +156,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Al Wataniya International School",
         "subtitle": "British Primary Curriculum, Doha",
         "neighborhood": "Doha",
+        "lat": None,
+        "lng": None,
         "price_from_qar": 27000,
         "age_groups": ["3-5", "6-12"],
         "description": (
@@ -141,6 +171,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "American Academy School Qatar",
         "subtitle": "American Curriculum, Doha",
         "neighborhood": "Doha",
+        "lat": None,
+        "lng": None,
         "price_from_qar": 18000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -154,6 +186,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "American School of Doha",
         "subtitle": "American Curriculum (AP), Al Waab",
         "neighborhood": "Al Waab",
+        "lat": 25.2606,
+        "lng": 51.4494,
         "price_from_qar": 45000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -167,6 +201,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Arab International Academy",
         "subtitle": "IB Curriculum, Al Luqta",
         "neighborhood": "Al Luqta",
+        "lat": 25.3236,
+        "lng": 51.4602,
         "price_from_qar": 45000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -180,6 +216,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Awfaz Global School",
         "subtitle": "International Curriculum, Doha",
         "neighborhood": "Doha",
+        "lat": None,
+        "lng": None,
         "price_from_qar": 18000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -193,6 +231,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Beta Cambridge School",
         "subtitle": "Cambridge / British, Doha",
         "neighborhood": "Doha",
+        "lat": None,
+        "lng": None,
         "price_from_qar": 18000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -206,6 +246,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Belgravia High School",
         "subtitle": "British Curriculum, Doha",
         "neighborhood": "Doha",
+        "lat": None,
+        "lng": None,
         "price_from_qar": 20000,
         "age_groups": ["6-12", "13-18"],
         "description": (
@@ -219,6 +261,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Birla Public School",
         "subtitle": "CBSE, Abu Hamour",
         "neighborhood": "Abu Hamour",
+        "lat": 25.2286,
+        "lng": 51.4869,
         "price_from_qar": 14000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -232,6 +276,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Brilliant Indian International School",
         "subtitle": "CBSE, Doha",
         "neighborhood": "Doha",
+        "lat": None,
+        "lng": None,
         "price_from_qar": 12000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -245,6 +291,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Cambridge International School Doha",
         "subtitle": "Cambridge / British, Doha",
         "neighborhood": "Doha",
+        "lat": None,
+        "lng": None,
         "price_from_qar": 18000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -258,6 +306,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Compass International School Doha – Themaid Campus",
         "subtitle": "British / IB pathway, Doha",
         "neighborhood": "Doha",
+        "lat": None,
+        "lng": None,
         "price_from_qar": 45000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -271,6 +321,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Compass International School Doha – Madinat Khalifa Campus",
         "subtitle": "British Curriculum, Doha",
         "neighborhood": "Doha",
+        "lat": None,
+        "lng": None,
         "price_from_qar": 40000,
         "age_groups": ["3-5", "6-12"],
         "description": (
@@ -284,6 +336,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Compass International School Doha – Gharaffa Campus",
         "subtitle": "British Curriculum, Al Gharrafa",
         "neighborhood": "Al Gharrafa",
+        "lat": 25.3339,
+        "lng": 51.4408,
         "price_from_qar": 40000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -297,6 +351,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Doha Academy",
         "subtitle": "British Curriculum (Cambridge/Pearson), Al Waab",
         "neighborhood": "Al Waab",
+        "lat": 25.2606,
+        "lng": 51.4494,
         "price_from_qar": 24000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -310,6 +366,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Doha British School – Ain Khaled",
         "subtitle": "British National Curriculum, Ain Khaled",
         "neighborhood": "Ain Khaled",
+        "lat": 25.2244,
+        "lng": 51.4525,
         "price_from_qar": 33000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -323,6 +381,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Doha British School – Al Wakra",
         "subtitle": "British National Curriculum, Al Wakrah",
         "neighborhood": "Al Wakrah",
+        "lat": 25.1659,
+        "lng": 51.5988,
         "price_from_qar": 31000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -336,6 +396,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Doha British School – Rawdat Al Hamama",
         "subtitle": "British National Curriculum, Rawdat Al Hamama",
         "neighborhood": "Rawdat Al Hamama",
+        "lat": 25.4247,
+        "lng": 51.4694,
         "price_from_qar": 34000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -349,6 +411,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Doha College",
         "subtitle": "British Curriculum (IGCSE/A Levels), West Bay Lagoon",
         "neighborhood": "West Bay Lagoon",
+        "lat": 25.3739,
+        "lng": 51.5133,
         "price_from_qar": 42000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -362,6 +426,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Doha English Speaking School (DESS)",
         "subtitle": "British Primary Curriculum, Fereej Kulaib",
         "neighborhood": "Fereej Kulaib",
+        "lat": 25.2842,
+        "lng": 51.5289,
         "price_from_qar": 35000,
         "age_groups": ["3-5", "6-12"],
         "description": (
@@ -375,6 +441,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Dukhan English School",
         "subtitle": "British Curriculum, Dukhan",
         "neighborhood": "Dukhan",
+        "lat": 25.43,
+        "lng": 50.785,
         "price_from_qar": 25000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -388,6 +456,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Durham School for Girls Doha",
         "subtitle": "British Curriculum, Mesaimeer",
         "neighborhood": "Mesaimeer",
+        "lat": 25.2231,
+        "lng": 51.4886,
         "price_from_qar": 27000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -401,6 +471,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Edison International Academy",
         "subtitle": "British Curriculum, Doha",
         "neighborhood": "Doha",
+        "lat": None,
+        "lng": None,
         "price_from_qar": 20000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -414,6 +486,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "English Modern School – Abu Hamour",
         "subtitle": "British & CBSE pathways, Abu Hamour",
         "neighborhood": "Abu Hamour",
+        "lat": 25.2286,
+        "lng": 51.4869,
         "price_from_qar": 16000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -427,6 +501,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "English Modern School – Al Khor",
         "subtitle": "British & CBSE pathways, Al Khor",
         "neighborhood": "Al Khor",
+        "lat": 25.684,
+        "lng": 51.497,
         "price_from_qar": 15000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -440,6 +516,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "GEMS American Academy Qatar",
         "subtitle": "American Curriculum (AP), Al Luqta",
         "neighborhood": "Al Luqta",
+        "lat": 25.3236,
+        "lng": 51.4602,
         "price_from_qar": 42000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -453,6 +531,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "German International School Doha",
         "subtitle": "German Curriculum, Al Mamoura",
         "neighborhood": "Al Mamoura",
+        "lat": 25.2419,
+        "lng": 51.5008,
         "price_from_qar": 38000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -466,6 +546,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Global Academy International",
         "subtitle": "American Curriculum, Doha",
         "neighborhood": "Doha",
+        "lat": None,
+        "lng": None,
         "price_from_qar": 18000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -479,6 +561,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Gulf English School",
         "subtitle": "British Curriculum, Al Gharrafa",
         "neighborhood": "Al Gharrafa",
+        "lat": 25.3339,
+        "lng": 51.4408,
         "price_from_qar": 25000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -492,6 +576,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Hamilton International School",
         "subtitle": "British Curriculum, Lusail",
         "neighborhood": "Lusail",
+        "lat": 25.43,
+        "lng": 51.49,
         "price_from_qar": 36000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -505,6 +591,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Hayat Universal School",
         "subtitle": "American Curriculum, Abu Hamour",
         "neighborhood": "Abu Hamour",
+        "lat": 25.2286,
+        "lng": 51.4869,
         "price_from_qar": 17000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -518,6 +606,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "International School of Choueifat – Doha",
         "subtitle": "SABIS® Curriculum, Abu Hamour",
         "neighborhood": "Abu Hamour",
+        "lat": 25.2286,
+        "lng": 51.4869,
         "price_from_qar": 26000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -531,6 +621,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "International School London Qatar (ISL Qatar)",
         "subtitle": "IB Curriculum, North Duhail",
         "neighborhood": "North Duhail",
+        "lat": 25.3494,
+        "lng": 51.4794,
         "price_from_qar": 47000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -544,6 +636,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Japan School of Doha",
         "subtitle": "Japanese National Curriculum, Doha",
         "neighborhood": "Doha",
+        "lat": None,
+        "lng": None,
         "price_from_qar": 25000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -557,6 +651,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "King’s College Doha",
         "subtitle": "British Curriculum, Al Thumama",
         "neighborhood": "Al Thumama",
+        "lat": 25.2378,
+        "lng": 51.5308,
         "price_from_qar": 39000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -570,6 +666,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Lebanese School Qatar",
         "subtitle": "Lebanese Curriculum / International pathway, Doha",
         "neighborhood": "Doha",
+        "lat": None,
+        "lng": None,
         "price_from_qar": 15000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -583,6 +681,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Loyola International School",
         "subtitle": "CBSE, Al Wukair",
         "neighborhood": "Al Wukair",
+        "lat": 25.14,
+        "lng": 51.535,
         "price_from_qar": 15000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -596,6 +696,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Lycée Bonaparte Doha",
         "subtitle": "French National Curriculum, West Bay",
         "neighborhood": "West Bay",
+        "lat": 25.3212,
+        "lng": 51.531,
         "price_from_qar": 32000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -609,6 +711,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Lycée Franco-Qatarien Voltaire",
         "subtitle": "French National Curriculum, Doha",
         "neighborhood": "Doha",
+        "lat": None,
+        "lng": None,
         "price_from_qar": 30000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -622,6 +726,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Mesaieed International School",
         "subtitle": "British Curriculum, Mesaieed",
         "neighborhood": "Mesaieed",
+        "lat": 24.9917,
+        "lng": 51.55,
         "price_from_qar": 25000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -635,6 +741,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Middle East International School",
         "subtitle": "American Curriculum, Doha",
         "neighborhood": "Doha",
+        "lat": None,
+        "lng": None,
         "price_from_qar": 19000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -648,6 +756,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Newton British Academy – Barwa City",
         "subtitle": "British Curriculum, Barwa City",
         "neighborhood": "Barwa City",
+        "lat": 25.2064,
+        "lng": 51.4747,
         "price_from_qar": 27000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -661,6 +771,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Newton International Academy",
         "subtitle": "British Curriculum, Barwa City",
         "neighborhood": "Barwa City",
+        "lat": 25.2064,
+        "lng": 51.4747,
         "price_from_qar": 24000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -674,6 +786,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Newton International School – Lagoon",
         "subtitle": "British Curriculum, West Bay Lagoon",
         "neighborhood": "West Bay Lagoon",
+        "lat": 25.3739,
+        "lng": 51.5133,
         "price_from_qar": 23000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -687,6 +801,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Newton International School – D Ring",
         "subtitle": "British Curriculum, D Ring Road",
         "neighborhood": "D Ring Road",
+        "lat": 25.25,
+        "lng": 51.52,
         "price_from_qar": 22000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -700,6 +816,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Newton International School – West Bay",
         "subtitle": "British Curriculum, West Bay",
         "neighborhood": "West Bay",
+        "lat": 25.3212,
+        "lng": 51.531,
         "price_from_qar": 25000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -713,6 +831,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Noble International School",
         "subtitle": "CBSE, Doha",
         "neighborhood": "Doha",
+        "lat": None,
+        "lng": None,
         "price_from_qar": 14000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -726,6 +846,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Nord Anglia International School Al Khor",
         "subtitle": "British & IB, Al Khor",
         "neighborhood": "Al Khor",
+        "lat": 25.684,
+        "lng": 51.497,
         "price_from_qar": 38000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -739,6 +861,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Oryx International School",
         "subtitle": "British Curriculum, Mesaimeer",
         "neighborhood": "Mesaimeer",
+        "lat": 25.2231,
+        "lng": 51.4886,
         "price_from_qar": 38000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -752,6 +876,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Olive International School",
         "subtitle": "CBSE, Doha",
         "neighborhood": "Doha",
+        "lat": None,
+        "lng": None,
         "price_from_qar": 6000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -765,6 +891,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Pakistan International School Qatar",
         "subtitle": "Pakistani Curriculum (FBISE), Doha",
         "neighborhood": "Doha",
+        "lat": None,
+        "lng": None,
         "price_from_qar": 10000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -778,6 +906,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Pak Shamaa School",
         "subtitle": "Pakistani Curriculum, Doha",
         "neighborhood": "Doha",
+        "lat": None,
+        "lng": None,
         "price_from_qar": 10000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -791,6 +921,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Park House English School",
         "subtitle": "British Curriculum, Mesaimeer",
         "neighborhood": "Mesaimeer",
+        "lat": 25.2231,
+        "lng": 51.4886,
         "price_from_qar": 34000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -804,6 +936,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Pearling Season International School",
         "subtitle": "British Curriculum, Doha",
         "neighborhood": "Doha",
+        "lat": None,
+        "lng": None,
         "price_from_qar": 17000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -817,6 +951,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Philippine International School Qatar",
         "subtitle": "Philippine Curriculum, Abu Hamour",
         "neighborhood": "Abu Hamour",
+        "lat": 25.2286,
+        "lng": 51.4869,
         "price_from_qar": 14000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -830,6 +966,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Podar Pearl School",
         "subtitle": "CBSE, Doha",
         "neighborhood": "Doha",
+        "lat": None,
+        "lng": None,
         "price_from_qar": 12000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -843,6 +981,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Qatar Academy Doha",
         "subtitle": "IB Curriculum, Education City",
         "neighborhood": "Education City",
+        "lat": 25.3153,
+        "lng": 51.4361,
         "price_from_qar": 55000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -856,6 +996,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Qatar Academy Al Khor",
         "subtitle": "IB Curriculum, Al Khor",
         "neighborhood": "Al Khor",
+        "lat": 25.684,
+        "lng": 51.497,
         "price_from_qar": 40000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -869,6 +1011,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Qatar Academy Al Wakrah",
         "subtitle": "IB Curriculum, Al Wakrah",
         "neighborhood": "Al Wakrah",
+        "lat": 25.1659,
+        "lng": 51.5988,
         "price_from_qar": 40000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -882,6 +1026,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Qatar Academy Msheireb",
         "subtitle": "IB Curriculum, Msheireb",
         "neighborhood": "Msheireb",
+        "lat": 25.2886,
+        "lng": 51.5253,
         "price_from_qar": 45000,
         "age_groups": ["3-5", "6-12"],
         "description": (
@@ -895,6 +1041,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Qatar Academy Sidra",
         "subtitle": "IB Curriculum, Education City",
         "neighborhood": "Education City",
+        "lat": 25.3153,
+        "lng": 51.4361,
         "price_from_qar": 50000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -908,6 +1056,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Qatar Canadian School",
         "subtitle": "Canadian Curriculum (Alberta), Doha",
         "neighborhood": "Doha",
+        "lat": None,
+        "lng": None,
         "price_from_qar": 28000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -921,6 +1071,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Qatar International School",
         "subtitle": "British Curriculum, Al Dafna",
         "neighborhood": "Al Dafna",
+        "lat": 25.3172,
+        "lng": 51.5289,
         "price_from_qar": 30000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -934,6 +1086,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Qatar Turkish School",
         "subtitle": "Turkish Curriculum, Ain Khaled",
         "neighborhood": "Ain Khaled",
+        "lat": 25.2244,
+        "lng": 51.4525,
         "price_from_qar": 15000,
         "age_groups": ["6-12", "13-18"],
         "description": (
@@ -947,6 +1101,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Royal Grammar School Guildford Qatar",
         "subtitle": "British Curriculum, Al Mashaf",
         "neighborhood": "Al Mashaf",
+        "lat": 25.155,
+        "lng": 51.48,
         "price_from_qar": 42000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -960,6 +1116,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "SEK International School Qatar",
         "subtitle": "IB Curriculum, West Bay",
         "neighborhood": "West Bay",
+        "lat": 25.3212,
+        "lng": 51.531,
         "price_from_qar": 46000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -973,6 +1131,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Sherborne Qatar – Preparatory School",
         "subtitle": "British Curriculum, Bani Hajer",
         "neighborhood": "Bani Hajer",
+        "lat": 25.32,
+        "lng": 51.39,
         "price_from_qar": 36000,
         "age_groups": ["3-5", "6-12"],
         "description": (
@@ -986,6 +1146,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Sherborne Qatar – Boys School",
         "subtitle": "British Curriculum, Al Rayyan",
         "neighborhood": "Al Rayyan",
+        "lat": 25.2919,
+        "lng": 51.4244,
         "price_from_qar": 38000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -999,6 +1161,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Sherborne Qatar – Girls School",
         "subtitle": "British Curriculum, Ain Khaled",
         "neighborhood": "Ain Khaled",
+        "lat": 25.2244,
+        "lng": 51.4525,
         "price_from_qar": 38000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -1012,6 +1176,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Shantiniketan Indian School",
         "subtitle": "CBSE, Doha",
         "neighborhood": "Doha",
+        "lat": None,
+        "lng": None,
         "price_from_qar": 10000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -1025,6 +1191,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Spectra Global School",
         "subtitle": "British / Cambridge Primary, Doha",
         "neighborhood": "Doha",
+        "lat": None,
+        "lng": None,
         "price_from_qar": 21000,
         "age_groups": ["3-5", "6-12"],
         "description": (
@@ -1038,6 +1206,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Stafford Sri Lankan School Doha",
         "subtitle": "Sri Lankan Curriculum, Doha",
         "neighborhood": "Doha",
+        "lat": None,
+        "lng": None,
         "price_from_qar": 10000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -1051,6 +1221,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Swiss International School Qatar",
         "subtitle": "IB Curriculum, Al Luqta",
         "neighborhood": "Al Luqta",
+        "lat": 25.3236,
+        "lng": 51.4602,
         "price_from_qar": 44000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -1064,6 +1236,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "The Cambridge School Doha",
         "subtitle": "Cambridge / British, Doha",
         "neighborhood": "Doha",
+        "lat": None,
+        "lng": None,
         "price_from_qar": 18000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -1077,6 +1251,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "The Scholars International School",
         "subtitle": "British Curriculum, Doha",
         "neighborhood": "Doha",
+        "lat": None,
+        "lng": None,
         "price_from_qar": 20000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -1090,6 +1266,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "United School International",
         "subtitle": "British Curriculum, The Pearl",
         "neighborhood": "The Pearl",
+        "lat": 25.3697,
+        "lng": 51.5508,
         "price_from_qar": 39000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
@@ -1103,6 +1281,8 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "Vision International School",
         "subtitle": "American Curriculum, Al Waab",
         "neighborhood": "Al Waab",
+        "lat": 25.2606,
+        "lng": 51.4494,
         "price_from_qar": 27000,
         "age_groups": ["3-5", "6-12", "13-18"],
         "description": (
