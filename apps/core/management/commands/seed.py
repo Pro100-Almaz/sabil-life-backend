@@ -25,6 +25,11 @@ class Command(BaseCommand):
             action="store_true",
             help="Skip seeding the catalog listings (users only).",
         )
+        parser.add_argument(
+            "--no-tutors",
+            action="store_true",
+            help="Skip seeding the individual tutor accounts (TutorDetail profiles).",
+        )
 
     def handle(self, *args, **options):
         if options["clean"]:
@@ -39,6 +44,9 @@ class Command(BaseCommand):
         if not options["no_listings"]:
             self.create_listings(clean=options["clean"])
 
+        if not options["no_tutors"]:
+            self.create_tutors(clean=options["clean"])
+
         self.stdout.write(self.style.SUCCESS("Successfully seeded database"))
 
     def create_listings(self, clean=False):
@@ -48,6 +56,13 @@ class Command(BaseCommand):
         idempotent `seed_catalog` command."""
         self.stdout.write("Seeding catalog listings...")
         call_command("seed_catalog", clean=clean)
+
+    def create_tutors(self, clean=False):
+        """Seed individual tutor accounts (CustomUser + TutorDetail) via the
+        idempotent `seed_tutors` command. Runs after `seed_catalog` so tutors
+        can affiliate to the seeded TUTORING listings by their stable UUID."""
+        self.stdout.write("Seeding tutor accounts...")
+        call_command("seed_tutors", clean=clean)
 
     def create_superuser(self):
         try:

@@ -23,7 +23,7 @@ _LISTING_EXAMPLE = {
     "lat": 25.369,
     "lng": 51.551,
     "price_from_qar": 150,
-    "age_groups": ["12-16", "16-18"],
+    "age_groups": ["10-12", "13-17"],
     "image_urls": ["https://picsum.photos/seed/tutor1/400/300"],
     "description": "Personalised maths tutoring for IGCSE and A-Level students.",
     "highlights": ["Small groups", "Weekend slots", "Native Arabic speakers"],

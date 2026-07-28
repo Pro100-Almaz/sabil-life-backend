@@ -142,6 +142,8 @@ class ProviderListingSerializer(serializers.ModelSerializer):
             "materials_required",
             "created_at",
             "updated_at",
+            "is_online",
+            "meeting_url",
         ]
         read_only_fields = [
             "id",
@@ -180,7 +182,26 @@ class ProviderListingSerializer(serializers.ModelSerializer):
                 f"Your roles do not allow creating listings in the {value} category."
             )
         return value
-    
+
+    def validate(self, attrs):
+        is_online = attrs.get("is_online", getattr(self.instance, "is_online", False))
+        meeting_url = attrs.get("meeting_url", getattr(self.instance, "meeting_url", ""))
+        neighborhood = attrs.get("neighborhood", getattr(self.instance, "neighborhood", ""))
+
+        # On a partial update (PATCH) only enforce a cross-field requirement
+        # when one of the fields it depends on is actually part of the request,
+        # so an unrelated change (e.g. just the title) is never blocked.
+        partial = getattr(self, "partial", False)
+        online_submitted = "is_online" in attrs or "meeting_url" in attrs
+        offline_submitted = "is_online" in attrs or "neighborhood" in attrs
+
+        if (not partial or online_submitted) and is_online and not meeting_url:
+            raise serializers.ValidationError({"meeting_url": "Required for online listings"})
+        if (not partial or offline_submitted) and not is_online and not neighborhood:
+            raise serializers.ValidationError({"neighborhood": "Required for offline listings"})
+
+        return attrs
+
     def get_image_urls(self, obj):
         return [default_storage.url(img.key) for img in obj.images.all()]
 

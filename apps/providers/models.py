@@ -38,7 +38,7 @@ class TutorDetail(models.Model):
     )
     age_groups = models.JSONField(
         _("age groups"), default=list, blank=True,
-        help_text=_('e.g. ["6-11", "12-15"]'),
+        help_text=_('e.g. ["6-9", "10-12"]'),
     )
     price_per_hour_qar = models.PositiveIntegerField(
         _("price per hour (QAR)"), null=True, blank=True,
