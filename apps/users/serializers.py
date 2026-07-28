@@ -7,9 +7,8 @@ from django.contrib.auth.password_validation import validate_password
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
-from apps.users.enums import UserRole
 from apps.users.models import CustomUser
-
+from apps.users.otp import CODE_LENGTH
 from apps.users.utils import get_errors
 
 logger = logging.getLogger(__name__)
@@ -85,11 +84,13 @@ class CreateUserSerializer(serializers.ModelSerializer):
         return CustomUser.objects.create_user(**validated_data)
 
 
-class RegisterSerializer(serializers.ModelSerializer):
+class RegistrationRequestSerializer(serializers.ModelSerializer):
     """
-    Public self-service registration.
+    Step 1 of self-service registration: validate the inputs before a
+    verification code is emailed. Deliberately does NOT create anything —
+    the account is only created once the code is verified (step 2).
 
-    Every user registers as FAMILY.  Additional roles (TUTOR, MASTERCLASS,
+    Every user registers as FAMILY. Additional roles (TUTOR, MASTERCLASS,
     MANAGER) are granted later by a manager/admin after verification.
     """
 
@@ -104,6 +105,14 @@ class RegisterSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
         fields = ("email", "password", "full_name", "phone")
+
+    def validate_email(self, value: str) -> str:
+        # Fail fast: surface a taken email BEFORE we email a code.
+        if CustomUser.objects.filter(email__iexact=value).exists():
+            raise serializers.ValidationError(
+                _("A user with this email already exists.")
+            )
+        return value
 
     def validate(self, data: dict) -> dict:
         password = data.get("password", "")
@@ -120,14 +129,12 @@ class RegisterSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({"password": errors}) from e
         return data
 
-    def create(self, validated_data: dict) -> CustomUser:
-        from apps.users.models import Role
 
-        validated_data["is_verified"] = True
-        user = CustomUser.objects.create_user(**validated_data)
-        family_role, _ = Role.objects.get_or_create(name=UserRole.FAMILY)
-        user.roles.add(family_role)
-        return user
+class RegistrationVerifySerializer(serializers.Serializer):
+    """Step 2: the email plus the code emailed to it."""
+
+    email = serializers.EmailField()
+    code = serializers.CharField(min_length=CODE_LENGTH, max_length=CODE_LENGTH)
 
 
 class UserProfileSerializer(serializers.ModelSerializer):

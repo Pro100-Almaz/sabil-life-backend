@@ -11,6 +11,7 @@ stable slug fed through uuid.uuid5() so the UUID is always the same.
 import uuid
 import requests
 
+from collections import Counter
 from decimal import Decimal
 
 from django.core.management.base import BaseCommand
@@ -18,6 +19,7 @@ from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 
 from apps.catalog.models import Listing, ListingCategory, ListingStatus, ListingImage
+from apps.catalog.services import delete_listing
 from apps.users.enums import UserRole
 from apps.users.models import CustomUser
 
@@ -82,7 +84,7 @@ LISTINGS: list[dict] = [
         "lat": 25.3220,
         "lng": 51.5260,
         "price_from_qar": 18000,
-        "age_groups": ["6-12", "13-18"],
+        "age_groups": ["6-9", "10-12", "13-17"],
         "description": (
             "A leading British-curriculum school serving West Bay families "
             "with excellent A-Level results and a strong university placement record."
@@ -107,7 +109,7 @@ LISTINGS: list[dict] = [
         "lat": 25.3710,
         "lng": 51.5510,
         "price_from_qar": 20000,
-        "age_groups": ["6-12", "13-18"],
+        "age_groups": ["6-9", "10-12", "13-17"],
         "description": (
             "Full US curriculum with Advanced Placement courses, "
             "nestled in the heart of The Pearl-Qatar community."
@@ -131,7 +133,7 @@ LISTINGS: list[dict] = [
         "lat": 25.4290,
         "lng": 51.5330,
         "price_from_qar": 16500,
-        "age_groups": ["6-12", "13-18"],
+        "age_groups": ["6-9", "10-12", "13-17"],
         "description": (
             "Bilingual French-English instruction following the French Ministry "
             "curriculum, located in the new Lusail district."
@@ -155,7 +157,7 @@ LISTINGS: list[dict] = [
         "lat": 25.3155,
         "lng": 51.4370,
         "price_from_qar": 17000,
-        "age_groups": ["6-12", "13-18"],
+        "age_groups": ["6-9", "10-12", "13-17"],
         "description": (
             "Partners with Qatar Foundation to deliver a STEM-intensive curriculum "
             "for grades 1–12, with access to world-class university facilities."
@@ -181,7 +183,7 @@ LISTINGS: list[dict] = [
         "lat": 25.3695,
         "lng": 51.5495,
         "price_from_qar": 3500,
-        "age_groups": ["0-3", "3-5"],
+        "age_groups": ["0-2", "3-5"],
         "description": (
             "Warm Montessori-inspired environment for children aged 3 months to 4 years, "
             "with bilingual Arabic-English staff."
@@ -205,7 +207,7 @@ LISTINGS: list[dict] = [
         "lat": 25.2820,
         "lng": 51.4650,
         "price_from_qar": 2800,
-        "age_groups": ["0-3", "3-5"],
+        "age_groups": ["0-2", "3-5"],
         "description": (
             "Child-led play-based learning in a purpose-built garden setting "
             "that encourages curiosity and social development."
@@ -229,7 +231,7 @@ LISTINGS: list[dict] = [
         "lat": 25.2790,
         "lng": 51.5060,
         "price_from_qar": 2500,
-        "age_groups": ["0-3", "3-5"],
+        "age_groups": ["0-2", "3-5"],
         "description": (
             "Nurturing environment rooted in Islamic values and the Early Years "
             "Foundation Stage, serving families in Al Sadd since 2018."
@@ -254,7 +256,7 @@ LISTINGS: list[dict] = [
         "lat": 25.2665,
         "lng": 51.4405,
         "price_from_qar": 250,
-        "age_groups": ["6-12", "13-18"],
+        "age_groups": ["6-9", "10-12", "13-17"],
         "description": (
             "Professional football coaching for all levels adjacent to the Aspire Dome, "
             "run by UEFA-licensed coaches."
@@ -279,7 +281,7 @@ LISTINGS: list[dict] = [
         "lat": 25.3600,
         "lng": 51.5260,
         "price_from_qar": 150,
-        "age_groups": ["6-12", "13-18", "Adult"],
+        "age_groups": ["6-9", "10-12", "13-17", "Adults"],
         "description": (
             "Creative arts studio in the Katara Cultural Village offering painting, "
             "ceramics, and Arabic calligraphy classes for all ages."
@@ -303,7 +305,7 @@ LISTINGS: list[dict] = [
         "lat": 25.3705,
         "lng": 51.5520,
         "price_from_qar": 180,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["3-5", "6-9", "10-12", "13-17"],
         "description": (
             "Year-round swimming programme from beginner splash classes to "
             "competitive squad training, led by FINA-certified coaches."
@@ -327,7 +329,7 @@ LISTINGS: list[dict] = [
         "lat": 25.2870,
         "lng": 51.5340,
         "price_from_qar": 200,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["3-5", "6-9", "10-12", "13-17"],
         "description": (
             "Professional dance studio in the heart of Msheireb Downtown "
             "offering classical ballet, contemporary, and traditional Khaleeji dance."
@@ -351,7 +353,7 @@ LISTINGS: list[dict] = [
         "lat": 25.3110,
         "lng": 51.4760,
         "price_from_qar": 220,
-        "age_groups": ["6-12", "13-18"],
+        "age_groups": ["6-9", "10-12", "13-17"],
         "description": (
             "Structured ITF junior tennis pathway with certified coaches, "
             "catering to beginners through tournament-ready players."
@@ -375,7 +377,7 @@ LISTINGS: list[dict] = [
         "lat": 25.2600,
         "lng": 51.4100,
         "price_from_qar": 350,
-        "age_groups": ["6-12", "13-18", "Adult"],
+        "age_groups": ["6-9", "10-12", "13-17", "Adults"],
         "description": (
             "Family-friendly equestrian centre on the outskirts of Al Rayyan "
             "offering beginner through advanced riding lessons."
@@ -400,7 +402,7 @@ LISTINGS: list[dict] = [
         "lat": 25.2872,
         "lng": 51.5338,
         "price_from_qar": 80,
-        "age_groups": ["6-12", "13-18", "Adult"],
+        "age_groups": ["6-9", "10-12", "13-17", "Adults"],
         "description": (
             "Immersive guided family tours of Doha's historic Souq Waqif, "
             "blending Qatari heritage storytelling with hands-on culinary stops."
@@ -424,7 +426,7 @@ LISTINGS: list[dict] = [
         "lat": 25.4285,
         "lng": 51.5325,
         "price_from_qar": 50,
-        "age_groups": ["3-5", "6-12", "13-18", "Adult"],
+        "age_groups": ["3-5", "6-9", "10-12", "13-17", "Adults"],
         "description": (
             "Modern 16-lane bowling alley with bumper options for young children, "
             "plus a 200-game arcade floor at Lusail Marina."
@@ -448,7 +450,7 @@ LISTINGS: list[dict] = [
         "lat": 25.2670,
         "lng": 51.5450,
         "price_from_qar": 120,
-        "age_groups": ["6-12", "13-18", "Adult"],
+        "age_groups": ["6-9", "10-12", "13-17", "Adults"],
         "description": (
             "High-energy go-kart venue with separate junior and adult tracks, "
             "electric karts, and a café pit lane."
@@ -473,7 +475,7 @@ LISTINGS: list[dict] = [
         "lat": 25.2800,
         "lng": 51.5070,
         "price_from_qar": 120,
-        "age_groups": ["6-12", "13-18", "Adult"],
+        "age_groups": ["6-9", "10-12", "13-17", "Adults"],
         "description": (
             "Network of vetted native Arabic-speaking tutors covering MSA, "
             "Qatari dialect, and school-curriculum Arabic for all levels."
@@ -497,7 +499,7 @@ LISTINGS: list[dict] = [
         "lat": 25.3210,
         "lng": 51.5265,
         "price_from_qar": 150,
-        "age_groups": ["6-12", "13-18"],
+        "age_groups": ["6-9", "10-12", "13-17"],
         "description": (
             "Specialist tutors for IGCSE, IB, and A-Level Maths, Physics, "
             "and Computer Science, with a strong track record of grade uplift."
@@ -521,7 +523,7 @@ LISTINGS: list[dict] = [
         "lat": 25.3160,
         "lng": 51.4368,
         "price_from_qar": 100,
-        "age_groups": ["6-12", "13-18", "Adult"],
+        "age_groups": ["6-9", "10-12", "13-17", "Adults"],
         "description": (
             "Accredited language tutoring centre offering English, French, and Spanish "
             "for school support and internationally recognised exams."
@@ -546,7 +548,7 @@ LISTINGS: list[dict] = [
         "lat": 25.3603,
         "lng": 51.5258,
         "price_from_qar": 300,
-        "age_groups": ["13-18", "Adult"],
+        "age_groups": ["13-17", "Adults"],
         "description": (
             "Intensive oud lessons taught by award-winning Qatari musician "
             "Ahmed Al-Marri, held inside the Katara Cultural Village."
@@ -570,7 +572,7 @@ LISTINGS: list[dict] = [
         "lat": 25.2875,
         "lng": 51.5345,
         "price_from_qar": 250,
-        "age_groups": ["13-18", "Adult"],
+        "age_groups": ["13-17", "Adults"],
         "description": (
             "Hands-on cooking masterclasses focused on traditional Qatari "
             "recipes and Mediterranean cuisine, led by professional chefs."
@@ -594,7 +596,7 @@ LISTINGS: list[dict] = [
         "lat": 25.2860,
         "lng": 51.5330,
         "price_from_qar": 400,
-        "age_groups": ["13-18", "Adult"],
+        "age_groups": ["13-17", "Adults"],
         "description": (
             "Weekend photography masterclasses led by published Doha photographer "
             "covering composition, light, and post-processing on location."
@@ -619,7 +621,7 @@ LISTINGS: list[dict] = [
         "lat": 25.3150,
         "lng": 51.4355,
         "price_from_qar": 0,
-        "age_groups": ["All"],
+        "age_groups": ["0-2", "3-5", "6-9", "10-12", "13-17", "Adults"],
         "description": (
             "Exclusive Sabil Life partnership granting registered families "
             "discounted entry to Qatar Foundation campus events, museums, and parks."
@@ -643,7 +645,7 @@ LISTINGS: list[dict] = [
         "lat": 25.2658,
         "lng": 51.4395,
         "price_from_qar": 500,
-        "age_groups": ["All"],
+        "age_groups": ["0-2", "3-5", "6-9", "10-12", "13-17", "Adults"],
         "description": (
             "Special family membership rate negotiated by Sabil Life giving "
             "unlimited access to Aspire Zone gyms, pools, and track facilities."
@@ -660,7 +662,8 @@ LISTINGS: list[dict] = [
     },
 ]
 
-# Sanity-check the data at import time (not at runtime in production — only in tests)
+# Sanity-check the data at import time so a miscategorized or dropped listing
+# fails fast (import error) rather than silently drifting the dataset.
 _EXPECTED_TOTALS = {
     ListingCategory.SCHOOLS: 4,
     ListingCategory.NURSERIES: 3,
@@ -670,7 +673,14 @@ _EXPECTED_TOTALS = {
     ListingCategory.MASTERCLASSES: 3,
     ListingCategory.PARTNERSHIPS: 2,
 }
-assert len(LISTINGS) == 24, f"Expected 24 listings, got {len(LISTINGS)}"
+assert len(LISTINGS) == sum(_EXPECTED_TOTALS.values()), (
+    f"Expected {sum(_EXPECTED_TOTALS.values())} listings, got {len(LISTINGS)}"
+)
+_ACTUAL_TOTALS = Counter(d["category"] for d in LISTINGS)
+assert _ACTUAL_TOTALS == _EXPECTED_TOTALS, (
+    f"Category distribution drifted — expected {dict(_EXPECTED_TOTALS)}, "
+    f"got {dict(_ACTUAL_TOTALS)}"
+)
 
 
 class Command(BaseCommand):
@@ -702,9 +712,18 @@ class Command(BaseCommand):
 
         if options["clean"]:
             seed_ids = [_uid(d["slug"]) for d in LISTINGS]
-            deleted, _ = Listing.objects.filter(id__in=seed_ids).delete()
+            # Delete through the service layer (not queryset.delete()) so each
+            # listing's image storage objects are enqueued for cleanup. A bulk
+            # queryset delete cascades the ListingImage rows but leaves their
+            # MinIO/S3 blobs orphaned.
+            to_delete = list(Listing.objects.filter(id__in=seed_ids))
+            for listing in to_delete:
+                delete_listing(listing)
             self.stdout.write(
-                self.style.WARNING(f"Deleted {deleted} previously-seeded listing(s).")
+                self.style.WARNING(
+                    f"Deleted {len(to_delete)} previously-seeded listing(s) "
+                    "and enqueued their images for storage cleanup."
+                )
             )
 
         # Upsert the two seed provider users so TUTORING / MASTERCLASSES
@@ -749,14 +768,19 @@ class Command(BaseCommand):
             )
             if created:
                 created_count += 1
-                self._seed_images(listing, slug, data.get("image_count", 1))
             else:
                 existed_count += 1
 
+            # Backfill placeholder images whenever the listing has none. On
+            # first creation this attaches the full set; on a later run it fills
+            # in listings that were created offline (network unavailable ->
+            # zero images), making image seeding eventually consistent. No-op
+            # once any image exists, so it never duplicates on re-runs.
+            if not listing.images.exists():
+                self._seed_images(listing, slug, data.get("image_count", 1))
+
 
         # Summary breakdown
-        from collections import Counter
-
         cat_counts = Counter(d["category"] for d in LISTINGS)
         breakdown = ", ".join(
             f"{count} {cat}" for cat, count in sorted(cat_counts.items())
