@@ -22,11 +22,9 @@ from django.utils.translation import gettext_lazy as _
 
 
 class InquiryStatus(models.TextChoices):
-    NEW = "NEW", _("New")
-    CONTACTED = "CONTACTED", _("Contacted")
+    PENDING = "PENDING", _("Pending")
     ACCEPTED = "ACCEPTED", _("Accepted")
     DECLINED = "DECLINED", _("Declined")
-    COMPLETED = "COMPLETED", _("Completed")
     CANCELLED = "CANCELLED", _("Cancelled")
 
 
@@ -35,12 +33,11 @@ class Inquiry(models.Model):
     Represents a family's inquiry addressed to a tutor.
 
     State machine (managed by services.transition):
-        NEW       → CONTACTED, ACCEPTED, DECLINED, CANCELLED
-        CONTACTED → ACCEPTED, DECLINED, CANCELLED
-        ACCEPTED  → COMPLETED
-        DECLINED, COMPLETED, CANCELLED → terminal
+        PENDING  → DECLINED, ACCEPTED, CANCELLED 
+        ACCEPTED → CANCELLED 
+        DECLINED, CANCELLED, ACCEPTED → terminal
 
-    Tutor-driven transitions: CONTACTED, ACCEPTED, DECLINED, COMPLETED.
+    Tutor-driven transitions: ACCEPTED, DECLINED.
     Family-driven transition:  CANCELLED.
 
     The `contact_revealed` flag is always False in Phase 5.
@@ -63,7 +60,7 @@ class Inquiry(models.Model):
     status = models.CharField(
         max_length=16,
         choices=InquiryStatus.choices,
-        default=InquiryStatus.NEW,
+        default=InquiryStatus.PENDING,
         db_index=True,
     )
     contact_revealed = models.BooleanField(default=False)

@@ -13,7 +13,6 @@ from apps.inquiries.models import Inquiry, InquiryStatus
 logger = logging.getLogger(__name__)
 
 ProviderResponse = {
-    InquiryStatus.CONTACTED,
     InquiryStatus.ACCEPTED,
     InquiryStatus.DECLINED,
 }
@@ -38,7 +37,7 @@ def notify_inquiry_result(self, inquiryId: str) -> None:
         body = _("Tutor has responded to your inquiry")
         user = inquiry.family
         
-    elif inquiry.status == InquiryStatus.NEW:
+    elif inquiry.status == InquiryStatus.PENDING:
         ntype = NotificationType.INQUIRY_REQUEST
         title = _("Inquiry recieved")
         body = _("You have recieved inquiry")
