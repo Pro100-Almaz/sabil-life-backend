@@ -66,7 +66,7 @@ class TestReviewCreateTutoring:
 
     def test_family_with_completed_inquiry_can_post_201(self):
         family = _user("cr_comp@test.com")
-        self._make_inquiry(family, InquiryStatus.COMPLETED)
+        self._make_inquiry(family, InquiryStatus.ACCEPTED)
         self.client.force_authenticate(user=family)
         resp = self.client.post(
             _reviews_url(self.listing.id), {"rating": 4, "text": "Good."}
@@ -75,14 +75,14 @@ class TestReviewCreateTutoring:
 
     def test_family_with_new_inquiry_gets_400(self):
         family = _user("cr_new@test.com")
-        self._make_inquiry(family, InquiryStatus.NEW)
+        self._make_inquiry(family, InquiryStatus.PENDING)
         self.client.force_authenticate(user=family)
         resp = self.client.post(_reviews_url(self.listing.id), {"rating": 3})
         assert resp.status_code == 400
 
     def test_family_with_contacted_inquiry_gets_400(self):
         family = _user("cr_contacted@test.com")
-        self._make_inquiry(family, InquiryStatus.CONTACTED)
+        self._make_inquiry(family, InquiryStatus.PENDING)
         self.client.force_authenticate(user=family)
         resp = self.client.post(_reviews_url(self.listing.id), {"rating": 3})
         assert resp.status_code == 400

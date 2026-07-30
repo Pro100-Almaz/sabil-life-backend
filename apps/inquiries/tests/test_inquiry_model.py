@@ -35,7 +35,7 @@ class TestInquiryModel:
         family = make_user("family@test.com", UserRole.FAMILY)
         tutor = make_tutor_detail("tutor@test.com")
         inquiry = make_inquiry(family, tutor)
-        assert inquiry.status == InquiryStatus.NEW
+        assert inquiry.status == InquiryStatus.PENDING
 
     def test_contact_revealed_defaults_false(self):
         family = make_user("family2@test.com", UserRole.FAMILY)
@@ -60,11 +60,8 @@ class TestInquiryModel:
 
     def test_status_choices_contain_expected_values(self):
         choice_values = [c[0] for c in InquiryStatus.choices]
-        assert "NEW" in choice_values
-        assert "CONTACTED" in choice_values
         assert "ACCEPTED" in choice_values
         assert "DECLINED" in choice_values
-        assert "COMPLETED" in choice_values
         assert "CANCELLED" in choice_values
 
     def test_uuid_primary_key(self):

@@ -29,7 +29,7 @@ def make_tutor_detail(email):
     return TutorDetail.objects.create(user=user)
 
 
-def make_inquiry(family, tutor, inq_status=InquiryStatus.NEW):
+def make_inquiry(family, tutor, inq_status=InquiryStatus.PENDING):
     return Inquiry.objects.create(
         family=family,
         tutor=tutor,
@@ -104,17 +104,8 @@ class TutorInquiryViewTests(APITestCase):
     # Status update (PATCH)
     # ------------------------------------------------------------------
 
-    def test_update_to_contacted(self):
-        inq = make_inquiry(self.family, self.tutor, InquiryStatus.NEW)
-        self.client.force_authenticate(user=self.tutor.user)
-        resp = self.client.patch(
-            self._detail_url(inq.id), {"status": InquiryStatus.CONTACTED}
-        )
-        self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        self.assertEqual(resp.data["status"], InquiryStatus.CONTACTED)
-
     def test_update_to_accepted(self):
-        inq = make_inquiry(self.family, self.tutor, InquiryStatus.NEW)
+        inq = make_inquiry(self.family, self.tutor, InquiryStatus.PENDING)
         self.client.force_authenticate(user=self.tutor.user)
         resp = self.client.patch(
             self._detail_url(inq.id), {"status": InquiryStatus.ACCEPTED}
@@ -123,7 +114,7 @@ class TutorInquiryViewTests(APITestCase):
         self.assertEqual(resp.data["status"], InquiryStatus.ACCEPTED)
 
     def test_update_to_declined(self):
-        inq = make_inquiry(self.family, self.tutor, InquiryStatus.NEW)
+        inq = make_inquiry(self.family, self.tutor, InquiryStatus.PENDING)
         self.client.force_authenticate(user=self.tutor.user)
         resp = self.client.patch(
             self._detail_url(inq.id), {"status": InquiryStatus.DECLINED}
@@ -131,26 +122,17 @@ class TutorInquiryViewTests(APITestCase):
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.data["status"], InquiryStatus.DECLINED)
 
-    def test_update_to_completed(self):
+    def test_invalid_transition_returns_409(self):
         inq = make_inquiry(self.family, self.tutor, InquiryStatus.ACCEPTED)
         self.client.force_authenticate(user=self.tutor.user)
         resp = self.client.patch(
-            self._detail_url(inq.id), {"status": InquiryStatus.COMPLETED}
-        )
-        self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        self.assertEqual(resp.data["status"], InquiryStatus.COMPLETED)
-
-    def test_invalid_transition_returns_409(self):
-        inq = make_inquiry(self.family, self.tutor, InquiryStatus.NEW)
-        self.client.force_authenticate(user=self.tutor.user)
-        resp = self.client.patch(
-            self._detail_url(inq.id), {"status": InquiryStatus.COMPLETED}
+            self._detail_url(inq.id), {"status": InquiryStatus.DECLINED}
         )
         self.assertEqual(resp.status_code, status.HTTP_409_CONFLICT)
 
     def test_tutor_cannot_set_cancelled_status(self):
         """CANCELLED is family-only and not a valid choice for the tutor."""
-        inq = make_inquiry(self.family, self.tutor, InquiryStatus.NEW)
+        inq = make_inquiry(self.family, self.tutor, InquiryStatus.PENDING)
         self.client.force_authenticate(user=self.tutor.user)
         resp = self.client.patch(
             self._detail_url(inq.id), {"status": InquiryStatus.CANCELLED}
@@ -160,7 +142,7 @@ class TutorInquiryViewTests(APITestCase):
     def test_tutor_cannot_update_other_tutors_inquiry(self):
         self.client.force_authenticate(user=self.other_tutor.user)
         resp = self.client.patch(
-            self._detail_url(self.inquiry.id), {"status": InquiryStatus.CONTACTED}
+            self._detail_url(self.inquiry.id), {"status": InquiryStatus.ACCEPTED}
         )
         self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
 

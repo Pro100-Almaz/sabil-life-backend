@@ -49,7 +49,7 @@ class InquiryContactRedactionGatedTests(APITestCase):
             family=cls.family,
             tutor=cls.tutor,
             message="Test",
-            status=InquiryStatus.NEW,
+            status=InquiryStatus.PENDING,
         )
         cls.inquiry_accepted = Inquiry.objects.create(
             family=cls.family,
@@ -154,7 +154,7 @@ class InquiryContactRevealFreeTrialTests(APITestCase):
             family=self.family,
             tutor=self.tutor,
             message="Please accept",
-            status=InquiryStatus.NEW,
+            status=InquiryStatus.PENDING,
         )
         self.client.force_authenticate(user=self.tutor.user)
         resp = self._accept(inquiry.id)
@@ -170,7 +170,7 @@ class InquiryContactRevealFreeTrialTests(APITestCase):
             family=self.family,
             tutor=self.tutor,
             message="Please accept",
-            status=InquiryStatus.NEW,
+            status=InquiryStatus.PENDING,
         )
         self.client.force_authenticate(user=self.tutor.user)
         self._accept(inquiry.id)
@@ -183,7 +183,7 @@ class InquiryContactRevealFreeTrialTests(APITestCase):
             family=self.family,
             tutor=self.tutor,
             message="Gate test",
-            status=InquiryStatus.NEW,
+            status=InquiryStatus.PENDING,
         )
         self.client.force_authenticate(user=self.tutor.user)
         self._accept(inquiry.id)
@@ -196,7 +196,7 @@ class InquiryContactRevealFreeTrialTests(APITestCase):
             family=self.family,
             tutor=self.tutor,
             message="Gate test",
-            status=InquiryStatus.NEW,
+            status=InquiryStatus.PENDING,
         )
         self.client.force_authenticate(user=self.tutor.user)
         resp = self._accept(inquiry.id)

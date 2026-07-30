@@ -49,7 +49,7 @@ def can_review(user, listing) -> bool:
         return Inquiry.objects.filter(
             family=user,
             tutor__user_id=listing.owner_id,
-            status__in=[InquiryStatus.ACCEPTED, InquiryStatus.COMPLETED],
+            status__in=[InquiryStatus.ACCEPTED],
         ).exists()
 
     if listing.category == ListingCategory.MASTERCLASSES:
@@ -78,9 +78,7 @@ def can_review_tutor(user, tutor) -> bool:
         family=user,
         tutor=tutor,
         status__in=[
-            InquiryStatus.CONTACTED,
             InquiryStatus.ACCEPTED,
-            InquiryStatus.COMPLETED,
         ],
     ).exists()
 

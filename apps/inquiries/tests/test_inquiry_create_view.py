@@ -62,7 +62,7 @@ class InquiryCreateViewTests(APITestCase):
             {"tutor_id": self.tutor.id, "message": "I am interested."},
         )
         self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(resp.data["status"], InquiryStatus.NEW)
+        self.assertEqual(resp.data["status"], InquiryStatus.PENDING)
         self.assertFalse(resp.data["contact_revealed"])
 
     def test_create_returns_correct_fields(self):
@@ -211,17 +211,6 @@ class InquiryCreateViewTests(APITestCase):
         resp = self.client.post(self._cancel_url(inquiry.id))
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.data["status"], InquiryStatus.CANCELLED)
-
-    def test_cancel_on_completed_returns_409(self):
-        inquiry = Inquiry.objects.create(
-            family=self.family,
-            tutor=self.tutor,
-            message="Done.",
-            status=InquiryStatus.COMPLETED,
-        )
-        self._auth(self.family)
-        resp = self.client.post(self._cancel_url(inquiry.id))
-        self.assertEqual(resp.status_code, status.HTTP_409_CONFLICT)
 
     def test_family_cannot_cancel_other_familys_inquiry(self):
         other_family = make_user("other2@test.com", UserRole.FAMILY)
