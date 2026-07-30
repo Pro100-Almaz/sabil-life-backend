@@ -14,10 +14,8 @@ from apps.notifications.tasks import notify_inquiry_result
 # Statuses a TUTOR is allowed to move an inquiry into.
 TUTOR_SETTABLE_STATUSES: frozenset[str] = frozenset(
     {
-        InquiryStatus.CONTACTED,
         InquiryStatus.ACCEPTED,
         InquiryStatus.DECLINED,
-        InquiryStatus.COMPLETED,
     }
 )
 
@@ -30,20 +28,15 @@ class InvalidTransition(Exception):
 # Valid transitions: {current_status: frozenset of allowed next statuses}
 # ---------------------------------------------------------------------------
 _ALLOWED: dict[str, frozenset[str]] = {
-    InquiryStatus.NEW: frozenset(
+    InquiryStatus.PENDING: frozenset(
         {
-            InquiryStatus.CONTACTED,
             InquiryStatus.ACCEPTED,
             InquiryStatus.DECLINED,
             InquiryStatus.CANCELLED,
         }
     ),
-    InquiryStatus.CONTACTED: frozenset(
-        {InquiryStatus.ACCEPTED, InquiryStatus.DECLINED, InquiryStatus.CANCELLED}
-    ),
-    InquiryStatus.ACCEPTED: frozenset({InquiryStatus.COMPLETED}),
+    InquiryStatus.ACCEPTED: frozenset({InquiryStatus.CANCELLED}),
     InquiryStatus.DECLINED: frozenset(),
-    InquiryStatus.COMPLETED: frozenset(),
     InquiryStatus.CANCELLED: frozenset(),
 }
 
@@ -65,7 +58,7 @@ def create_inquiry(family, tutor: TutorDetail, message: str) -> Inquiry:
         family=family,
         tutor=tutor,
         message=message,
-        status=InquiryStatus.NEW,
+        status=InquiryStatus.PENDING,
     )
 
     notify_inquiry_result.delay(inquiry.id)

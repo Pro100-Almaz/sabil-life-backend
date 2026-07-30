@@ -26,7 +26,7 @@ def _make_user(email, role):
     return User.objects.create_user(email=email, password="pass1234!", role=role)
 
 
-def _make_inquiry(status_val=InquiryStatus.NEW):
+def _make_inquiry(status_val=InquiryStatus.PENDING):
     uid = id(object())
     family = _make_user(f"fam_ft_{uid}@test.com", UserRole.FAMILY)
     tutor_user = _make_user(f"tut_ft_{uid}@test.com", UserRole.TUTOR)
@@ -47,7 +47,7 @@ class TestFreeTrialFlag:
     @override_settings(BILLING_GATE_ENABLED=False)
     def test_accept_flips_contact_revealed_when_gate_disabled(self):
         """Free-trial mode: accepting an inquiry reveals contact immediately."""
-        inq = _make_inquiry(InquiryStatus.NEW)
+        inq = _make_inquiry(InquiryStatus.PENDING)
         result = transition(inq, InquiryStatus.ACCEPTED, actor=inq.tutor.user)
         result.refresh_from_db()
         assert result.contact_revealed is True
@@ -55,42 +55,23 @@ class TestFreeTrialFlag:
     @override_settings(BILLING_GATE_ENABLED=True)
     def test_accept_leaves_contact_hidden_when_gate_enabled(self):
         """Billing-gate mode: accepting an inquiry does NOT reveal contact."""
-        inq = _make_inquiry(InquiryStatus.NEW)
+        inq = _make_inquiry(InquiryStatus.PENDING)
         result = transition(inq, InquiryStatus.ACCEPTED, actor=inq.tutor.user)
-        result.refresh_from_db()
-        assert result.contact_revealed is False
-
-    @override_settings(BILLING_GATE_ENABLED=False)
-    def test_contacted_does_not_flip_contact_revealed(self):
-        """CONTACTED transition never changes contact_revealed."""
-        inq = _make_inquiry(InquiryStatus.NEW)
-        result = transition(inq, InquiryStatus.CONTACTED, actor=inq.tutor.user)
         result.refresh_from_db()
         assert result.contact_revealed is False
 
     @override_settings(BILLING_GATE_ENABLED=False)
     def test_declined_does_not_flip_contact_revealed(self):
         """DECLINED transition never changes contact_revealed."""
-        inq = _make_inquiry(InquiryStatus.NEW)
+        inq = _make_inquiry(InquiryStatus.PENDING)
         result = transition(inq, InquiryStatus.DECLINED, actor=inq.tutor.user)
         result.refresh_from_db()
         assert result.contact_revealed is False
 
     @override_settings(BILLING_GATE_ENABLED=False)
-    def test_completed_does_not_change_contact_revealed(self):
-        """COMPLETED transition does not change contact_revealed."""
-        inq = _make_inquiry(InquiryStatus.ACCEPTED)
-        inq.contact_revealed = True
-        inq.save(update_fields=["contact_revealed", "updated_at"])
-
-        result = transition(inq, InquiryStatus.COMPLETED, actor=inq.tutor.user)
-        result.refresh_from_db()
-        assert result.contact_revealed is True
-
-    @override_settings(BILLING_GATE_ENABLED=False)
     def test_contact_revealed_persisted_in_db(self):
         """The contact_revealed flip is persisted (not just in-memory)."""
-        inq = _make_inquiry(InquiryStatus.NEW)
+        inq = _make_inquiry(InquiryStatus.PENDING)
         transition(inq, InquiryStatus.ACCEPTED, actor=inq.tutor.user)
         fresh = Inquiry.objects.get(pk=inq.pk)
         assert fresh.contact_revealed is True
