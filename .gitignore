@@ -202,3 +202,7 @@ media_root/
 
 #secrets
 secrets/
+
+# Self-hosted map tile archives are generated/downloaded artifacts.
+maps/data/*.pmtiles
+maps/data/*.mbtiles

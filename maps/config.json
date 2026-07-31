@@ -1,0 +1,27 @@
+{
+  "options": {
+    "paths": {
+      "root": "/data",
+      "styles": "styles",
+      "pmtiles": "data"
+    },
+    "allowedHosts": "api.sabil-life.com",
+    "frontPage": true
+  },
+  "styles": {
+    "light": {
+      "style": "protomaps-light.json",
+      "serve_rendered": true,
+      "serve_data": true,
+      "tilejson": {
+        "format": "png",
+        "bounds": [50.7, 24.45, 52.05, 26.25]
+      }
+    }
+  },
+  "data": {
+    "qatar": {
+      "pmtiles": "qatar.pmtiles"
+    }
+  }
+}

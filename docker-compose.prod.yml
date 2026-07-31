@@ -95,6 +95,15 @@ services:
       backend:
         condition: service_started
 
+  tileserver:
+    image: maptiler/tileserver-gl:latest
+    restart: unless-stopped
+    command: --config /data/config.json --port 8080
+    expose:
+      - "8080"
+    volumes:
+      - ./maps:/data:ro
+
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped
@@ -107,6 +116,8 @@ services:
       - caddy_config:/config
     depends_on:
       backend:
+        condition: service_started
+      tileserver:
         condition: service_started
 
 volumes:
