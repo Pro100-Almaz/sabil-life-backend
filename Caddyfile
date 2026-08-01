@@ -8,7 +8,7 @@
 # traffic to gunicorn and map tile traffic under /maps/* to TileServer GL.
 # Uploaded media is served directly from the GCS bucket, not through this proxy.
 {
-	email you@example.com
+	email q19.almaz@gmail.com
 }
 
 api.sabil-life.com {
