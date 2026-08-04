@@ -11,6 +11,20 @@
 	email q19.almaz@gmail.com
 }
 
+support.sabil-life.com {
+	encode zstd gzip
+	root * /srv
+
+	handle / {
+		rewrite * /support.html
+		file_server
+	}
+
+	handle {
+		respond "Not found" 404
+	}
+}
+
 api.sabil-life.com {
 	encode zstd gzip
 
