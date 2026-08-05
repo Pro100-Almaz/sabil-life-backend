@@ -17,7 +17,7 @@ from unfold.decorators import action, display
 from unfold.widgets import UnfoldAdminTextareaWidget
 from unfold.admin import ModelAdmin, TabularInline   # unfold-styled inline
 
-from apps.catalog.models import Listing, ListingImage, ListingStatus, ListingTag
+from apps.catalog.models import Listing, ListingImage, ListingStatus, ListingTag, ListingTagGroup
 from apps.catalog.services import delete_listing, delete_listing_image
 from apps.notifications.tasks import notify_review_result
 # ---------------------------------------------------------------------------
@@ -310,6 +310,13 @@ class ListingAdmin(ModelAdmin):
 
 @admin.register(ListingTag)
 class ListingTagAdmin(ModelAdmin):
-    list_display = ("name", "category")
+    list_display = ("name", "category", "group", "order")
+    list_filter = ("category", "group")
+    search_fields = ("name",)
+
+@admin.register(ListingTagGroup)
+class ListingTagGroupAdmin(ModelAdmin):
+    list_display = ("name", "category", "order")
     list_filter = ("category",)
     search_fields = ("name",)
+

@@ -1,7 +1,9 @@
+from unicodedata import category
+
 import django_filters
 from django.db.models import Q, QuerySet
 
-from apps.catalog.models import Listing
+from apps.catalog.models import Listing, ListingTag
 from apps.providers.models import TutorDetail
 
 
@@ -60,7 +62,27 @@ class ListingFilter(BaseFilter):
         
         if not names:
             return queryset
-        
+
+        tags = (
+            ListingTag.objects
+            .select_related("group")
+            .filter(name__in=names)
+        )
+
+        category = self.data.get("category")
+        if category:
+            tags = tags.filter(category=category)
+
+        grouped = {}
+        for tag in tags:
+            key = tag.group_id or f"ungrouped:{tag.id}"
+            grouped.setdefault(key, []).append(tag.name)
+
+        for tag_names in grouped.values():
+            queryset = queryset.filter(name__in=tag_names)
+
+        return queryset.distinct()
+
         return queryset.filter(tags__name__in=names).distinct()
 
     def filter_age(self, queryset: QuerySet, name: str, value: str) -> QuerySet:
