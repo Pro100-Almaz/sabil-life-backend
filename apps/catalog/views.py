@@ -1,6 +1,6 @@
 import logging
 
-from django.db.models import Count, QuerySet
+from django.db.models import Count, QuerySet, Model
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import filters, permissions, viewsets, mixins
@@ -11,7 +11,8 @@ from rest_framework.response import Response
 from apps.catalog.filters import ListingFilter, TutorFilter
 from apps.providers.models import TutorDetail, TutorSubject
 
-from apps.catalog.models import Listing, ListingCategory, ListingStatus, ListingClientStatus, ListingClient, ListingTag
+from apps.catalog.models import Listing, ListingCategory, ListingStatus, ListingClientStatus, ListingClient, ListingTag, \
+    ListingTagGroup
 from apps.catalog.schema import (
     CATEGORIES_SCHEMA,
     LISTING_DETAIL_SCHEMA,
@@ -25,7 +26,7 @@ from apps.catalog.serializers import (
     ListingClientOwnerSerializer,
     ListingClientSerializer,
     ListingDetailSerializer,
-    TutorCardSerializer,
+    TutorCardSerializer, ListingTagGroupSerializer,
 )
 from apps.catalog.services import annotate_distance_km
 from apps.users.enums import UserRole
@@ -171,6 +172,22 @@ def listing_tags_view(request: Request) -> Response:
     
     names = list(qs.values_list("name", flat=True))
     return Response(names)
+
+@api_view(["GET"])
+@permission_classes([permissions.AllowAny])
+def listing_tags_group_view(request: Request) -> Response:
+    """
+    GET /api/v1/tag-groups/?category=CATEGORY
+    :return: list of all nested tag groups belonging to this category
+    """
+    qs = ListingTagGroup.objects.prefetch_related("tags").all()
+    category = request.query_params.get("category")
+    if category:
+        qs = qs.filter(category=category.upper())
+
+    serializer = ListingTagGroupSerializer(qs, many=True)
+    return Response(serializer.data)
+
 
 class TutorListViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [permissions.AllowAny]

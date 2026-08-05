@@ -4,7 +4,7 @@ from django.core.files.storage import default_storage
 
 from apps.providers.models import TutorDetail, TutorSubject
 
-from apps.catalog.models import Listing, ListingClient, ListingClientStatus
+from apps.catalog.models import Listing, ListingClient, ListingClientStatus, ListingTag, ListingTagGroup
 
 from apps.catalog.models import Listing, ListingImage
 
@@ -259,3 +259,14 @@ class ListingClientOwnerSerializer(serializers.ModelSerializer):
             )
         return attrs
 
+class ListingTagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ListingTag
+        fields = ["name"]
+
+class ListingTagGroupSerializer(serializers.ModelSerializer):
+    tags = ListingTagSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = ListingTagGroup
+        fields = ["name", "tags"]

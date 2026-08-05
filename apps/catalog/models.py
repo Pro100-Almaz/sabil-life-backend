@@ -28,7 +28,7 @@ class ListingClientStatus(models.TextChoices):
     ACCEPTED = "ACCEPTED", _("Accepted")
     REJECTED = "REJECTED", _("Rejected")
 
-class ListingTag(models.Model):
+class ListingTagGroup(models.Model):
     name = models.CharField(_("name"), max_length=200, unique=True)
     category = models.CharField(
         _("category"),
@@ -36,7 +36,37 @@ class ListingTag(models.Model):
         choices=ListingCategory.choices,
         db_index=True,
     )
+    order = models.PositiveBigIntegerField(default=0)
 
+    class Meta:
+        ordering = ["category", "order", "name"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["name", "category"],
+                name="unique_group_per_category", 
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.name} {self.category}"
+
+class ListingTag(models.Model):
+    name = models.CharField(_("name"), max_length=200)
+    category = models.CharField(
+        _("category"),
+        max_length=200,
+        choices=ListingCategory.choices,
+        db_index=True,
+    )
+    group = models.ForeignKey(
+        ListingTagGroup,
+        related_name="tags",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+    )
+    order = models.PositiveIntegerField(default=0)
+    
     class Meta:
         verbose_name = _("listing tag")
         verbose_name_plural = _("listing tags")
