@@ -12,7 +12,7 @@ after adding names to ``SCHOOL_TAG_FACETS`` inserts only the new ones.
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
-from apps.catalog.models import ListingCategory, ListingTag
+from apps.catalog.models import ListingCategory, ListingTag, ListingTagGroup
 from apps.catalog.seed_data.school_tags import SCHOOL_TAG_FACETS, SCHOOL_TAGS
 
 CATEGORY = ListingCategory.SCHOOLS
@@ -78,10 +78,24 @@ class Command(BaseCommand):
             existing = set()
 
         created_count = 0
-        for facet, names in SCHOOL_TAG_FACETS.items():
-            for name in names:
-                _, created = ListingTag.objects.get_or_create(
-                    name=name, category=CATEGORY
+
+        for group_order, (facet, names) in enumerate(SCHOOL_TAG_FACETS.items()):
+            group, _ = ListingTagGroup.objects.update_or_create(
+                category=CATEGORY,
+                name=facet,
+                defaults={
+                    "order": group_order,
+                },
+            )
+
+            for tag_order, name in enumerate(names):
+                _, created = ListingTag.objects.update_or_create(
+                    name=name,
+                    category=CATEGORY,
+                    defaults={
+                        "group": group,
+                        "order": tag_order,
+                    },
                 )
                 if created:
                     created_count += 1
