@@ -79,11 +79,9 @@ class ListingFilter(BaseFilter):
             grouped.setdefault(key, []).append(tag.name)
 
         for tag_names in grouped.values():
-            queryset = queryset.filter(name__in=tag_names)
+            queryset = queryset.filter(tags__name__in=tag_names)
 
         return queryset.distinct()
-
-        return queryset.filter(tags__name__in=names).distinct()
 
     def filter_age(self, queryset: QuerySet, name: str, value: str) -> QuerySet:
         """Match listings whose age_groups JSON list contains the given string."""

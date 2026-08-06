@@ -29,7 +29,7 @@ class ListingClientStatus(models.TextChoices):
     REJECTED = "REJECTED", _("Rejected")
 
 class ListingTagGroup(models.Model):
-    name = models.CharField(_("name"), max_length=200, unique=True)
+    name = models.CharField(_("name"), max_length=200)
     category = models.CharField(
         _("category"),
         max_length=200,
