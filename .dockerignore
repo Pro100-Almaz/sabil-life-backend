@@ -38,6 +38,7 @@ htmlcov/
 venv/
 ENV/
 env/
+secrets/
 
 # IDEs
 .vscode/

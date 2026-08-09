@@ -1,0 +1,109 @@
+name: Test
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  quality:
+    name: Quality Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: astral-sh/setup-uv@v7
+        with: 
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.14
+
+      - name: Install locked dependencies
+        run: uv sync --locked --all-groups
+
+      - name: Check formatting
+        run: uv run ruff format --check .
+
+      - name: Run linter
+        run: uv run ruff check .
+
+      - name: Run type checker
+        run: uv run mypy .
+
+  test:
+    name: Tests on "Python ${{ matrix.python-version }}"
+    runs-on: ubuntu-latest
+    needs: quality 
+
+    services:
+      postgres:
+        image: postgres:alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:8-alpine
+        ports:
+          - 6379:6379
+        options:
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    strategy:
+      matrix:
+        python-version: ["3.14"]
+        os: [ubuntu-latest]
+
+    env:
+      DEBUG: "True"
+      DJANGO_SECRET_KEY: django-insecure-wlgjuo53y49%-4y5(!%ksylle_ud%b=7%__@9hh+@$d%_^y3s!
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/test_db
+      REDIS_URL: redis://localhost:6379/1
+      CELERY_BROKER_URL: redis://localhost:6379/1
+      PUSH_NOTIFICATIONS_ENABLED: "False"
+
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v7
+        with: 
+          enable-cache: true
+
+      - name: Set up python
+        run: uv python install 3.14
+
+      - name: Install locked dependencies
+        run: uv sync --locked --all-groups
+
+      - name: Verify migration exits
+        run: uv run python manage.py makemigrations --check --dry-run
+
+      - name: Run test
+        run: uv run pytest
+  
+  docker-build:
+    name: Production image builds
+    runs-on: ubuntu-latest
+    needs: [quality, tests]
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Build production image
+        run: docker build --tag sabil-life-backend:ci .
+ 
