@@ -11,6 +11,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -18,6 +22,15 @@ jobs:
       name: production
 
     steps:
+      - name: Validate image tag
+        env:
+          IMAGE_TAG: ${{ inputs.image_tag }}
+        run: |
+          [[ "$IMAGE_TAG" =~ ^sha-[0-9a-f]{40}$ ]] || {
+            echo "Use a full immutable sha-... image tag."
+            exit 1
+          }
+
       - name: Configure SSH
         run: |
           mkdir -p ~/.ssh
@@ -29,16 +42,20 @@ jobs:
 
       - name: Deploy image to existing VM
         env:
-          HOST: ${{ secrets.PRODUCTION_HOST }}
-          USER: ${{ secrets.PRODUCTION_USER }}
+          DEPLOY_HOST: ${{ secrets.PRODUCTION_HOST }}
+          DEPLOY_USER: ${{ secrets.PRODUCTION_USER }}
           IMAGE_TAG: ${{ inputs.image_tag }}
         run: |
-          ssh "${USER}@${HOST}" "
+          : "${DEPLOY_HOST:?Missing PRODUCTION_HOST secret}"
+          : "${DEPLOY_USER:?Missing PRODUCTION_USER secret}"
+
+          ssh "${DEPLOY_USER}@${DEPLOY_HOST}" "
             set -eu
             cd /home/q19almaz/sabil-life-backend
             export IMAGE_TAG='${IMAGE_TAG}'
             docker compose -f docker-compose.prod.yml pull backend worker beat
-            docker compose -f docker-compose.prod.yml up -d --no-build --remove-orphans
+            docker compose -f docker-compose.prod.yml up -d --no-build \
+              backend worker beat
             docker compose -f docker-compose.prod.yml ps
           "
 
@@ -48,4 +65,3 @@ jobs:
             --retry 12 \
             --retry-delay 5 \
             '${{ secrets.PRODUCTION_URL }}/api/v1/core/ping/'
-
