@@ -6,7 +6,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
@@ -15,40 +14,106 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='Device',
+            name="Device",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('fcm_token', models.CharField(max_length=255, unique=True, verbose_name='FCM token')),
-                ('platform', models.CharField(choices=[('ANDROID', 'Android'), ('IOS', 'iOS')], max_length=10, verbose_name='platform')),
-                ('is_active', models.BooleanField(default=True, verbose_name='active')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('last_seen_at', models.DateTimeField(auto_now=True)),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='devices', to=settings.AUTH_USER_MODEL, verbose_name='user')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "fcm_token",
+                    models.CharField(
+                        max_length=255, unique=True, verbose_name="FCM token"
+                    ),
+                ),
+                (
+                    "platform",
+                    models.CharField(
+                        choices=[("ANDROID", "Android"), ("IOS", "iOS")],
+                        max_length=10,
+                        verbose_name="platform",
+                    ),
+                ),
+                ("is_active", models.BooleanField(default=True, verbose_name="active")),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("last_seen_at", models.DateTimeField(auto_now=True)),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="devices",
+                        to=settings.AUTH_USER_MODEL,
+                        verbose_name="user",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'device',
-                'verbose_name_plural': 'devices',
-                'indexes': [models.Index(fields=['user', 'is_active'], name='notificatio_user_id_124c2d_idx')],
+                "verbose_name": "device",
+                "verbose_name_plural": "devices",
+                "indexes": [
+                    models.Index(
+                        fields=["user", "is_active"],
+                        name="notificatio_user_id_124c2d_idx",
+                    )
+                ],
             },
         ),
         migrations.CreateModel(
-            name='Notification',
+            name="Notification",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('type', models.CharField(choices=[('PROVIDER_APPROVED', 'Provider application approved'), ('PROVIDER_REJECTED', 'Provider application rejected')], max_length=40, verbose_name='type')),
-                ('title', models.CharField(max_length=255, verbose_name='title')),
-                ('body', models.TextField(verbose_name='body')),
-                ('data', models.JSONField(blank=True, default=dict, verbose_name='data')),
-                ('is_read', models.BooleanField(default=False, verbose_name='read')),
-                ('read_at', models.DateTimeField(blank=True, null=True, verbose_name='read at')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='notifications', to=settings.AUTH_USER_MODEL, verbose_name='user')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "type",
+                    models.CharField(
+                        choices=[
+                            ("PROVIDER_APPROVED", "Provider application approved"),
+                            ("PROVIDER_REJECTED", "Provider application rejected"),
+                        ],
+                        max_length=40,
+                        verbose_name="type",
+                    ),
+                ),
+                ("title", models.CharField(max_length=255, verbose_name="title")),
+                ("body", models.TextField(verbose_name="body")),
+                ("data", models.JSONField(blank=True, default=dict, verbose_name="data")),
+                ("is_read", models.BooleanField(default=False, verbose_name="read")),
+                (
+                    "read_at",
+                    models.DateTimeField(blank=True, null=True, verbose_name="read at"),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="notifications",
+                        to=settings.AUTH_USER_MODEL,
+                        verbose_name="user",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'notification',
-                'verbose_name_plural': 'notifications',
-                'ordering': ['-created_at'],
-                'indexes': [models.Index(fields=['user', 'is_read'], name='notificatio_user_id_427e4b_idx')],
+                "verbose_name": "notification",
+                "verbose_name_plural": "notifications",
+                "ordering": ["-created_at"],
+                "indexes": [
+                    models.Index(
+                        fields=["user", "is_read"], name="notificatio_user_id_427e4b_idx"
+                    )
+                ],
             },
         ),
     ]

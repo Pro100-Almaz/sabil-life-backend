@@ -4,20 +4,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('catalog', '0007_listingtag_listing_tags'),
+        ("catalog", "0007_listingtag_listing_tags"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='listing',
-            name='is_online',
+            model_name="listing",
+            name="is_online",
             field=models.BooleanField(default=True),
         ),
         migrations.AddField(
-            model_name='listing',
-            name='meeting_url',
-            field=models.URLField(blank=True, default=''),
+            model_name="listing",
+            name="meeting_url",
+            field=models.URLField(blank=True, default=""),
         ),
     ]

@@ -5,38 +5,74 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('catalog', '0008_listing_is_online_listing_meeting_url'),
+        ("catalog", "0008_listing_is_online_listing_meeting_url"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='listingtag',
-            name='order',
+            model_name="listingtag",
+            name="order",
             field=models.PositiveIntegerField(default=0),
         ),
         migrations.AlterField(
-            model_name='listingtag',
-            name='name',
-            field=models.CharField(max_length=200, verbose_name='name'),
+            model_name="listingtag",
+            name="name",
+            field=models.CharField(max_length=200, verbose_name="name"),
         ),
         migrations.CreateModel(
-            name='ListingTagGroup',
+            name="ListingTagGroup",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=200, unique=True, verbose_name='name')),
-                ('category', models.CharField(choices=[('SCHOOLS', 'Schools'), ('NURSERIES', 'Nurseries'), ('ACTIVITIES', 'Activities'), ('ENTERTAINMENT', 'Entertainment'), ('TUTORING', 'Tutoring'), ('MASTERCLASSES', 'Masterclasses'), ('PARTNERSHIPS', 'Partnerships')], db_index=True, max_length=200, verbose_name='category')),
-                ('order', models.PositiveBigIntegerField(default=0)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "name",
+                    models.CharField(max_length=200, unique=True, verbose_name="name"),
+                ),
+                (
+                    "category",
+                    models.CharField(
+                        choices=[
+                            ("SCHOOLS", "Schools"),
+                            ("NURSERIES", "Nurseries"),
+                            ("ACTIVITIES", "Activities"),
+                            ("ENTERTAINMENT", "Entertainment"),
+                            ("TUTORING", "Tutoring"),
+                            ("MASTERCLASSES", "Masterclasses"),
+                            ("PARTNERSHIPS", "Partnerships"),
+                        ],
+                        db_index=True,
+                        max_length=200,
+                        verbose_name="category",
+                    ),
+                ),
+                ("order", models.PositiveBigIntegerField(default=0)),
             ],
             options={
-                'ordering': ['category', 'order', 'name'],
-                'constraints': [models.UniqueConstraint(fields=('name', 'category'), name='unique_group_per_category')],
+                "ordering": ["category", "order", "name"],
+                "constraints": [
+                    models.UniqueConstraint(
+                        fields=("name", "category"), name="unique_group_per_category"
+                    )
+                ],
             },
         ),
         migrations.AddField(
-            model_name='listingtag',
-            name='group',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='tags', to='catalog.listingtaggroup'),
+            model_name="listingtag",
+            name="group",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="tags",
+                to="catalog.listingtaggroup",
+            ),
         ),
     ]

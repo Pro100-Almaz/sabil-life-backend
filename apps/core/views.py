@@ -48,7 +48,7 @@ def _extract_storage_key(raw_url: str) -> str:
     if bucket:
         bucket_prefix = f"{bucket}/"
         if path.startswith(bucket_prefix):
-            path = path[len(bucket_prefix):]
+            path = path[len(bucket_prefix) :]
         elif path == bucket:
             raise ValueError("Missing object key.")
 

@@ -86,7 +86,5 @@ SCHOOL_TAG_FACETS: dict[str, tuple[str, ...]] = {
 
 # Flat, de-duplicated tuple in facet order — the import_tags write set.
 SCHOOL_TAGS: tuple[str, ...] = tuple(
-    dict.fromkeys(
-        name for names in SCHOOL_TAG_FACETS.values() for name in names
-    )
+    dict.fromkeys(name for names in SCHOOL_TAG_FACETS.values() for name in names)
 )

@@ -86,7 +86,7 @@ def verify_and_pop(*, email: str, code: str) -> dict:
         # cache (LocMemCache) lacks it, so fall back to the full TTL there.
         try:
             remaining = cache.ttl(key)
-        except (AttributeError, NotImplementedError):
+        except AttributeError, NotImplementedError:
             remaining = CODE_TTL
         cache.set(key, data, timeout=remaining)
         raise VerificationError("invalid")

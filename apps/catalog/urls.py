@@ -7,14 +7,17 @@ from apps.catalog.views import (
     ListingViewSet,
     TutorListViewSet,
     categories_view,
+    listing_tags_group_view,
+    listing_tags_view,
     tutor_subjects_view,
-    listing_tags_view, listing_tags_group_view
 )
 
 router = DefaultRouter()
 router.register(r"listings", ListingViewSet, basename="listings")
 router.register(r"tutors", TutorListViewSet, basename="tutors")
-router.register(r"listing-enrollment", ListingClientViewSet, basename="listing-enrollment")
+router.register(
+    r"listing-enrollment", ListingClientViewSet, basename="listing-enrollment"
+)
 router.register(r"listing-clients", ListingOwnerViewSet, basename="listing-clients")
 
 app_name = "catalog"

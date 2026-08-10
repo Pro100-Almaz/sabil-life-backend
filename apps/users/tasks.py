@@ -15,9 +15,9 @@ def send_verification_email(self, email: str, code: str) -> None:
     """Email a registration verification code. Retries on SMTP failure via
     BaseTaskWithRetry (fail_silently=False lets the exception propagate)."""
     subject = _("Your Sabil Life verification code")
-    body = _(
-        "Your verification code is %(code)s. It expires in 10 minutes."
-    ) % {"code": code}
+    body = _("Your verification code is %(code)s. It expires in 10 minutes.") % {
+        "code": code
+    }
     send_mail(
         subject,
         body,

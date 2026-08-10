@@ -4,13 +4,12 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('providers', '0007_providerverification'),
+        ("providers", "0007_providerverification"),
     ]
 
     operations = [
         migrations.DeleteModel(
-            name='ProviderProfile',
+            name="ProviderProfile",
         ),
     ]

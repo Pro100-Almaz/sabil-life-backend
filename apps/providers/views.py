@@ -1,28 +1,33 @@
 import logging
-import uuid 
-
+import uuid
 from pathlib import Path
+
+import rest_framework.exceptions
+import rest_framework.status
 from django.core.files.storage import default_storage
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema, extend_schema_view
-from rest_framework import generics, mixins, permissions, viewsets, status, views, serializers
-import rest_framework.exceptions
-from rest_framework import parsers
-import rest_framework.status
+from rest_framework import (
+    generics,
+    mixins,
+    parsers,
+    permissions,
+    serializers,
+    status,
+    views,
+    viewsets,
+)
 from rest_framework.response import Response
 
-from apps.catalog.models import Listing, ListingStatus, ListingImage
+from apps.catalog.models import Listing, ListingImage, ListingStatus
 from apps.catalog.serializers import ListingImageSerializer
 from apps.catalog.services import delete_listing, delete_listing_image
-from apps.users.enums import UserRole
-from apps.users.models import Role
-
 from apps.providers.models import (
+    AvatarImage,
     ProviderChoices,
     ProviderVerification,
     StatusChoices,
     TutorDetail,
-    AvatarImage
 )
 from apps.providers.permissions import IsListingOwner
 from apps.providers.schema import (
@@ -40,8 +45,9 @@ from apps.providers.serializers import (
     VerifyProviderSerializer,
 )
 from apps.providers.services import apply_verification_outcome, delete_avatar_image
+from apps.users.enums import UserRole
+from apps.users.models import Role
 from apps.users.permissions import IsManagerOrAdmin, IsMasterclassManagerOrAdmin
-
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +62,8 @@ class TutorDetailView(generics.CreateAPIView, generics.RetrieveUpdateAPIView):
     GET    /api/v1/provider/tutor-detail/ — retrieve own tutor detail.
     POST   /api/v1/provider/tutor-detail/ — create tutor detail.
     PATCH  /api/v1/provider/tutor-detail/ — update tutor detail.
-    DELETE /api/v1/provider/tutor-detail/ — soft-delete tutor detail and remove TUTOR role.
+    DELETE /api/v1/provider/tutor-detail/ — soft-delete tutor detail and remove
+        TUTOR role.
 
     Auth: IsAuthenticated + IsTutor.
     Avatar is uploaded as a file (multipart/form-data).
@@ -75,7 +82,7 @@ class TutorDetailView(generics.CreateAPIView, generics.RetrieveUpdateAPIView):
         try:
             obj = TutorDetail.objects.get(user=self.request.user, deleted_at__isnull=True)
         except TutorDetail.DoesNotExist:
-            raise rest_framework.exceptions.NotFound("Tutor detail not found.")
+            raise rest_framework.exceptions.NotFound("Tutor detail not found.") from None
         self.check_object_permissions(self.request, obj)
         return obj
 
@@ -113,7 +120,9 @@ class TutorDetailView(generics.CreateAPIView, generics.RetrieveUpdateAPIView):
         self._sync_verification(StatusChoices.UPDATED)
 
     def create(self, request, *args, **kwargs):
-        if TutorDetail.objects.filter(user=request.user, deleted_at__isnull=True).exists():
+        if TutorDetail.objects.filter(
+            user=request.user, deleted_at__isnull=True
+        ).exists():
             return Response(
                 {"detail": "Tutor detail already exists. Use PATCH to update."},
                 status=rest_framework.status.HTTP_409_CONFLICT,
@@ -147,6 +156,7 @@ class AvatarUploadView(views.APIView):
 
     Returns {"id", "url"}.
     """
+
     permission_classes = [permissions.IsAuthenticated]
     parser_classes = [parsers.MultiPartParser, parsers.FormParser]
 
@@ -154,10 +164,10 @@ class AvatarUploadView(views.APIView):
         try:
             obj, _ = TutorDetail.objects.get_or_create(user=request.user)
         except TutorDetail.DoesNotExist:
-            raise rest_framework.exceptions.NotFound("Tutor not found")
-        
-        return obj 
-    
+            raise rest_framework.exceptions.NotFound("Tutor not found") from None
+
+        return obj
+
     def post(self, request):
         tutor = self._get_tutor(request=request)
         ProviderVerification.objects.get_or_create(
@@ -179,7 +189,7 @@ class AvatarUploadView(views.APIView):
         key = default_storage.save(object_name, f)
         avatar = AvatarImage.objects.create(tutor=tutor, key=key)
         return Response(AvatarImageSerializer(avatar).data, status=201)
-    
+
     def delete(self, request):
         tutor = self._get_tutor(request=request)
         avatar = AvatarImage.objects.filter(tutor=tutor).first()
@@ -187,7 +197,7 @@ class AvatarUploadView(views.APIView):
             delete_avatar_image(avatar)
 
         return Response(status=status.HTTP_204_NO_CONTENT)
-    
+
 
 # ---------------------------------------------------------------------------
 # Provider-owned Listings
@@ -244,7 +254,11 @@ class ProviderListingViewSet(
     ]
 
     def get_queryset(self):
-        return Listing.objects.filter(owner=self.request.user).prefetch_related("images").prefetch_related("tags")
+        return (
+            Listing.objects.filter(owner=self.request.user)
+            .prefetch_related("images")
+            .prefetch_related("tags")
+        )
 
     def perform_destroy(self, instance):
         # Explicit storage cleanup: remove the listing and its images' MinIO
@@ -262,10 +276,12 @@ class ProviderListingViewSet(
 
     def _resolved_status(self) -> str:
         """Return the status that should be applied on every provider write."""
-        status = self.request.query_params.get('status', 'DRAFT').upper()
-        if status not in {'DRAFT', 'PENDING'}:
-            raise serializers.ValidationError({"status": f"Unsupported status '{status}'."})
-        
+        status = self.request.query_params.get("status", "DRAFT").upper()
+        if status not in {"DRAFT", "PENDING"}:
+            raise serializers.ValidationError(
+                {"status": f"Unsupported status '{status}'."}
+            )
+
         if self.request.user.is_verified and status != ListingStatus.DRAFT:
             return ListingStatus.PENDING
         return ListingStatus.DRAFT
@@ -378,7 +394,7 @@ class VerifyProviderView(generics.ListAPIView):
         except ProviderVerification.DoesNotExist:
             raise rest_framework.exceptions.NotFound(
                 "No verification request found for this provider type."
-            )
+            ) from None
 
         if verification.status == StatusChoices.APPROVED:
             return Response(
@@ -446,7 +462,7 @@ class ProviderVerificationAdminViewSet(
 
     def perform_update(self, serializer) -> None:
         verification = serializer.save()
-        
+
         # The verification outcome is expressed by granting (or revoking) the
         # matching provider role on the user's roles M2M. ProviderChoices
         # values map 1:1 to UserRole values ("TUTOR" / "MASTERCLASS").
@@ -455,7 +471,7 @@ class ProviderVerificationAdminViewSet(
     def update(self, request, *args, **kwargs):
         # Force PATCH semantics — the router only exposes patch, but guard anyway.
         kwargs["partial"] = True
-        response = super().update(request, *args, **kwargs)
+        super().update(request, *args, **kwargs)
         # Return the full read representation after a successful review.
         instance = self.get_object()
         return Response(VerifyProviderSerializer(instance).data)
@@ -463,6 +479,7 @@ class ProviderVerificationAdminViewSet(
 
 class ListingImageView(views.APIView):
     """POST /provider/listings/<listing_id>/images/ -upload one or more"""
+
     permission_classes = [permissions.IsAuthenticated, IsMasterclassManagerOrAdmin]
     parser_classes = [parsers.MultiPartParser, parsers.FormParser]
 
@@ -470,10 +487,10 @@ class ListingImageView(views.APIView):
         try:
             obj = Listing.objects.get(id=listing_id, owner=request.user)
         except Listing.DoesNotExist:
-            raise rest_framework.exceptions.NotFound("Listing not found")
-        
-        return obj 
-    
+            raise rest_framework.exceptions.NotFound("Listing not found") from None
+
+        return obj
+
     def post(self, request, listing_id):
         listing = self._get_listing(request=request, listing_id=listing_id)
         files = request.FILES.getlist("images")
@@ -483,22 +500,27 @@ class ListingImageView(views.APIView):
             suffix = Path(f.name).suffix.lower()
             object_name = f"listings/{listing_id}/{uuid.uuid4().hex}{suffix}"
             key = default_storage.save(object_name, f)
-            created.append(ListingImage.objects.create(listing=listing, key=key, position=start + i))
+            created.append(
+                ListingImage.objects.create(listing=listing, key=key, position=start + i)
+            )
         return Response(ListingImageSerializer(created, many=True).data, status=201)
-    
+
 
 class ListingImageDetailView(generics.DestroyAPIView):
     """DELETE /provider/listing/<listing_id>/images/<image_id>"""
+
     permission_classes = [permissions.IsAuthenticated, IsMasterclassManagerOrAdmin]
 
     def _get_listing(self, request, listing_id, image_id):
         try:
             listing = Listing.objects.get(id=listing_id, owner=request.user)
             obj = ListingImage.objects.get(id=image_id, listing=listing)
-        except (ListingImage.DoesNotExist, Listing.DoesNotExist):
-            raise rest_framework.exceptions.NotFound("Image or Listing not found.")
-        
-        return obj 
+        except ListingImage.DoesNotExist, Listing.DoesNotExist:
+            raise rest_framework.exceptions.NotFound(
+                "Image or Listing not found."
+            ) from None
+
+        return obj
 
     def delete(self, request, listing_id, image_id):
         image = self._get_listing(request, listing_id, image_id)

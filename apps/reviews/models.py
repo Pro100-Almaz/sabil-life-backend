@@ -93,4 +93,6 @@ class TutorReview(models.Model):
         ]
 
     def __str__(self) -> str:
-        return f"TutorReview({self.tutor_id}, author={self.author_id}, rating={self.rating})"
+        return (
+            f"TutorReview({self.tutor_id}, author={self.author_id}, rating={self.rating})"
+        )

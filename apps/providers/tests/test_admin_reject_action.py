@@ -76,9 +76,7 @@ class RejectProviderRequestAdminActionTests(TestCase):
         self.assertEqual(response.status_code, 302)  # redirect back to changelist
         verification.refresh_from_db()
         self.assertEqual(verification.status, StatusChoices.REJECTED)
-        self.assertEqual(
-            verification.comment, "Your credentials could not be verified."
-        )
+        self.assertEqual(verification.comment, "Your credentials could not be verified.")
 
     def test_blank_message_is_rejected_and_nothing_changes(self):
         verification = make_pending_verification()

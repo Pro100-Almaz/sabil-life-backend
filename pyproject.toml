@@ -48,6 +48,12 @@ target-version = "py314"
 select = ["E", "F", "I", "B"]
 ignore = []
 
+[tool.ruff.lint.per-file-ignores]
+# Seed descriptions are data displayed to users; wrapping them would not improve
+# readability. Applied migrations must not be modified.
+"apps/catalog/seed_data/*.py" = ["E501"]
+"apps/*/migrations/*.py" = ["E501"]
+
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"

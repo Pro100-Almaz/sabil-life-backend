@@ -59,7 +59,7 @@ class TestInquiryStateMachine:
     # ------------------------------------------------------------------
     # Invalid transitions — terminal states
     # ------------------------------------------------------------------
-    
+
     def test_declined_to_accepted_raises(self):
         inq = make_inquiry(InquiryStatus.DECLINED)
         with pytest.raises(InvalidTransition):
@@ -133,4 +133,3 @@ class TestTutorStatusUpdateEndpoint:
         self.client.force_authenticate(user=self.tutor.user)
         resp = self.client.patch(self._url(inq.id), {"status": InquiryStatus.DECLINED})
         assert resp.status_code == 409
-

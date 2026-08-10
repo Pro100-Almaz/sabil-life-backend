@@ -7,7 +7,6 @@ Mirrors the pattern in apps/users/schema.py and apps/catalog/schema.py.
 from drf_spectacular.utils import OpenApiExample, OpenApiResponse
 
 from apps.core.schema import UNAUTHORIZED_EXAMPLES, ErrorResponseSerializer
-
 from apps.providers.serializers import ProviderListingSerializer
 
 # ---------------------------------------------------------------------------

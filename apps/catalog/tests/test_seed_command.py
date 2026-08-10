@@ -16,11 +16,10 @@ from django.contrib.auth import get_user_model
 from django.core.files.base import ContentFile
 from django.core.management import call_command
 
-from apps.catalog.management.commands import seed_catalog
 from apps.catalog.management.commands.seed_catalog import (
+    _EXPECTED_TOTALS,
     LISTINGS,
     NAMESPACE,
-    _EXPECTED_TOTALS,
     _uid,
 )
 from apps.catalog.models import Listing, ListingCategory, ListingImage, ListingStatus
@@ -85,9 +84,10 @@ class TestSeedCatalogCreates:
     def test_owner_assignment(self):
         seed()
         # Only TUTORING + MASTERCLASSES carry a provider owner.
-        owned = _EXPECTED_TOTALS[ListingCategory.TUTORING] + _EXPECTED_TOTALS[
-            ListingCategory.MASTERCLASSES
-        ]
+        owned = (
+            _EXPECTED_TOTALS[ListingCategory.TUTORING]
+            + _EXPECTED_TOTALS[ListingCategory.MASTERCLASSES]
+        )
         assert Listing.objects.filter(owner__isnull=False).count() == owned
         assert Listing.objects.filter(owner__isnull=True).count() == (
             len(LISTINGS) - owned

@@ -82,14 +82,18 @@ class NotificationViewSet(
 
     @action(detail=True, methods=["post"])
     def read(self, request, id=None):
-        updated = self.get_queryset().filter(id=id, is_read=False).update(
-            is_read=True, read_at=timezone.now()
+        updated = (
+            self.get_queryset()
+            .filter(id=id, is_read=False)
+            .update(is_read=True, read_at=timezone.now())
         )
         return Response({"updated": updated})
 
     @action(detail=False, methods=["post"], url_path="read-all")
     def read_all(self, request):
-        updated = self.get_queryset().filter(is_read=False).update(
-            is_read=True, read_at=timezone.now()
+        updated = (
+            self.get_queryset()
+            .filter(is_read=False)
+            .update(is_read=True, read_at=timezone.now())
         )
         return Response({"updated": updated})

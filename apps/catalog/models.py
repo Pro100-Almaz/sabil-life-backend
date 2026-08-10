@@ -28,6 +28,7 @@ class ListingClientStatus(models.TextChoices):
     ACCEPTED = "ACCEPTED", _("Accepted")
     REJECTED = "REJECTED", _("Rejected")
 
+
 class ListingTagGroup(models.Model):
     name = models.CharField(_("name"), max_length=200)
     category = models.CharField(
@@ -43,12 +44,13 @@ class ListingTagGroup(models.Model):
         constraints = [
             models.UniqueConstraint(
                 fields=["name", "category"],
-                name="unique_group_per_category", 
+                name="unique_group_per_category",
             )
         ]
 
     def __str__(self):
         return f"{self.name} {self.category}"
+
 
 class ListingTag(models.Model):
     name = models.CharField(_("name"), max_length=200)
@@ -66,12 +68,12 @@ class ListingTag(models.Model):
         on_delete=models.SET_NULL,
     )
     order = models.PositiveIntegerField(default=0)
-    
+
     class Meta:
         verbose_name = _("listing tag")
         verbose_name_plural = _("listing tags")
         ordering = ["name"]
-        constraints=[
+        constraints = [
             models.UniqueConstraint(
                 fields=["name", "category"],
                 name="unique_tag_per_category",
@@ -80,6 +82,7 @@ class ListingTag(models.Model):
 
     def __str__(self) -> str:
         return f"{self.name} ({self.category})"
+
 
 class Listing(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -129,7 +132,6 @@ class Listing(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-
     class Meta:
         ordering = ["-is_featured", "-created_at"]
 
@@ -169,16 +171,12 @@ class ListingClient(models.Model):
 
     def __str__(self) -> str:
         return f"{self.user} → {self.listing} ({self.status})"
-    
+
 
 class ListingImage(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    listing = models.ForeignKey(
-        Listing,
-        on_delete=models.CASCADE,
-        related_name="images" 
-    )
-    key = models.CharField(max_length=512, unique=True) #identity 
+    listing = models.ForeignKey(Listing, on_delete=models.CASCADE, related_name="images")
+    key = models.CharField(max_length=512, unique=True)  # identity
     position = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 

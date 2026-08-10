@@ -1,23 +1,28 @@
 from django.contrib.auth import get_user_model
-from rest_framework import serializers
 from django.core.files.storage import default_storage
+from rest_framework import serializers
 
+from apps.catalog.models import (
+    Listing,
+    ListingClient,
+    ListingClientStatus,
+    ListingImage,
+    ListingTag,
+    ListingTagGroup,
+)
 from apps.providers.models import TutorDetail, TutorSubject
-
-from apps.catalog.models import Listing, ListingClient, ListingClientStatus, ListingTag, ListingTagGroup
-
-from apps.catalog.models import Listing, ListingImage
-
 
 
 class ListingImageSerializer(serializers.ModelSerializer):
     url = serializers.SerializerMethodField()
+
     class Meta:
         model = ListingImage
         fields = ["id", "url", "position"]
 
     def get_url(self, obj):
         return default_storage.url(obj.key)
+
 
 class ListingCardSerializer(serializers.ModelSerializer):
     """
@@ -66,12 +71,12 @@ class ListingCardSerializer(serializers.ModelSerializer):
             return None
         try:
             return round(float(raw), 2)
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             return None
 
     def get_image_urls(self, obj):
         return [default_storage.url(img.key) for img in obj.images.all()]
-    
+
 
 class ListingDetailSerializer(ListingCardSerializer):
     """
@@ -109,7 +114,7 @@ class ListingDetailSerializer(ListingCardSerializer):
             obj.reviews.select_related("author").order_by("-created_at")[:10],
             many=True,
         ).data
-    
+
 
 class CategoryCountSerializer(serializers.Serializer):
     """Serializer for GET /api/v1/categories/ — {key, count}."""
@@ -148,11 +153,10 @@ class TutorCardSerializer(serializers.ModelSerializer):
             "bio",
             "city",
         ]
-    
+
     def get_avatar_url(self, obj):
         avatar = getattr(obj, "avatar", None)
         return default_storage.url(avatar.key) if avatar else ""
-
 
 
 class ListingClientSerializer(serializers.ModelSerializer):
@@ -175,14 +179,10 @@ class ListingClientSerializer(serializers.ModelSerializer):
         user = self.context["request"].user
 
         if listing.owner == user:
-            raise serializers.ValidationError(
-                "You cannot request your own listing."
-            )
+            raise serializers.ValidationError("You cannot request your own listing.")
 
         if ListingClient.objects.filter(user=user, listing=listing).exists():
-            raise serializers.ValidationError(
-                "You have already requested this listing."
-            )
+            raise serializers.ValidationError("You have already requested this listing.")
 
         return listing
 
@@ -259,10 +259,12 @@ class ListingClientOwnerSerializer(serializers.ModelSerializer):
             )
         return attrs
 
+
 class ListingTagSerializer(serializers.ModelSerializer):
     class Meta:
         model = ListingTag
         fields = ["name"]
+
 
 class ListingTagGroupSerializer(serializers.ModelSerializer):
     tags = ListingTagSerializer(many=True, read_only=True)

@@ -4,15 +4,16 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('providers', '0008_delete_providerprofile'),
+        ("providers", "0008_delete_providerprofile"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='tutordetail',
-            name='city',
-            field=models.CharField(blank=True, max_length=120, null=True, verbose_name='city'),
+            model_name="tutordetail",
+            name="city",
+            field=models.CharField(
+                blank=True, max_length=120, null=True, verbose_name="city"
+            ),
         ),
     ]

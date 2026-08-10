@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('providers', '0004_rename_avatar_url_to_avatar'),
+        ("providers", "0004_rename_avatar_url_to_avatar"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='tutordetail',
-            name='is_verified',
-            field=models.BooleanField(default=False, verbose_name='verified'),
+            model_name="tutordetail",
+            name="is_verified",
+            field=models.BooleanField(default=False, verbose_name="verified"),
         ),
     ]

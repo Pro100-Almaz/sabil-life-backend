@@ -1,5 +1,3 @@
-from unicodedata import category
-
 import django_filters
 from django.db.models import Q, QuerySet
 
@@ -58,16 +56,12 @@ class ListingFilter(BaseFilter):
         return queryset.filter(category=value.upper())
 
     def filter_tags(self, queryset: QuerySet, name: str, value: str) -> QuerySet:
-        names = [v.strip() for v in value.split(',') if v.strip()]
-        
+        names = [v.strip() for v in value.split(",") if v.strip()]
+
         if not names:
             return queryset
 
-        tags = (
-            ListingTag.objects
-            .select_related("group")
-            .filter(name__in=names)
-        )
+        tags = ListingTag.objects.select_related("group").filter(name__in=names)
 
         category = self.data.get("category")
         if category:
@@ -119,7 +113,7 @@ class TutorFilter(BaseFilter):
     trial_available = django_filters.BooleanFilter(field_name="trial_available")
     city = django_filters.CharFilter(field_name="city")
     subject = django_filters.CharFilter(method="filter_subject")
-    
+
     class Meta:
         model = TutorDetail
         fields: list[str] = []
@@ -129,9 +123,7 @@ class TutorFilter(BaseFilter):
         """Split a comma-separated param into a clean list of values."""
         return [v.strip() for v in value.split(",") if v.strip()]
 
-    def _filter_json_any(
-        self, queryset: QuerySet, field: str, value: str
-    ) -> QuerySet:
+    def _filter_json_any(self, queryset: QuerySet, field: str, value: str) -> QuerySet:
         """Match rows whose JSON list `field` contains ANY of the given values."""
         values = self._split(value)
         if not values:
@@ -158,4 +150,4 @@ class TutorFilter(BaseFilter):
         return self._filter_json_any(queryset, "languages", value)
 
     def filter_subject(self, queryset: QuerySet, name: str, value: str) -> QuerySet:
-        return queryset.filter(subjects__contains=[value])        
+        return queryset.filter(subjects__contains=[value])

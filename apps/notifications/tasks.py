@@ -3,12 +3,12 @@ import logging
 from celery import shared_task
 from django.utils.translation import gettext as _
 
+from apps.catalog.models import Listing, ListingStatus
 from apps.core.tasks import BaseTaskWithRetry
+from apps.inquiries.models import Inquiry, InquiryStatus
 from apps.notifications.models import NotificationType
 from apps.notifications.services import notify_user
-from apps.providers.models import ProviderVerification, StatusChoices, TutorDetail
-from apps.catalog.models import Listing, ListingStatus
-from apps.inquiries.models import Inquiry, InquiryStatus
+from apps.providers.models import ProviderVerification, StatusChoices
 
 logger = logging.getLogger(__name__)
 
@@ -19,13 +19,13 @@ ProviderResponse = {
 
 
 @shared_task(bind=True, base=BaseTaskWithRetry)
-def notify_inquiry_result(self, inquiryId: str) -> None: 
+def notify_inquiry_result(self, inquiryId: str) -> None:
     """
     Notify Provider with iquiry and family user with inquiry results.
     """
     try:
         inquiry = Inquiry.objects.select_related("family", "tutor__user").get(
-            id = inquiryId
+            id=inquiryId
         )
     except Inquiry.DoesNotExist:
         logger.warning("Inquiry %s does not exist; skipping", inquiryId)
@@ -36,7 +36,7 @@ def notify_inquiry_result(self, inquiryId: str) -> None:
         title = _("Inquiry answered")
         body = _("Tutor has responded to your inquiry")
         user = inquiry.family
-        
+
     elif inquiry.status == InquiryStatus.PENDING:
         ntype = NotificationType.INQUIRY_REQUEST
         title = _("Inquiry recieved")
@@ -47,7 +47,8 @@ def notify_inquiry_result(self, inquiryId: str) -> None:
         title = _("Inquiry canceled")
         body = _("Client has cancelled their inquiry")
         user = inquiry.tutor.user
-    else: return
+    else:
+        return
 
     notify_user(
         user=user,
@@ -57,8 +58,9 @@ def notify_inquiry_result(self, inquiryId: str) -> None:
         data={
             "inquiry_id": str(inquiry.id),
             "status": inquiry.status,
-        }
+        },
     )
+
 
 @shared_task(bind=True, base=BaseTaskWithRetry)
 def notify_review_result(self, listingId: str, comment: str = None) -> None:
@@ -66,9 +68,7 @@ def notify_review_result(self, listingId: str, comment: str = None) -> None:
     Notify Masterclass Provider that their listing application was approved or rejected.
     """
     try:
-        listing = Listing.objects.select_related("owner").get(
-            id = listingId
-        )
+        listing = Listing.objects.select_related("owner").get(id=listingId)
     except Listing.DoesNotExist:
         logger.warning("Listing %s does not exist; skipping", listingId)
         return
@@ -102,8 +102,6 @@ def notify_review_result(self, listingId: str, comment: str = None) -> None:
         },
     )
 
-    
-    
 
 @shared_task(bind=True, base=BaseTaskWithRetry)
 def notify_verification_result(self, verification_id: int) -> None:
@@ -129,9 +127,7 @@ def notify_verification_result(self, verification_id: int) -> None:
     elif verification.status == StatusChoices.REJECTED:
         ntype = NotificationType.PROVIDER_REJECTED
         title = _("Application rejected")
-        body = _("Your %(provider)s application was rejected.") % {
-            "provider": provider
-        }
+        body = _("Your %(provider)s application was rejected.") % {"provider": provider}
         if verification.comment:
             body = f"{body} {verification.comment}"
     else:

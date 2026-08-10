@@ -3,9 +3,13 @@ from rest_framework import serializers
 
 from apps.catalog.models import Listing, ListingCategory
 from apps.catalog.serializers import ListingImageSerializer
+from apps.providers.models import (
+    AvatarImage,
+    ProviderVerification,
+    StatusChoices,
+    TutorDetail,
+)
 from apps.users.enums import UserRole
-
-from apps.providers.models import ProviderVerification, StatusChoices, TutorDetail, AvatarImage
 
 # ---------------------------------------------------------------------------
 # Provider Listings — shared maps
@@ -31,6 +35,7 @@ _CATEGORY_ROLE_ERROR: dict[str, str] = {
 
 class AvatarImageSerializer(serializers.ModelSerializer):
     url = serializers.SerializerMethodField()
+
     class Meta:
         model = AvatarImage
         fields = ["id", "url"]
@@ -44,7 +49,7 @@ class TutorDetailSerializer(serializers.ModelSerializer):
     full_name = serializers.CharField(source="user.full_name", read_only=True)
     avatar_url = serializers.SerializerMethodField(read_only=True)
     avatar = AvatarImageSerializer(many=False, read_only=True)
-    
+
     class Meta:
         model = TutorDetail
         fields = [
@@ -186,7 +191,9 @@ class ProviderListingSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         is_online = attrs.get("is_online", getattr(self.instance, "is_online", False))
         meeting_url = attrs.get("meeting_url", getattr(self.instance, "meeting_url", ""))
-        neighborhood = attrs.get("neighborhood", getattr(self.instance, "neighborhood", ""))
+        neighborhood = attrs.get(
+            "neighborhood", getattr(self.instance, "neighborhood", "")
+        )
 
         # On a partial update (PATCH) only enforce a cross-field requirement
         # when one of the fields it depends on is actually part of the request,
@@ -196,14 +203,19 @@ class ProviderListingSerializer(serializers.ModelSerializer):
         offline_submitted = "is_online" in attrs or "neighborhood" in attrs
 
         if (not partial or online_submitted) and is_online and not meeting_url:
-            raise serializers.ValidationError({"meeting_url": "Required for online listings"})
+            raise serializers.ValidationError(
+                {"meeting_url": "Required for online listings"}
+            )
         if (not partial or offline_submitted) and not is_online and not neighborhood:
-            raise serializers.ValidationError({"neighborhood": "Required for offline listings"})
+            raise serializers.ValidationError(
+                {"neighborhood": "Required for offline listings"}
+            )
 
         return attrs
 
     def get_image_urls(self, obj):
         return [default_storage.url(img.key) for img in obj.images.all()]
+
 
 # ---------------------------------------------------------------------------
 # Provider Verification

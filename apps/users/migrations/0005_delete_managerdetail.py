@@ -3,15 +3,13 @@
 from django.db import migrations
 
 
-
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('users', '0004_populate_roles_from_legacy'),
+        ("users", "0004_populate_roles_from_legacy"),
     ]
 
     operations = [
         migrations.DeleteModel(
-            name='ManagerDetail',
+            name="ManagerDetail",
         ),
     ]

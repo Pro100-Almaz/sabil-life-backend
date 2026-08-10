@@ -55,6 +55,7 @@ class IsManagerOrAdmin(HasRole):
     required_roles = {UserRole.MANAGER, UserRole.ADMIN}
     message = "Only managers or admins can access this resource."
 
+
 class IsMasterclass(HasRole):
     required_roles = {UserRole.MASTERCLASS}
     message = "Only masterclasses can access this resource."
@@ -62,6 +63,4 @@ class IsMasterclass(HasRole):
 
 class IsMasterclassManagerOrAdmin(HasRole):
     required_roles = {UserRole.MASTERCLASS, UserRole.MANAGER, UserRole.ADMIN}
-    message = (
-        "Only masterclass providers, managers, or admins can manage listings."
-    )
+    message = "Only masterclass providers, managers, or admins can manage listings."

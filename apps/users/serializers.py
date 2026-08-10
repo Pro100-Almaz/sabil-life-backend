@@ -109,9 +109,7 @@ class RegistrationRequestSerializer(serializers.ModelSerializer):
     def validate_email(self, value: str) -> str:
         # Fail fast: surface a taken email BEFORE we email a code.
         if CustomUser.objects.filter(email__iexact=value).exists():
-            raise serializers.ValidationError(
-                _("A user with this email already exists.")
-            )
+            raise serializers.ValidationError(_("A user with this email already exists."))
         return value
 
     def validate(self, data: dict) -> dict:

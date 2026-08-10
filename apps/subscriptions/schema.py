@@ -5,8 +5,10 @@ drf-spectacular OpenAPI schema helpers for the subscriptions app.
 from drf_spectacular.utils import OpenApiExample, OpenApiParameter, OpenApiResponse
 
 from apps.core.schema import UNAUTHORIZED_EXAMPLES, ErrorResponseSerializer
-
-from apps.subscriptions.serializers import FamilySubscriptionSerializer, ProviderSubscriptionSerializer
+from apps.subscriptions.serializers import (
+    FamilySubscriptionSerializer,
+    ProviderSubscriptionSerializer,
+)
 
 _PRIVATE_DETAILS_EXAMPLE = {
     "session_schedule": "Saturday mornings 9-11am",

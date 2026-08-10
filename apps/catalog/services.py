@@ -20,14 +20,15 @@ Implementation note on dlat/dlng:
 """
 
 import math
+from urllib.parse import unquote, urlparse
 
+from django.conf import settings
 from django.db import transaction
 from django.db.models import ExpressionWrapper, FloatField, Func, QuerySet, Value
-from urllib.parse import urlparse, unquote
-from django.conf import settings
 
 from apps.catalog.models import Listing, ListingImage
 from apps.catalog.tasks import delete_storage_objects
+
 
 class _Radians(Func):
     """RADIANS(expr) — convert degrees to radians."""
@@ -135,6 +136,7 @@ def haversine_km(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
     )
     return 2 * R * math.asin(math.sqrt(a))
 
+
 def delete_listing_image(image: ListingImage) -> None:
     """
     Delete a single ListingImage row and remove its storage object.
@@ -171,13 +173,13 @@ def url_to_storage_key(url: str) -> str | None:
     MinIO:  https://host/<bucket>/listings/<id>/<uuid>.jpg  -> listings/<id>/<uuid>.jpg
     Local:  http://host/media/listings/<id>/<uuid>.jpg       -> listings/<id>/<uuid>.jpg
     """
-    
+
     if not url:
         return None
-    
-    path = unquote(urlparse(url).path) 
+
+    path = unquote(urlparse(url).path)
     prefix = urlparse(settings.MEDIA_URL).path
     if prefix and prefix in path:
-        return path.split(prefix, 1)[1].lstrip('/') or None
-    
-    return path.lstrip("/") or None 
+        return path.split(prefix, 1)[1].lstrip("/") or None
+
+    return path.lstrip("/") or None

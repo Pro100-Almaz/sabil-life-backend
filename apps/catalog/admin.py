@@ -9,17 +9,24 @@ from pathlib import Path
 from django import forms
 from django.contrib import admin, messages
 from django.contrib.admin.helpers import ACTION_CHECKBOX_NAME
-from django.template.response import TemplateResponse
 from django.core.files.storage import default_storage
+from django.template.response import TemplateResponse
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
+from unfold.admin import ModelAdmin, TabularInline  # unfold-styled inline
 from unfold.decorators import action, display
 from unfold.widgets import UnfoldAdminTextareaWidget
-from unfold.admin import ModelAdmin, TabularInline   # unfold-styled inline
 
-from apps.catalog.models import Listing, ListingImage, ListingStatus, ListingTag, ListingTagGroup
+from apps.catalog.models import (
+    Listing,
+    ListingImage,
+    ListingStatus,
+    ListingTag,
+    ListingTagGroup,
+)
 from apps.catalog.services import delete_listing, delete_listing_image
 from apps.notifications.tasks import notify_review_result
+
 # ---------------------------------------------------------------------------
 # Bulk moderation actions
 # ---------------------------------------------------------------------------
@@ -46,6 +53,7 @@ class RejectionForm(forms.Form):
             "The same message is sent to every selected applicant."
         ),
     )
+
 
 class MultipleImageInput(forms.ClearableFileInput):
     allow_multiple_selected = True
@@ -87,7 +95,7 @@ def approve_listings(modeladmin, request, queryset):
     updated = 0
     for listing in eligible:
         listing.status = ListingStatus.ACTIVE
-        listing.save(update_fields=['status'])
+        listing.save(update_fields=["status"])
         updated += 1
         notify_review_result.delay(listing.id)
 
@@ -105,22 +113,23 @@ def approve_listings(modeladmin, request, queryset):
             messages.WARNING,
         )
 
+
 @action(
     description=_("Reject selected listings (DRAFT/PENDING/ACTIVE → REJECTED)"),
     icon="cancel",
 )
 def reject_listings(modeladmin, request, queryset):
-    if 'apply' in request.POST:
+    if "apply" in request.POST:
         form = RejectionForm(request.POST)
-        if form.is_valid():    
+        if form.is_valid():
             comment = form.cleaned_data["comment"]
             eligible = queryset.filter(status__in=_MUTABLE_FOR_REJECT)
             skipped = queryset.exclude(status__in=_MUTABLE_FOR_REJECT).count()
-            
+
             rejected = 0
             for listing in eligible:
                 listing.status = ListingStatus.REJECTED
-                listing.comment = comment 
+                listing.comment = comment
                 listing.save(update_fields=["status", "comment"])
                 notify_review_result.delay(listing.id, comment)
                 rejected += 1
@@ -138,7 +147,7 @@ def reject_listings(modeladmin, request, queryset):
                     msg % {"n": skipped},
                     messages.WARNING,
                 )
-            return None     
+            return None
 
     else:
         form = RejectionForm()
@@ -158,6 +167,7 @@ def reject_listings(modeladmin, request, queryset):
             "opts": modeladmin.model._meta,
         },
     )
+
 
 @action(description=_("Mark selected listings as featured"), icon="star")
 def mark_featured(modeladmin, request, queryset):
@@ -183,9 +193,10 @@ def unmark_featured(modeladmin, request, queryset):
 # ListingAdmin
 # ---------------------------------------------------------------------------
 
+
 class ListingImageInline(TabularInline):
     model = ListingImage
-    extra = 0 
+    extra = 0
     fields = ("thumb", "key", "position")
     readonly_fields = ("thumb", "key")
     ordering = ("position", "created_at")
@@ -199,6 +210,7 @@ class ListingImageInline(TabularInline):
             'object-fit:cover;border-radius:4px;"/>',
             default_storage.url(obj.key),
         )
+
 
 @admin.register(Listing)
 class ListingAdmin(ModelAdmin):
@@ -275,7 +287,9 @@ class ListingAdmin(ModelAdmin):
     def status_badge(self, obj: Listing):
         return obj.status, obj.get_status_display()
 
-    def save_model(self, request, obj: Listing, form: ListingAdminForm, change: bool) -> None:
+    def save_model(
+        self, request, obj: Listing, form: ListingAdminForm, change: bool
+    ) -> None:
         super().save_model(request, obj, form, change)
 
         uploaded_images = request.FILES.getlist("uploaded_images") or []
@@ -308,15 +322,16 @@ class ListingAdmin(ModelAdmin):
         for listing in queryset:
             delete_listing(listing)
 
+
 @admin.register(ListingTag)
 class ListingTagAdmin(ModelAdmin):
     list_display = ("name", "category", "group", "order")
     list_filter = ("category", "group")
     search_fields = ("name",)
 
+
 @admin.register(ListingTagGroup)
 class ListingTagGroupAdmin(ModelAdmin):
     list_display = ("name", "category", "order")
     list_filter = ("category",)
     search_fields = ("name",)
-

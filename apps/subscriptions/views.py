@@ -20,7 +20,6 @@ from rest_framework import mixins, permissions, status, viewsets
 from rest_framework.response import Response
 
 from apps.catalog.models import Listing
-
 from apps.subscriptions import services
 from apps.subscriptions.models import MasterclassSubscription, SubscriptionStatus
 from apps.subscriptions.permissions import IsFamily

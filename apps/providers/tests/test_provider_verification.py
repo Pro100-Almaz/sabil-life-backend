@@ -76,9 +76,7 @@ class VerificationLifecycleFromTutorDetailTests(APITestCase):
     def test_only_one_verification_per_user_and_type(self):
         self.client.post(TUTOR_DETAIL_URL, {"bio": "Hello"}, format="json")
         self.client.patch(TUTOR_DETAIL_URL, {"bio": "Edit"}, format="json")
-        self.assertEqual(
-            ProviderVerification.objects.filter(user=self.user).count(), 1
-        )
+        self.assertEqual(ProviderVerification.objects.filter(user=self.user).count(), 1)
 
 
 class ProviderVerificationReadTests(APITestCase):
@@ -122,9 +120,7 @@ class RequestVerificationTests(APITestCase):
         # is only granted once an admin approves.
         user = make_user(role=UserRole.FAMILY)
         client = auth_client(user)
-        resp = client.post(
-            VERIFY_URL, {"provider_type": "MASTERCLASS"}, format="json"
-        )
+        resp = client.post(VERIFY_URL, {"provider_type": "MASTERCLASS"}, format="json")
         self.assertEqual(resp.status_code, 201)
         self.assertEqual(resp.data["status"], StatusChoices.PENDING)
         self.assertEqual(resp.data["provider_type"], "MASTERCLASS")
@@ -154,9 +150,7 @@ class RequestVerificationTests(APITestCase):
         user = make_user(role=UserRole.MASTERCLASS)
         client = auth_client(user)
         client.post(VERIFY_URL, {"provider_type": "MASTERCLASS"}, format="json")
-        resp = client.post(
-            VERIFY_URL, {"provider_type": "MASTERCLASS"}, format="json"
-        )
+        resp = client.post(VERIFY_URL, {"provider_type": "MASTERCLASS"}, format="json")
         self.assertEqual(resp.status_code, 409)
 
     def test_can_rerequest_after_rejection(self):
@@ -168,9 +162,7 @@ class RequestVerificationTests(APITestCase):
         v.comment = "Need more info"
         v.save()
 
-        resp = client.post(
-            VERIFY_URL, {"provider_type": "MASTERCLASS"}, format="json"
-        )
+        resp = client.post(VERIFY_URL, {"provider_type": "MASTERCLASS"}, format="json")
         self.assertEqual(resp.status_code, 200)
         v.refresh_from_db()
         self.assertEqual(v.status, StatusChoices.UPDATED)
@@ -183,9 +175,7 @@ class RequestVerificationTests(APITestCase):
         v = ProviderVerification.objects.get(user=user)
         v.status = StatusChoices.APPROVED
         v.save()
-        resp = client.post(
-            VERIFY_URL, {"provider_type": "MASTERCLASS"}, format="json"
-        )
+        resp = client.post(VERIFY_URL, {"provider_type": "MASTERCLASS"}, format="json")
         self.assertEqual(resp.status_code, 409)
 
 
@@ -198,9 +188,7 @@ class CancelVerificationTests(APITestCase):
     def test_provider_can_cancel(self):
         resp = self.client.delete(CANCEL_URL)
         self.assertEqual(resp.status_code, 204)
-        self.assertFalse(
-            ProviderVerification.objects.filter(user=self.user).exists()
-        )
+        self.assertFalse(ProviderVerification.objects.filter(user=self.user).exists())
 
     def test_cannot_cancel_approved(self):
         v = ProviderVerification.objects.get(user=self.user)
@@ -241,15 +229,11 @@ class AdminReviewTests(APITestCase):
         self.assertTrue(all(r["status"] == "PENDING" for r in results))
 
     def test_approve_sets_status_and_verifies_tutor_detail(self):
-        resp = self.client.patch(
-            self.detail_url, {"status": "APPROVED"}, format="json"
-        )
+        resp = self.client.patch(self.detail_url, {"status": "APPROVED"}, format="json")
         self.assertEqual(resp.status_code, 200)
         self.verification.refresh_from_db()
         self.assertEqual(self.verification.status, StatusChoices.APPROVED)
-        self.assertTrue(
-            TutorDetail.objects.get(user=self.tutor).is_verified
-        )
+        self.assertTrue(TutorDetail.objects.get(user=self.tutor).is_verified)
 
     def test_approve_grants_role(self):
         # A user with no provider role gets it granted on approval.
@@ -279,9 +263,7 @@ class AdminReviewTests(APITestCase):
         self.assertFalse(self.tutor.has_role(UserRole.TUTOR))
 
     def test_reject_requires_comment(self):
-        resp = self.client.patch(
-            self.detail_url, {"status": "REJECTED"}, format="json"
-        )
+        resp = self.client.patch(self.detail_url, {"status": "REJECTED"}, format="json")
         self.assertEqual(resp.status_code, 400)
         self.assertIn("comment", resp.data)
 
@@ -298,17 +280,13 @@ class AdminReviewTests(APITestCase):
         self.assertFalse(TutorDetail.objects.get(user=self.tutor).is_verified)
 
     def test_cannot_set_arbitrary_status(self):
-        resp = self.client.patch(
-            self.detail_url, {"status": "PENDING"}, format="json"
-        )
+        resp = self.client.patch(self.detail_url, {"status": "PENDING"}, format="json")
         self.assertEqual(resp.status_code, 400)
 
     def test_cannot_review_cancelled(self):
         self.verification.status = StatusChoices.CANCELLED
         self.verification.save()
-        resp = self.client.patch(
-            self.detail_url, {"status": "APPROVED"}, format="json"
-        )
+        resp = self.client.patch(self.detail_url, {"status": "APPROVED"}, format="json")
         self.assertEqual(resp.status_code, 400)
 
     def test_family_cannot_access_admin(self):

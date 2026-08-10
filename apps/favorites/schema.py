@@ -1,6 +1,5 @@
 from drf_spectacular.utils import OpenApiParameter, OpenApiTypes, extend_schema
 
-
 FAVORITE_LIST_SCHEMA = extend_schema(
     tags=["favorites"],
     summary="List my favorites",
@@ -17,8 +16,7 @@ FAVORITE_RETRIEVE_SCHEMA = extend_schema(
     tags=["favorites"],
     summary="Get a favorite",
     description=(
-        "Returns the authenticated user's favorite record for the given "
-        "listing UUID."
+        "Returns the authenticated user's favorite record for the given listing UUID."
     ),
     parameters=[
         OpenApiParameter(
@@ -34,8 +32,7 @@ FAVORITE_DELETE_SCHEMA = extend_schema(
     tags=["favorites"],
     summary="Delete a favorite",
     description=(
-        "Removes the authenticated user's saved favorite for the given "
-        "listing UUID."
+        "Removes the authenticated user's saved favorite for the given listing UUID."
     ),
     parameters=[
         OpenApiParameter(

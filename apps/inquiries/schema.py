@@ -7,7 +7,6 @@ Mirrors the pattern in apps/providers/schema.py and apps/users/schema.py.
 from drf_spectacular.utils import OpenApiExample, OpenApiParameter, OpenApiResponse
 
 from apps.core.schema import UNAUTHORIZED_EXAMPLES, ErrorResponseSerializer
-
 from apps.inquiries.serializers import FamilyInquirySerializer, TutorInquirySerializer
 
 # ---------------------------------------------------------------------------
@@ -336,7 +335,7 @@ TUTOR_INQUIRY_UPDATE_SCHEMA = {
     "summary": "Update inquiry status",
     "description": (
         "Update the status of an inquiry addressed to the authenticated tutor.\n\n"
-        "Body: `{\"status\": \"<TARGET>\"}` where TARGET is one of "
+        'Body: `{"status": "<TARGET>"}` where TARGET is one of '
         "CONTACTED, ACCEPTED, DECLINED, COMPLETED.\n\n"
         "Allowed transitions:\n"
         "- NEW → CONTACTED, ACCEPTED, DECLINED\n"
