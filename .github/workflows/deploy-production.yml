@@ -16,7 +16,6 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: production
-      url: ${{ secrets.PRODUCTION_URL }}
 
     steps:
       - name: Configure SSH
@@ -36,7 +35,7 @@ jobs:
         run: |
           ssh "${USER}@${HOST}" "
             set -eu
-            cd /home/q19_almaz/sabil-life-backend
+            cd /home/q19almaz/sabil-life-backend
             export IMAGE_TAG='${IMAGE_TAG}'
             docker compose -f docker-compose.prod.yml pull backend worker beat
             docker compose -f docker-compose.prod.yml up -d --no-build --remove-orphans
