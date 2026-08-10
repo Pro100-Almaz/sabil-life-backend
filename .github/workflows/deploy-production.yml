@@ -1,0 +1,52 @@
+name: Deploy production
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Exact image tag, for example sha-abc123"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: ${{ secrets.PRODUCTION_URL }}
+
+    steps:
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "${{ secrets.PRODUCTION_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Deploy image to existing VM
+        env:
+          HOST: ${{ secrets.PRODUCTION_HOST }}
+          USER: ${{ secrets.PRODUCTION_USER }}
+          IMAGE_TAG: ${{ inputs.image_tag }}
+        run: |
+          ssh "${USER}@${HOST}" "
+            set -eu
+            cd /home/q19_almaz/sabil-life-backend
+            export IMAGE_TAG='${IMAGE_TAG}'
+            docker compose -f docker-compose.prod.yml pull backend worker beat
+            docker compose -f docker-compose.prod.yml up -d --no-build --remove-orphans
+            docker compose -f docker-compose.prod.yml ps
+          "
+
+      - name: Verify health endpoint
+        run: |
+          curl --fail --show-error --silent \
+            --retry 12 \
+            --retry-delay 5 \
+            '${{ secrets.PRODUCTION_URL }}/api/v1/core/ping/'
+
