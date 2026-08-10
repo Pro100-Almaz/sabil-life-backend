@@ -39,7 +39,7 @@ services:
 
   backend:
     build: .
-    image: ghcr.io/pro100-almaz/sabil-life-backend:${IMAGE_TAG}
+    image: sabil-life-backend:prod
     restart: unless-stopped
     command: >
       sh -c "python manage.py migrate --noinput &&
@@ -62,7 +62,7 @@ services:
         condition: service_healthy
 
   worker:
-    image: ghcr.io/pro100-almaz/sabil-life-backend:${IMAGE_TAG}
+    image: sabil-life-backend:prod
     pull_policy: never
     restart: unless-stopped
     command: sh -c "./scripts/wait-for-migrations.sh celery -A conf worker -l info"
@@ -79,7 +79,7 @@ services:
         condition: service_started
 
   beat:
-    image: ghcr.io/pro100-almaz/sabil-life-backend:${IMAGE_TAG}
+    image: sabil-life-backend:prod
     pull_policy: never
     restart: unless-stopped
     command: sh -c "./scripts/wait-for-migrations.sh celery -A conf beat -l info"
