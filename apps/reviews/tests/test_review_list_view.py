@@ -100,7 +100,14 @@ class TestReviewListView:
         Review.objects.create(listing=listing, author=family, rating=4, text="Good")
         resp = self.client.get(_reviews_url(listing.id))
         result = resp.json()["results"][0]
-        assert set(result.keys()) == {"id", "rating", "text", "author_name", "author_id", "created_at"}
+        assert set(result.keys()) == {
+            "id",
+            "rating",
+            "text",
+            "author_name",
+            "author_id",
+            "created_at",
+        }
 
     def test_paginated_response_shape(self):
         listing = _listing("Paginated")

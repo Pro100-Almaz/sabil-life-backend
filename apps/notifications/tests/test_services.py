@@ -12,8 +12,8 @@ from unittest.mock import MagicMock, patch
 from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
 
-from apps.notifications.models import Device, Notification, NotificationType, Platform
 from apps.notifications import services
+from apps.notifications.models import Device, Notification, NotificationType, Platform
 from apps.users.enums import UserRole
 
 User = get_user_model()
@@ -42,9 +42,7 @@ class NotifyUserTests(TestCase):
 
     @override_settings(PUSH_NOTIFICATIONS_ENABLED=False)
     def test_no_fcm_call_when_push_disabled(self):
-        Device.objects.create(
-            user=self.user, fcm_token="tok", platform=Platform.ANDROID
-        )
+        Device.objects.create(user=self.user, fcm_token="tok", platform=Platform.ANDROID)
         fake_messaging = MagicMock()
         with patch.object(services, "messaging", fake_messaging):
             services.send_push_to_user(self.user, "t", "b", {})
@@ -77,13 +75,12 @@ class SendPushTests(TestCase):
         fake.send_each_for_multicast.return_value = SimpleNamespace(
             responses=[
                 SimpleNamespace(success=True, exception=None),
-                SimpleNamespace(
-                    success=False, exception=fake.UnregisteredError("gone")
-                ),
+                SimpleNamespace(success=False, exception=fake.UnregisteredError("gone")),
             ]
         )
-        with patch.object(services, "_get_firebase_app", return_value=object()), patch.object(
-            services, "messaging", fake
+        with (
+            patch.object(services, "_get_firebase_app", return_value=object()),
+            patch.object(services, "messaging", fake),
         ):
             services.send_push_to_user(self.user, "t", "b", {"k": 1})
 
@@ -97,8 +94,9 @@ class SendPushTests(TestCase):
                 SimpleNamespace(success=True, exception=None),
             ]
         )
-        with patch.object(services, "_get_firebase_app", return_value=object()), patch.object(
-            services, "messaging", fake
+        with (
+            patch.object(services, "_get_firebase_app", return_value=object()),
+            patch.object(services, "messaging", fake),
         ):
             services.send_push_to_user(self.user, "t", "b", {"k": 1})
         fake.send_each_for_multicast.assert_called_once()
@@ -106,8 +104,9 @@ class SendPushTests(TestCase):
     def test_no_active_devices_skips_send(self):
         Device.objects.filter(user=self.user).update(is_active=False)
         fake = MagicMock()
-        with patch.object(services, "_get_firebase_app", return_value=object()), patch.object(
-            services, "messaging", fake
+        with (
+            patch.object(services, "_get_firebase_app", return_value=object()),
+            patch.object(services, "messaging", fake),
         ):
             services.send_push_to_user(self.user, "t", "b", {})
         fake.send_each_for_multicast.assert_not_called()

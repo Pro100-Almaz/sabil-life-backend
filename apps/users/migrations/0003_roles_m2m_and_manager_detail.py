@@ -6,45 +6,98 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('users', '0002_user_roles_profile'),
+        ("users", "0002_user_roles_profile"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Role',
+            name="Role",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(choices=[('FAMILY', 'Family'), ('TUTOR', 'Tutor'), ('MASTERCLASS', 'Masterclass'), ('MANAGER', 'Manager'), ('ADMIN', 'Admin')], max_length=20, unique=True, verbose_name='name')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "name",
+                    models.CharField(
+                        choices=[
+                            ("FAMILY", "Family"),
+                            ("TUTOR", "Tutor"),
+                            ("MASTERCLASS", "Masterclass"),
+                            ("MANAGER", "Manager"),
+                            ("ADMIN", "Admin"),
+                        ],
+                        max_length=20,
+                        unique=True,
+                        verbose_name="name",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'role',
-                'verbose_name_plural': 'roles',
+                "verbose_name": "role",
+                "verbose_name_plural": "roles",
             },
         ),
         migrations.AlterField(
-            model_name='customuser',
-            name='role',
-            field=models.CharField(choices=[('FAMILY', 'Family'), ('TUTOR', 'Tutor'), ('MASTERCLASS', 'Masterclass'), ('MANAGER', 'Manager'), ('ADMIN', 'Admin')], default='FAMILY', max_length=20, verbose_name='legacy role'),
+            model_name="customuser",
+            name="role",
+            field=models.CharField(
+                choices=[
+                    ("FAMILY", "Family"),
+                    ("TUTOR", "Tutor"),
+                    ("MASTERCLASS", "Masterclass"),
+                    ("MANAGER", "Manager"),
+                    ("ADMIN", "Admin"),
+                ],
+                default="FAMILY",
+                max_length=20,
+                verbose_name="legacy role",
+            ),
         ),
         migrations.CreateModel(
-            name='ManagerDetail',
+            name="ManagerDetail",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('is_verified', models.BooleanField(default=False, verbose_name='verified')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('user', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='manager_detail', to=settings.AUTH_USER_MODEL, verbose_name='user')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "is_verified",
+                    models.BooleanField(default=False, verbose_name="verified"),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "user",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="manager_detail",
+                        to=settings.AUTH_USER_MODEL,
+                        verbose_name="user",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'manager detail',
-                'verbose_name_plural': 'manager details',
+                "verbose_name": "manager detail",
+                "verbose_name_plural": "manager details",
             },
         ),
         migrations.AddField(
-            model_name='customuser',
-            name='roles',
-            field=models.ManyToManyField(blank=True, related_name='users', to='users.role', verbose_name='roles'),
+            model_name="customuser",
+            name="roles",
+            field=models.ManyToManyField(
+                blank=True, related_name="users", to="users.role", verbose_name="roles"
+            ),
         ),
     ]

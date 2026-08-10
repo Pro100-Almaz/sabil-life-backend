@@ -69,9 +69,7 @@ class RegisterFlowTests(APITestCase):
         mock_send.assert_called_once_with("family@example.com", FIXED_CODE)
 
     def test_request_code_duplicate_email_rejected(self, mock_send, _mock_code):
-        User.objects.create_user(
-            email="dup@example.com", password="StrongPass!99"
-        )
+        User.objects.create_user(email="dup@example.com", password="StrongPass!99")
         response = self._request_code(self._family_data("dup@example.com"))
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("email", response.data)

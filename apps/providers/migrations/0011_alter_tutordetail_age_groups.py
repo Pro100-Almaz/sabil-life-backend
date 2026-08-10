@@ -4,15 +4,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('providers', '0010_remove_tutordetail_avatar_avatarimage'),
+        ("providers", "0010_remove_tutordetail_avatar_avatarimage"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='tutordetail',
-            name='age_groups',
-            field=models.JSONField(blank=True, default=list, help_text='e.g. ["6-9", "10-12"]', verbose_name='age groups'),
+            model_name="tutordetail",
+            name="age_groups",
+            field=models.JSONField(
+                blank=True,
+                default=list,
+                help_text='e.g. ["6-9", "10-12"]',
+                verbose_name="age groups",
+            ),
         ),
     ]

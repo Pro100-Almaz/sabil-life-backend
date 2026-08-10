@@ -8,7 +8,6 @@ from apps.users.enums import UserRole
 from apps.users.permissions import IsProvider
 
 
-
 def _mock_request(user) -> MagicMock:
     req = MagicMock()
     req.user = user

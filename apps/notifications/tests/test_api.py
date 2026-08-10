@@ -88,9 +88,7 @@ class NotificationFeedApiTests(APITestCase):
         )
 
     def _read_url(self, note_id):
-        return reverse(
-            "v1:notifications:notifications-read", kwargs={"id": note_id}
-        )
+        return reverse("v1:notifications:notifications-read", kwargs={"id": note_id})
 
     def test_feed_lists_only_own_notifications(self):
         self._make_note(self.user)

@@ -8,7 +8,10 @@ from apps.users.managers import CustomUserManager
 
 class Role(models.Model):
     name = models.CharField(
-        _("name"), max_length=20, choices=UserRole.choices, unique=True,
+        _("name"),
+        max_length=20,
+        choices=UserRole.choices,
+        unique=True,
     )
 
     class Meta:
@@ -36,7 +39,10 @@ class CustomUser(AbstractUser):
         default=UserRole.FAMILY,
     )
     roles = models.ManyToManyField(
-        Role, related_name="users", blank=True, verbose_name=_("roles"),
+        Role,
+        related_name="users",
+        blank=True,
+        verbose_name=_("roles"),
     )
     phone = models.CharField(_("phone"), max_length=32, blank=True, default="")
     home_lat = models.FloatField(_("home latitude"), null=True, blank=True)
@@ -52,9 +58,7 @@ class CustomUser(AbstractUser):
 
     def _get_role_names(self) -> set[str]:
         if not hasattr(self, "_role_names_cache"):
-            self._role_names_cache = set(
-                self.roles.values_list("name", flat=True)
-            )
+            self._role_names_cache = set(self.roles.values_list("name", flat=True))
         return self._role_names_cache
 
     def has_role(self, role_name: str) -> bool:

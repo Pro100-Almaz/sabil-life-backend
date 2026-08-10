@@ -23,9 +23,7 @@ class Device(models.Model):
         verbose_name=_("user"),
     )
     fcm_token = models.CharField(_("FCM token"), max_length=255, unique=True)
-    platform = models.CharField(
-        _("platform"), max_length=10, choices=Platform.choices
-    )
+    platform = models.CharField(_("platform"), max_length=10, choices=Platform.choices)
     is_active = models.BooleanField(_("active"), default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     last_seen_at = models.DateTimeField(auto_now=True)
@@ -42,7 +40,7 @@ class Device(models.Model):
 class NotificationType(models.TextChoices):
     PROVIDER_APPROVED = "PROVIDER_APPROVED", _("Provider application approved")
     PROVIDER_REJECTED = "PROVIDER_REJECTED", _("Provider application rejected")
-    LISTING_APPROVED = "LISTING_APPROVED", _("Listing applicatoin approved") 
+    LISTING_APPROVED = "LISTING_APPROVED", _("Listing applicatoin approved")
     LISTING_REJECTED = "LISTING_REJECTED", _("Listing application rejected")
     INQUIRY_RESPONSE = "INQUIRY_RESPONSE", _("Inquiry responded")
     INQUIRY_REQUEST = "INQUIRY_REQUEST", _("Inquiry requested")
@@ -63,9 +61,7 @@ class Notification(models.Model):
         related_name="notifications",
         verbose_name=_("user"),
     )
-    type = models.CharField(
-        _("type"), max_length=40, choices=NotificationType.choices
-    )
+    type = models.CharField(_("type"), max_length=40, choices=NotificationType.choices)
     title = models.CharField(_("title"), max_length=255)
     body = models.TextField(_("body"))
     data = models.JSONField(_("data"), default=dict, blank=True)

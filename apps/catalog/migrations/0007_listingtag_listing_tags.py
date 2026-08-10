@@ -4,29 +4,61 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('catalog', '0006_listing_comment'),
+        ("catalog", "0006_listing_comment"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='ListingTag',
+            name="ListingTag",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=200, unique=True, verbose_name='name')),
-                ('category', models.CharField(choices=[('SCHOOLS', 'Schools'), ('NURSERIES', 'Nurseries'), ('ACTIVITIES', 'Activities'), ('ENTERTAINMENT', 'Entertainment'), ('TUTORING', 'Tutoring'), ('MASTERCLASSES', 'Masterclasses'), ('PARTNERSHIPS', 'Partnerships')], db_index=True, max_length=200, verbose_name='category')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "name",
+                    models.CharField(max_length=200, unique=True, verbose_name="name"),
+                ),
+                (
+                    "category",
+                    models.CharField(
+                        choices=[
+                            ("SCHOOLS", "Schools"),
+                            ("NURSERIES", "Nurseries"),
+                            ("ACTIVITIES", "Activities"),
+                            ("ENTERTAINMENT", "Entertainment"),
+                            ("TUTORING", "Tutoring"),
+                            ("MASTERCLASSES", "Masterclasses"),
+                            ("PARTNERSHIPS", "Partnerships"),
+                        ],
+                        db_index=True,
+                        max_length=200,
+                        verbose_name="category",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'listing tag',
-                'verbose_name_plural': 'listing tags',
-                'ordering': ['name'],
-                'constraints': [models.UniqueConstraint(fields=('name', 'category'), name='unique_tag_per_category')],
+                "verbose_name": "listing tag",
+                "verbose_name_plural": "listing tags",
+                "ordering": ["name"],
+                "constraints": [
+                    models.UniqueConstraint(
+                        fields=("name", "category"), name="unique_tag_per_category"
+                    )
+                ],
             },
         ),
         migrations.AddField(
-            model_name='listing',
-            name='tags',
-            field=models.ManyToManyField(blank=True, related_name='listings', to='catalog.listingtag'),
+            model_name="listing",
+            name="tags",
+            field=models.ManyToManyField(
+                blank=True, related_name="listings", to="catalog.listingtag"
+            ),
         ),
     ]

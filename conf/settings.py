@@ -206,16 +206,12 @@ UNFOLD = {
                     {
                         "title": _("Listings"),
                         "icon": "storefront",
-                        "link": reverse_lazy(
-                            "admin:catalog_listing_changelist"
-                        ),
+                        "link": reverse_lazy("admin:catalog_listing_changelist"),
                     },
                     {
                         "title": _("Reviews"),
                         "icon": "rate_review",
-                        "link": reverse_lazy(
-                            "admin:reviews_review_changelist"
-                        ),
+                        "link": reverse_lazy("admin:reviews_review_changelist"),
                     },
                     # {
                     #     "title": _("Favorites"),
@@ -233,16 +229,12 @@ UNFOLD = {
                     {
                         "title": _("Tutor details"),
                         "icon": "badge",
-                        "link": reverse_lazy(
-                            "admin:providers_tutordetail_changelist"
-                        ),
+                        "link": reverse_lazy("admin:providers_tutordetail_changelist"),
                     },
                     {
                         "title": _("Tutor subjects"),
                         "icon": "subject",
-                        "link": reverse_lazy(
-                            "admin:providers_tutorsubject_changelist"
-                        ),
+                        "link": reverse_lazy("admin:providers_tutorsubject_changelist"),
                     },
                     {
                         "title": _("Provider verifications"),
@@ -260,9 +252,7 @@ UNFOLD = {
                     {
                         "title": _("Inquiries"),
                         "icon": "forum",
-                        "link": reverse_lazy(
-                            "admin:inquiries_inquiry_changelist"
-                        ),
+                        "link": reverse_lazy("admin:inquiries_inquiry_changelist"),
                     },
                     {
                         "title": _("Subscriptions"),
@@ -329,19 +319,19 @@ UNFOLD = {
                 {
                     "title": _("Pending"),
                     "link": (
-                        lambda request: reverse_lazy(
-                            "admin:catalog_listing_changelist"
+                        lambda request: (
+                            reverse_lazy("admin:catalog_listing_changelist")
+                            + "?status__exact=PENDING"
                         )
-                        + "?status__exact=PENDING"
                     ),
                 },
                 {
                     "title": _("Active"),
                     "link": (
-                        lambda request: reverse_lazy(
-                            "admin:catalog_listing_changelist"
+                        lambda request: (
+                            reverse_lazy("admin:catalog_listing_changelist")
+                            + "?status__exact=ACTIVE"
                         )
-                        + "?status__exact=ACTIVE"
                     ),
                 },
             ],

@@ -1,6 +1,9 @@
 from rest_framework.routers import DefaultRouter
 
-from apps.subscriptions.views import FamilySubscriptionViewSet, ProviderSubscriptionViewSet
+from apps.subscriptions.views import (
+    FamilySubscriptionViewSet,
+    ProviderSubscriptionViewSet,
+)
 
 app_name = "subscriptions"
 

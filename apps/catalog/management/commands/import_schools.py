@@ -147,7 +147,7 @@ class Command(BaseCommand):
         self.stdout.write(
             f"Coordinates: {placed} placed at district centroids (~1-2km, not "
             f"geocoded addresses), {len(SCHOOLS) - placed} left NULL because "
-            f"their location is only \"Doha\". The NULL ones are skipped by "
+            f'their location is only "Doha". The NULL ones are skipped by '
             f"?sort=distance and max_distance_km."
         )
 
@@ -156,9 +156,7 @@ class Command(BaseCommand):
         needed = {t for s in SCHOOLS for t in s["tags"]}
         tag_map = {
             tag.name: tag
-            for tag in ListingTag.objects.filter(
-                category=CATEGORY, name__in=needed
-            )
+            for tag in ListingTag.objects.filter(category=CATEGORY, name__in=needed)
         }
         missing = sorted(needed - set(tag_map))
         if missing:
@@ -172,9 +170,9 @@ class Command(BaseCommand):
 
     def _handle_dry_run(self, *, skip_tags: bool) -> None:
         existing = set(
-            Listing.objects.filter(
-                id__in=[_uid(s["slug"]) for s in SCHOOLS]
-            ).values_list("id", flat=True)
+            Listing.objects.filter(id__in=[_uid(s["slug"]) for s in SCHOOLS]).values_list(
+                "id", flat=True
+            )
         )
         would_create = sum(1 for s in SCHOOLS if _uid(s["slug"]) not in existing)
         self.stdout.write(
@@ -186,9 +184,9 @@ class Command(BaseCommand):
             return
         needed = {t for s in SCHOOLS for t in s["tags"]}
         present = set(
-            ListingTag.objects.filter(
-                category=CATEGORY, name__in=needed
-            ).values_list("name", flat=True)
+            ListingTag.objects.filter(category=CATEGORY, name__in=needed).values_list(
+                "name", flat=True
+            )
         )
         missing = sorted(needed - present)
         if missing:

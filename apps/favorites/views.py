@@ -24,8 +24,7 @@ class FavoriteViewSet(viewsets.ModelViewSet):
     lookup_field = "listing_id"
     lookup_url_kwarg = "listing_id"
     lookup_value_regex = (
-        "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-"
-        "[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
+        "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
     )
 
     def get_queryset(self):

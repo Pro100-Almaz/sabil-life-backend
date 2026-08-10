@@ -4,11 +4,9 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('catalog', '0003_remove_listing_image_urls_listingimage'),
-        ('catalog', '0004_listingclient_comment'),
+        ("catalog", "0003_remove_listing_image_urls_listingimage"),
+        ("catalog", "0004_listingclient_comment"),
     ]
 
-    operations = [
-    ]
+    operations = []

@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('catalog', '0005_merge_20260628_0729'),
+        ("catalog", "0005_merge_20260628_0729"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='listing',
-            name='comment',
+            model_name="listing",
+            name="comment",
             field=models.TextField(blank=True),
         ),
     ]

@@ -9,16 +9,15 @@ stable slug fed through uuid.uuid5() so the UUID is always the same.
 """
 
 import uuid
-import requests
-
 from collections import Counter
 from decimal import Decimal
 
-from django.core.management.base import BaseCommand
+import requests
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
+from django.core.management.base import BaseCommand
 
-from apps.catalog.models import Listing, ListingCategory, ListingStatus, ListingImage
+from apps.catalog.models import Listing, ListingCategory, ListingImage, ListingStatus
 from apps.catalog.services import delete_listing
 from apps.users.enums import UserRole
 from apps.users.models import CustomUser
@@ -69,6 +68,7 @@ def _fetch_image(slug: str, index: int) -> ContentFile | None:
         return ContentFile(resp.content)
     except requests.RequestException:
         return None
+
 
 # ---------------------------------------------------------------------------
 # Listing data — 24 entries, easy to scan / review
@@ -779,7 +779,6 @@ class Command(BaseCommand):
             if not listing.images.exists():
                 self._seed_images(listing, slug, data.get("image_count", 1))
 
-
         # Summary breakdown
         cat_counts = Counter(d["category"] for d in LISTINGS)
         breakdown = ", ".join(
@@ -816,9 +815,7 @@ class Command(BaseCommand):
                 continue
             object_name = f"listings/{listing.id}/{uuid.uuid4().hex}.jpg"
             key = default_storage.save(object_name, content)
-            ListingImage.objects.create(
-                listing=listing, key=key, position=position
-            )
+            ListingImage.objects.create(listing=listing, key=key, position=position)
             position += 1
 
     def _handle_count(self):

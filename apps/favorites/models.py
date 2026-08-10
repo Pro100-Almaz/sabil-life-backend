@@ -7,9 +7,9 @@ One favorite per (listing, user) pair, enforced via UniqueConstraint.
 
 from django.conf import settings
 from django.db import models
-from django.utils.translation import gettext_lazy as _
 
 from apps.catalog.models import Listing
+
 
 class Favorite(models.Model):
     listing = models.ForeignKey(
@@ -23,14 +23,13 @@ class Favorite(models.Model):
         related_name="favorited_by",
     )
     created_at = models.DateTimeField(auto_now_add=True)
-    
-    class Meta: 
+
+    class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=["user", "listing"],
-                name = "unique_user_favorite_listing"
-            ) 
+                fields=["user", "listing"], name="unique_user_favorite_listing"
+            )
         ]
 
-    def __str__ (self):
-        return Favorite(listing = self.listing, user = self.user)
+    def __str__(self):
+        return Favorite(listing=self.listing, user=self.user)

@@ -23,9 +23,6 @@ from rest_framework import mixins, permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from apps.providers.models import TutorDetail
-from apps.users.permissions import IsTutor
-
 from apps.inquiries import services
 from apps.inquiries.models import Inquiry, InquiryStatus
 from apps.inquiries.permissions import IsFamily
@@ -44,6 +41,8 @@ from apps.inquiries.serializers import (
     InquiryStatusUpdateSerializer,
     TutorInquirySerializer,
 )
+from apps.providers.models import TutorDetail
+from apps.users.permissions import IsTutor
 
 logger = logging.getLogger(__name__)
 
@@ -123,9 +122,7 @@ class FamilyInquiryViewSet(
         return Response(out_serializer.data, status=status.HTTP_201_CREATED)
 
     def retrieve(self, request, *args, **kwargs):
-        inquiry = get_object_or_404(
-            self.get_queryset(), id=kwargs["id"]
-        )
+        inquiry = get_object_or_404(self.get_queryset(), id=kwargs["id"])
         serializer = FamilyInquirySerializer(inquiry, context={"request": request})
         return Response(serializer.data)
 

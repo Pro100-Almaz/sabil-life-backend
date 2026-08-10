@@ -2,7 +2,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("providers", "0005_tutor_detail_is_verified"),
     ]
@@ -11,8 +10,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="tutordetail",
             name="deleted_at",
-            field=models.DateTimeField(
-                blank=True, null=True, verbose_name="deleted at"
-            ),
+            field=models.DateTimeField(blank=True, null=True, verbose_name="deleted at"),
         ),
     ]

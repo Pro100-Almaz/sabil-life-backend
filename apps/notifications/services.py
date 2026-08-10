@@ -3,7 +3,7 @@ import logging
 
 from django.conf import settings
 from django.db import transaction
-from firebase_admin import credentials, messaging, initialize_app
+from firebase_admin import credentials, initialize_app, messaging
 
 from apps.notifications.models import Device, Notification
 
@@ -20,9 +20,9 @@ def _get_firebase_app():
 
     raw = settings.FIREBASE_CREDENTIALS
     if raw.strip().startswith("{"):
-        cred = credentials.Certificate(json.loads(raw))  
+        cred = credentials.Certificate(json.loads(raw))
     else:
-        cred = credentials.Certificate(raw)  
+        cred = credentials.Certificate(raw)
     _firebase_app = initialize_app(cred)
     return _firebase_app
 
@@ -51,7 +51,7 @@ def send_push_to_user(user, title: str, body: str, data: dict) -> None:
     response = messaging.send_each_for_multicast(message, app=_get_firebase_app())
 
     dead = []
-    for token, resp in zip(tokens, response.responses):
+    for token, resp in zip(tokens, response.responses, strict=False):
         if resp.success:
             continue
         exc = resp.exception

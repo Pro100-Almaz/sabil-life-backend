@@ -3,12 +3,12 @@ from rest_framework.routers import DefaultRouter
 
 from apps.providers.views import (
     AvatarUploadView,
+    ListingImageDetailView,
+    ListingImageView,
     ProviderListingViewSet,
     ProviderVerificationAdminViewSet,
     TutorDetailView,
     VerifyProviderView,
-    ListingImageDetailView,
-    ListingImageView
 )
 
 app_name = "providers"
@@ -33,8 +33,14 @@ urlpatterns = router.urls + [
     ),
     path("tutor-detail/", TutorDetailView.as_view(), name="tutor-detail"),
     path("avatar/", AvatarUploadView.as_view(), name="avatar-upload"),
-    path("listings/<uuid:listing_id>/images/",
-        ListingImageView.as_view(), name="listing-images"),
-    path("listings/<uuid:listing_id>/images/<uuid:image_id>/",
-        ListingImageDetailView.as_view(), name="listing-image-detail"),
+    path(
+        "listings/<uuid:listing_id>/images/",
+        ListingImageView.as_view(),
+        name="listing-images",
+    ),
+    path(
+        "listings/<uuid:listing_id>/images/<uuid:image_id>/",
+        ListingImageDetailView.as_view(),
+        name="listing-image-detail",
+    ),
 ]

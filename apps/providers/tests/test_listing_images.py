@@ -140,9 +140,7 @@ class ListingImageDeleteTests(APITestCase):
         )
         with patch(TASK) as task:
             with self.captureOnCommitCallbacks(execute=True):
-                resp = auth_client(user).delete(
-                    self._detail_url(listing.id, image.id)
-                )
+                resp = auth_client(user).delete(self._detail_url(listing.id, image.id))
         self.assertEqual(resp.status_code, 204)
         self.assertFalse(ListingImage.objects.filter(id=image.id).exists())
         task.delay.assert_called_once_with([f"listings/{listing.id}/a.png"])

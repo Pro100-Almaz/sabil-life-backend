@@ -19,7 +19,6 @@ from rest_framework.views import APIView
 
 from apps.catalog.models import Listing, ListingStatus
 from apps.providers.models import TutorDetail
-
 from apps.reviews.models import Review, TutorReview
 from apps.reviews.permissions import IsFamily
 from apps.reviews.schema import (
@@ -27,7 +26,6 @@ from apps.reviews.schema import (
     LISTING_REVIEWS_LIST_SCHEMA,
     MY_REVIEWS_LIST_SCHEMA,
     REVIEW_DETAIL_SCHEMA,
-    TUTOR_REVIEW_BY_AUTHOR_SCHEMA,
     TUTOR_REVIEW_DETAIL_SCHEMA,
     TUTOR_REVIEWS_CREATE_SCHEMA,
     TUTOR_REVIEWS_LIST_SCHEMA,

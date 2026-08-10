@@ -7,7 +7,12 @@ from unfold.admin import ModelAdmin
 from unfold.decorators import action, display
 from unfold.widgets import UnfoldAdminTextareaWidget
 
-from apps.providers.models import ProviderVerification, TutorDetail, TutorSubject, StatusChoices
+from apps.providers.models import (
+    ProviderVerification,
+    StatusChoices,
+    TutorDetail,
+    TutorSubject,
+)
 from apps.providers.services import apply_verification_outcome
 
 
@@ -26,10 +31,11 @@ class RejectionForm(forms.Form):
         ),
     )
 
+
 _MUTABLE_FOR_APPROVE = {
     StatusChoices.PENDING,
     StatusChoices.REJECTED,
-    StatusChoices.UPDATED
+    StatusChoices.UPDATED,
 }
 _MUTABLE_FOR_REJECT = {
     StatusChoices.PENDING,
@@ -37,8 +43,9 @@ _MUTABLE_FOR_REJECT = {
     StatusChoices.UPDATED,
 }
 
+
 @action(
-    description = _("Approve provider verification request PENDING -> APPROVED"),
+    description=_("Approve provider verification request PENDING -> APPROVED"),
     icon="check_circle",
 )
 def approve_provider_request(modeladmin, request, queryset):
@@ -53,25 +60,24 @@ def approve_provider_request(modeladmin, request, queryset):
         apply_verification_outcome(verification, request.user)
         approved += 1
 
-    if approved: 
+    if approved:
         modeladmin.message_user(
             request,
             _("%(n)d verification(s) APPROVED.") % {"n": approved},
             messages.SUCCESS,
         )
-    
+
     if skipped:
         modeladmin.message_user(
             request,
             _("%(n)d only PENDING or REJECTED verifications are eligible for APPROVE")
             % {"n": skipped},
             messages.WARNING,
-        ) 
-        
-        
+        )
+
 
 @action(
-    description = _("Reject provider verification request"),
+    description=_("Reject provider verification request"),
     icon="cancel",
 )
 def reject_provider_request(modeladmin, request, queryset):
@@ -151,16 +157,16 @@ class TutorDetailAdmin(ModelAdmin):
         return obj.user.full_name
 
 
-
 @admin.register(TutorSubject)
 class TutorSubjectAdmin(ModelAdmin):
     list_display = ("name",)
     search_fields = ("name",)
 
+
 @admin.register(ProviderVerification)
 class ProviderVerificationAdmin(ModelAdmin):
     actions = [reject_provider_request, approve_provider_request]
-    
+
     list_display = (
         "user_email",
         "provider_type",
@@ -174,7 +180,7 @@ class ProviderVerificationAdmin(ModelAdmin):
     @admin.display(description=_("Email"), ordering="user__email")
     def user_email(self, obj: ProviderVerification) -> str:
         return obj.user.email
-    
+
     @display(
         description=_("Status"),
         ordering="status",

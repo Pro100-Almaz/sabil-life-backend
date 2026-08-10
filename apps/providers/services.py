@@ -2,14 +2,20 @@ import logging
 
 from django.db import transaction
 
-from apps.users.models import Role
-from apps.providers.models import ProviderChoices, TutorDetail, ProviderVerification, StatusChoices, AvatarImage
 from apps.catalog.tasks import delete_storage_objects
-
+from apps.providers.models import (
+    AvatarImage,
+    ProviderChoices,
+    ProviderVerification,
+    StatusChoices,
+    TutorDetail,
+)
+from apps.users.models import Role
 
 logger = logging.getLogger(__name__)
 
-def apply_verification_outcome(verification: ProviderVerification, reviewer = None) -> bool:
+
+def apply_verification_outcome(verification: ProviderVerification, reviewer=None) -> bool:
     approved = verification.status == StatusChoices.APPROVED
     user = verification.user
 
@@ -23,9 +29,9 @@ def apply_verification_outcome(verification: ProviderVerification, reviewer = No
 
         # Keep TutorDetail's mirror flag truthful for the tutor-detail API.
     if verification.provider_type == ProviderChoices.TUTOR:
-        TutorDetail.objects.filter(
-            user=user, deleted_at__isnull=True
-        ).update(is_verified=approved)
+        TutorDetail.objects.filter(user=user, deleted_at__isnull=True).update(
+            is_verified=approved
+        )
 
     logger.info(
         "Reviewer %s set %s verification for %s to %s (role %s).",
@@ -44,6 +50,7 @@ def apply_verification_outcome(verification: ProviderVerification, reviewer = No
     notify_verification_result.delay(verification.id)
 
     return approved
+
 
 def delete_avatar_image(avatar: AvatarImage) -> None:
     key = avatar.key

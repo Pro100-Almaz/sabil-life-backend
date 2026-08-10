@@ -3,7 +3,6 @@ Subscription service layer — Phase 5.
 """
 
 from apps.catalog.models import Listing, ListingCategory, ListingStatus
-
 from apps.subscriptions.models import MasterclassSubscription, SubscriptionStatus
 
 

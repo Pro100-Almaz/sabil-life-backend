@@ -1,10 +1,8 @@
 import uuid
+
 from django.conf import settings
-from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-
-from apps.users.enums import UserRole
 
 
 class ProviderChoices(models.TextChoices):
@@ -20,7 +18,6 @@ class StatusChoices(models.TextChoices):
     CANCELLED = "CANCELLED", _("Cancelled")
 
 
-
 class TutorDetail(models.Model):
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
@@ -29,30 +26,45 @@ class TutorDetail(models.Model):
         verbose_name=_("user"),
     )
     affiliation_listing_id = models.CharField(
-        _("affiliation listing ID"), max_length=120, blank=True,
+        _("affiliation listing ID"),
+        max_length=120,
+        blank=True,
     )
     subjects = models.JSONField(_("subjects"), default=list, blank=True)
     formats = models.JSONField(
-        _("formats"), default=list, blank=True,
+        _("formats"),
+        default=list,
+        blank=True,
         help_text=_('e.g. ["ONE_ON_ONE", "SMALL_GROUP", "AT_CENTRE"]'),
     )
     age_groups = models.JSONField(
-        _("age groups"), default=list, blank=True,
+        _("age groups"),
+        default=list,
+        blank=True,
         help_text=_('e.g. ["6-9", "10-12"]'),
     )
     price_per_hour_qar = models.PositiveIntegerField(
-        _("price per hour (QAR)"), null=True, blank=True,
+        _("price per hour (QAR)"),
+        null=True,
+        blank=True,
     )
     rating = models.DecimalField(
-        _("rating"), max_digits=2, decimal_places=1, default=0,
+        _("rating"),
+        max_digits=2,
+        decimal_places=1,
+        default=0,
     )
     review_count = models.PositiveIntegerField(_("review count"), default=0)
     years_experience = models.PositiveIntegerField(
-        _("years of experience"), null=True, blank=True,
+        _("years of experience"),
+        null=True,
+        blank=True,
     )
     credentials = models.CharField(_("credentials"), max_length=300, blank=True)
     languages = models.JSONField(
-        _("languages"), default=list, blank=True,
+        _("languages"),
+        default=list,
+        blank=True,
         help_text=_('e.g. ["EN", "AR"]'),
     )
     trial_available = models.BooleanField(_("trial available"), default=False)
@@ -91,15 +103,16 @@ class TutorSubject(models.Model):
     def __str__(self) -> str:
         return self.name
 
+
 class AvatarImage(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     tutor = models.OneToOneField(
-        TutorDetail, 
+        TutorDetail,
         on_delete=models.CASCADE,
         related_name="avatar",
-        verbose_name=_("tutor")
+        verbose_name=_("tutor"),
     )
-    key = models.CharField(max_length=512, unique=True) #identity 
+    key = models.CharField(max_length=512, unique=True)  # identity
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -158,4 +171,7 @@ class ProviderVerification(models.Model):
         ]
 
     def __str__(self) -> str:
-        return f"ProviderVerification({self.user.email}, {self.provider_type}, {self.status})"
+        return (
+            f"ProviderVerification({self.user.email}, {self.provider_type}, "
+            f"{self.status})"
+        )

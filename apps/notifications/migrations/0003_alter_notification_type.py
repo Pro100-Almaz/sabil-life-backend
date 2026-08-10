@@ -4,15 +4,26 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('notifications', '0002_alter_notification_type'),
+        ("notifications", "0002_alter_notification_type"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='notification',
-            name='type',
-            field=models.CharField(choices=[('PROVIDER_APPROVED', 'Provider application approved'), ('PROVIDER_REJECTED', 'Provider application rejected'), ('LISTING_APPROVED', 'Listing applicatoin approved'), ('LISTING_REJECTED', 'Listing application rejected'), ('INQUIRY_RESPONSE', 'Inquiry responded'), ('INQUIRY_REQUEST', 'Inquiry requested'), ('INQUIRY_CANCEL', 'Inquiry cancelled')], max_length=40, verbose_name='type'),
+            model_name="notification",
+            name="type",
+            field=models.CharField(
+                choices=[
+                    ("PROVIDER_APPROVED", "Provider application approved"),
+                    ("PROVIDER_REJECTED", "Provider application rejected"),
+                    ("LISTING_APPROVED", "Listing applicatoin approved"),
+                    ("LISTING_REJECTED", "Listing application rejected"),
+                    ("INQUIRY_RESPONSE", "Inquiry responded"),
+                    ("INQUIRY_REQUEST", "Inquiry requested"),
+                    ("INQUIRY_CANCEL", "Inquiry cancelled"),
+                ],
+                max_length=40,
+                verbose_name="type",
+            ),
         ),
     ]

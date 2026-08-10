@@ -33,8 +33,8 @@ class Inquiry(models.Model):
     Represents a family's inquiry addressed to a tutor.
 
     State machine (managed by services.transition):
-        PENDING  → DECLINED, ACCEPTED, CANCELLED 
-        ACCEPTED → CANCELLED 
+        PENDING  → DECLINED, ACCEPTED, CANCELLED
+        ACCEPTED → CANCELLED
         DECLINED, CANCELLED, ACCEPTED → terminal
 
     Tutor-driven transitions: ACCEPTED, DECLINED.

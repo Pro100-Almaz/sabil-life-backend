@@ -6,29 +6,77 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('providers', '0006_tutordetail_deleted_at'),
+        ("providers", "0006_tutordetail_deleted_at"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='ProviderVerification',
+            name="ProviderVerification",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('provider_type', models.CharField(choices=[('MASTERCLASS', 'Masterclass'), ('TUTOR', 'Tutor')], max_length=20, verbose_name='provider type')),
-                ('status', models.CharField(choices=[('PENDING', 'Pending'), ('APPROVED', 'Approved'), ('REJECTED', 'Rejected'), ('UPDATED', 'Updated'), ('CANCELLED', 'Cancelled')], default='PENDING', max_length=20, verbose_name='status')),
-                ('comment', models.TextField(blank=True, help_text='Reviewer note — e.g. the reason a verification was rejected.', verbose_name='comment')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='provider_verifications', to=settings.AUTH_USER_MODEL, verbose_name='user')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "provider_type",
+                    models.CharField(
+                        choices=[("MASTERCLASS", "Masterclass"), ("TUTOR", "Tutor")],
+                        max_length=20,
+                        verbose_name="provider type",
+                    ),
+                ),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("PENDING", "Pending"),
+                            ("APPROVED", "Approved"),
+                            ("REJECTED", "Rejected"),
+                            ("UPDATED", "Updated"),
+                            ("CANCELLED", "Cancelled"),
+                        ],
+                        default="PENDING",
+                        max_length=20,
+                        verbose_name="status",
+                    ),
+                ),
+                (
+                    "comment",
+                    models.TextField(
+                        blank=True,
+                        help_text="Reviewer note — e.g. the reason a verification was rejected.",
+                        verbose_name="comment",
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="provider_verifications",
+                        to=settings.AUTH_USER_MODEL,
+                        verbose_name="user",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'provider verification',
-                'verbose_name_plural': 'provider verifications',
-                'ordering': ['-updated_at'],
-                'constraints': [models.UniqueConstraint(fields=('user', 'provider_type'), name='unique_verification_per_user_provider_type')],
+                "verbose_name": "provider verification",
+                "verbose_name_plural": "provider verifications",
+                "ordering": ["-updated_at"],
+                "constraints": [
+                    models.UniqueConstraint(
+                        fields=("user", "provider_type"),
+                        name="unique_verification_per_user_provider_type",
+                    )
+                ],
             },
         ),
     ]

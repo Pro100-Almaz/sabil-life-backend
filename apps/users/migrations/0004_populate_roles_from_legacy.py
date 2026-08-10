@@ -22,7 +22,6 @@ def reverse_populate(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("users", "0003_roles_m2m_and_manager_detail"),
     ]

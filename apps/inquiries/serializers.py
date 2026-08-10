@@ -166,7 +166,5 @@ class InquiryStatusUpdateSerializer(serializers.Serializer):
     """
 
     status = serializers.ChoiceField(
-        choices=[
-            (s, InquiryStatus(s).label) for s in sorted(TUTOR_SETTABLE_STATUSES)
-        ]
+        choices=[(s, InquiryStatus(s).label) for s in sorted(TUTOR_SETTABLE_STATUSES)]
     )

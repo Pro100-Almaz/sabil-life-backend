@@ -5,7 +5,6 @@ drf-spectacular OpenAPI schema helpers for the suggestions app.
 from drf_spectacular.utils import OpenApiExample, OpenApiResponse
 
 from apps.core.schema import UNAUTHORIZED_EXAMPLES, ErrorResponseSerializer
-
 from apps.suggestions.serializers import SuggestionSerializer
 
 _SUGGESTION_EXAMPLE = {

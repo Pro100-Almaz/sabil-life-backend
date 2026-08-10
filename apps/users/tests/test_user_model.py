@@ -84,11 +84,12 @@ class TestUserModel:
         assert not user.has_role(UserRole.ADMIN)
 
     def test_manager_inherits_all_except_admin(self):
-        from apps.users.models import Role
 
         User = get_user_model()
         user = User.objects.create_user(
-            email="manager@example.com", password="testpass123", role=UserRole.MANAGER,
+            email="manager@example.com",
+            password="testpass123",
+            role=UserRole.MANAGER,
         )
         assert user.has_role(UserRole.FAMILY)
         assert user.has_role(UserRole.TUTOR)

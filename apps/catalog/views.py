@@ -1,18 +1,23 @@
 import logging
 
-from django.db.models import Count, QuerySet, Model
+from django.db.models import Count, QuerySet
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema, extend_schema_view
-from rest_framework import filters, permissions, viewsets, mixins
+from rest_framework import filters, mixins, permissions, viewsets
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.request import Request
 from rest_framework.response import Response
 
 from apps.catalog.filters import ListingFilter, TutorFilter
-from apps.providers.models import TutorDetail, TutorSubject
-
-from apps.catalog.models import Listing, ListingCategory, ListingStatus, ListingClientStatus, ListingClient, ListingTag, \
-    ListingTagGroup
+from apps.catalog.models import (
+    Listing,
+    ListingCategory,
+    ListingClient,
+    ListingClientStatus,
+    ListingStatus,
+    ListingTag,
+    ListingTagGroup,
+)
 from apps.catalog.schema import (
     CATEGORIES_SCHEMA,
     LISTING_DETAIL_SCHEMA,
@@ -26,9 +31,11 @@ from apps.catalog.serializers import (
     ListingClientOwnerSerializer,
     ListingClientSerializer,
     ListingDetailSerializer,
-    TutorCardSerializer, ListingTagGroupSerializer,
+    ListingTagGroupSerializer,
+    TutorCardSerializer,
 )
 from apps.catalog.services import annotate_distance_km
+from apps.providers.models import TutorDetail, TutorSubject
 from apps.users.enums import UserRole
 from apps.users.permissions import IsFamily, IsMasterclass
 
@@ -68,7 +75,11 @@ class ListingViewSet(viewsets.ReadOnlyModelViewSet):
     ordering_fields = ["rating", "price_from_qar", "created_at"]
 
     def get_queryset(self) -> QuerySet:
-        qs = Listing.objects.filter(status=ListingStatus.ACTIVE).prefetch_related("images").prefetch_related("tags")
+        qs = (
+            Listing.objects.filter(status=ListingStatus.ACTIVE)
+            .prefetch_related("images")
+            .prefetch_related("tags")
+        )
         if self.request.user.is_authenticated:
             qs = qs.exclude(owner=self.request.user)
 
@@ -85,7 +96,7 @@ class ListingViewSet(viewsets.ReadOnlyModelViewSet):
                 lat = float(lat_str)
                 lng = float(lng_str)
                 qs = annotate_distance_km(qs, lat, lng)
-            except (TypeError, ValueError):
+            except TypeError, ValueError:
                 logger.debug(
                     "Invalid lat/lng params (%s, %s) — distance not annotated.",
                     lat_str,
@@ -100,7 +111,7 @@ class ListingViewSet(viewsets.ReadOnlyModelViewSet):
             try:
                 max_dist = float(max_dist_str)
                 qs = qs.filter(distance_km__lte=max_dist)
-            except (TypeError, ValueError):
+            except TypeError, ValueError:
                 pass
 
         # ------------------------------------------------------------------
@@ -160,7 +171,7 @@ def categories_view(request: Request) -> Response:
 
 @api_view(["GET"])
 @permission_classes([permissions.AllowAny])
-def listing_tags_view(request: Request) -> Response: 
+def listing_tags_view(request: Request) -> Response:
     """
     GET /api/v1/tags/?category=CATEGORY
     Returns all of the tags belonging to this category
@@ -169,9 +180,10 @@ def listing_tags_view(request: Request) -> Response:
     category = request.query_params.get("category")
     if category:
         qs = qs.filter(category=category.upper())
-    
+
     names = list(qs.values_list("name", flat=True))
     return Response(names)
+
 
 @api_view(["GET"])
 @permission_classes([permissions.AllowAny])
@@ -200,8 +212,7 @@ class TutorListViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         qs = (
-            TutorDetail.objects
-            .select_related("user")
+            TutorDetail.objects.select_related("user")
             .select_related("avatar")
             .filter(user__roles__name=UserRole.TUTOR)
             .order_by("-rating", "-review_count")
@@ -266,10 +277,8 @@ class ListingClientViewSet(
         return ListingClientSerializer
 
     def get_queryset(self) -> QuerySet:
-        return (
-            ListingClient.objects
-            .select_related("listing")
-            .filter(user=self.request.user)
+        return ListingClient.objects.select_related("listing").filter(
+            user=self.request.user
         )
 
     def perform_create(self, serializer):
@@ -317,10 +326,8 @@ class ListingOwnerViewSet(
     http_method_names = ["get", "patch", "head", "options"]
 
     def get_queryset(self) -> QuerySet:
-        qs = (
-            ListingClient.objects
-            .select_related("user", "listing")
-            .filter(listing__owner=self.request.user)
+        qs = ListingClient.objects.select_related("user", "listing").filter(
+            listing__owner=self.request.user
         )
         listing_id = self.request.query_params.get("listing")
         if listing_id:

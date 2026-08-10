@@ -44,9 +44,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         dry_run = options["dry_run"]
         existing = set(
-            ListingTag.objects.filter(category=CATEGORY).values_list(
-                "name", flat=True
-            )
+            ListingTag.objects.filter(category=CATEGORY).values_list("name", flat=True)
         )
         wanted = set(SCHOOL_TAGS)
         missing = [n for n in SCHOOL_TAGS if n not in existing]

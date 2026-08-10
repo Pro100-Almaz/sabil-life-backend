@@ -4,15 +4,24 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('inquiries', '0002_inquiry_tutor'),
+        ("inquiries", "0002_inquiry_tutor"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='inquiry',
-            name='status',
-            field=models.CharField(choices=[('PENDING', 'Pending'), ('ACCEPTED', 'Accepted'), ('DECLINED', 'Declined'), ('CANCELLED', 'Cancelled')], db_index=True, default='PENDING', max_length=16),
+            model_name="inquiry",
+            name="status",
+            field=models.CharField(
+                choices=[
+                    ("PENDING", "Pending"),
+                    ("ACCEPTED", "Accepted"),
+                    ("DECLINED", "Declined"),
+                    ("CANCELLED", "Cancelled"),
+                ],
+                db_index=True,
+                default="PENDING",
+                max_length=16,
+            ),
         ),
     ]
