@@ -56,7 +56,7 @@ jobs:
 
           ssh "${DEPLOY_USER}@${DEPLOY_HOST}" "
             set -eu
-            cd /home/q19almaz/sabil-life-backend
+            cd /opt/sabil-life-backend
             export IMAGE_TAG='${IMAGE_TAG}'
             docker compose -f docker-compose.prod.yml pull backend worker beat
             docker compose -f docker-compose.prod.yml config --quiet
