@@ -74,8 +74,7 @@ class ForgotPasswordView(generics.GenericAPIView):
         return Response(
             {
                 "detail": (
-                    "If an account exists for this email, "
-                    "a reset code has been sent."
+                    "If an account exists for this email, a reset code has been sent."
                 )
             },
             status=status.HTTP_200_OK,
@@ -115,11 +114,7 @@ class ForgotPasswordConfirmView(generics.GenericAPIView):
 
         if user is None:
             raise serializers.ValidationError(
-                {
-                    "code": [
-                        "Code expired or not found. Please request a new one."
-                    ]
-                }
+                {"code": ["Code expired or not found. Please request a new one."]}
             )
 
         try:

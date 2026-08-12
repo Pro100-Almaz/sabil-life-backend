@@ -141,7 +141,7 @@ def verify_password_reset_code(*, email: str, code: str) -> None:
         data["attempts"] += 1
         try:
             remaining = cache.ttl(key)
-        except (AttributeError, NotImplementedError):
+        except AttributeError, NotImplementedError:
             remaining = CODE_TTL
 
         if remaining is None or remaining <= 0:
