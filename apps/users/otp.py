@@ -93,3 +93,62 @@ def verify_and_pop(*, email: str, code: str) -> dict:
 
     cache.delete(key)  # single-use
     return data
+
+
+def _password_reset_key(email: str) -> str:
+    return f"password-reset:{email.strip().lower()}"
+
+
+def start_password_reset(*, email: str) -> str:
+    """
+    Generate and cache a password-reset code.
+
+    Only the code hash is stored. Requesting another code invalidates the
+    previous code for this email.
+    """
+    code = generate_code()
+
+    cache.set(
+        _password_reset_key(email),
+        {
+            "code_hash": _hash_code(code),
+            "attempts": 0,
+        },
+        timeout=CODE_TTL,
+    )
+
+    return code
+
+
+def verify_password_reset_code(*, email: str, code: str) -> None:
+    """
+    Verify and consume a password-reset code.
+
+    The code is deleted after successful verification, making it single-use.
+    """
+    key = _password_reset_key(email)
+    data = cache.get(key)
+    if data is None:
+        raise VerificationError("expired")
+
+    if data["attempts"] >= MAX_ATTEMPTS:
+        cache.delete(key)
+        raise VerificationError("too_many_attempts")
+
+    submitted_hash = _hash_code(code)
+
+    if not secrets.compare_digest(submitted_hash, data["code_hash"]):
+        data["attempts"] += 1
+        try:
+            remaining = cache.ttl(key)
+        except (AttributeError, NotImplementedError):
+            remaining = CODE_TTL
+
+        if remaining is None or remaining <= 0:
+            cache.delete(key)
+            raise VerificationError("expired")
+
+        cache.set(key, data, timeout=remaining)
+        raise VerificationError("invalid")
+
+    cache.delete(key)

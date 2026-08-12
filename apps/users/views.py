@@ -3,7 +3,7 @@ from datetime import datetime
 from datetime import timezone as tz
 
 from django.contrib.auth import login
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from knox.auth import TokenAuthentication
 from knox.models import AuthToken
@@ -28,14 +28,122 @@ from apps.users.schema import (
 from apps.users.serializers import (
     AuthTokenSerializer,
     CreateUserSerializer,
+    ForgotPasswordConfirmSerializer,
+    ForgotPasswordRequestSerializer,
     RegistrationRequestSerializer,
     RegistrationVerifySerializer,
     UserProfileSerializer,
 )
-from apps.users.tasks import send_verification_email
-from apps.users.throttles import RegistrationCodeThrottle, UserLoginRateThrottle
+from apps.users.tasks import send_password_reset_email, send_verification_email
+from apps.users.throttles import (
+    PasswordResetRequestThrottle,
+    RegistrationCodeThrottle,
+    UserLoginRateThrottle,
+)
 
 logger = logging.getLogger(__name__)
+
+
+class ForgotPasswordView(generics.GenericAPIView):
+    """
+    Request a password-reset code.
+
+    The response never reveals whether the submitted email belongs to an
+    account.
+    """
+
+    permission_classes = (permissions.AllowAny,)
+    serializer_class = ForgotPasswordRequestSerializer
+    throttle_classes = [PasswordResetRequestThrottle]
+
+    def post(self, request, *args, **kwargs) -> Response:
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        email = serializer.validated_data["email"]
+
+        user = CustomUser.objects.filter(
+            email__iexact=email,
+            is_active=True,
+        ).first()
+
+        if user is not None:
+            code = otp.start_password_reset(email=user.email)
+            send_password_reset_email.delay(user.email, code)
+
+        return Response(
+            {
+                "detail": (
+                    "If an account exists for this email, "
+                    "a reset code has been sent."
+                )
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class ForgotPasswordConfirmView(generics.GenericAPIView):
+    """
+    Verify a password-reset code and set a new password.
+
+    A successful reset invalidates every existing Knox token for the user.
+    """
+
+    permission_classes = (permissions.AllowAny,)
+    serializer_class = ForgotPasswordConfirmSerializer
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "password_reset_confirm"
+
+    _ERROR_MESSAGES = {
+        "expired": "Code expired or not found. Please request a new one.",
+        "invalid": "Invalid code.",
+        "too_many_attempts": "Too many attempts. Please request a new code.",
+    }
+
+    def post(self, request, *args, **kwargs) -> Response:
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        email = serializer.validated_data["email"]
+        code = serializer.validated_data["code"]
+        new_password = serializer.validated_data["password"]
+
+        user = CustomUser.objects.filter(
+            email__iexact=email,
+            is_active=True,
+        ).first()
+
+        if user is None:
+            raise serializers.ValidationError(
+                {
+                    "code": [
+                        "Code expired or not found. Please request a new one."
+                    ]
+                }
+            )
+
+        try:
+            otp.verify_password_reset_code(
+                email=user.email,
+                code=code,
+            )
+        except otp.VerificationError as exc:
+            message = self._ERROR_MESSAGES.get(exc.reason, "Invalid code.")
+            raise serializers.ValidationError({"code": [message]}) from exc
+
+        with transaction.atomic():
+            user.set_password(new_password)
+            user.save(update_fields=["password"])
+
+            # A stolen or previously issued session must not survive a reset.
+            AuthToken.objects.filter(user=user).delete()
+
+        logger.info("Password reset completed for user ID %s.", user.pk)
+
+        return Response(
+            {"detail": "Password reset successfully."},
+            status=status.HTTP_200_OK,
+        )
 
 
 @extend_schema(responses=LOGIN_RESPONSE_SCHEMA)

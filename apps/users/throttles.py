@@ -48,3 +48,19 @@ class RegistrationCodeThrottle(SimpleRateThrottle):
         if not email:
             return None  # no email → let the serializer return the 400
         return self.cache_format % {"scope": self.scope, "ident": email}
+
+
+class PasswordResetRequestThrottle(SimpleRateThrottle):
+    """
+    Limit reset-email requests per normalized email address.
+    """
+
+    scope = "password_reset_request"
+
+    def get_cache_key(self, request, view):
+        email = (request.data.get("email") or "").strip().lower()
+
+        if not email:
+            return None
+
+        return self.cache_format % {"scope": self.scope, "ident": email}

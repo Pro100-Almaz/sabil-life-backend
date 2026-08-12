@@ -135,6 +135,56 @@ class RegistrationVerifySerializer(serializers.Serializer):
     code = serializers.CharField(min_length=CODE_LENGTH, max_length=CODE_LENGTH)
 
 
+class ForgotPasswordRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+
+class ForgotPasswordConfirmSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    code = serializers.CharField(
+        min_length=CODE_LENGTH,
+        max_length=CODE_LENGTH,
+        trim_whitespace=True,
+    )
+    password = serializers.CharField(
+        write_only=True,
+        min_length=MIN_PASSWORD_LENGTH,
+        trim_whitespace=False,
+        style={"input_type": "password"},
+    )
+    password2 = serializers.CharField(
+        write_only=True,
+        min_length=MIN_PASSWORD_LENGTH,
+        trim_whitespace=False,
+        style={"input_type": "password"},
+    )
+
+    def validate(self, data: dict) -> dict:
+        password = data["password"]
+
+        if password != data["password2"]:
+            raise serializers.ValidationError(
+                {"password2": [_("Passwords do not match.")]}
+            )
+
+        # Validate consistently without exposing whether the account exists.
+        validation_user = CustomUser(email=data["email"])
+
+        try:
+            validate_password(password, user=validation_user)
+        except Exception as exc:
+            if hasattr(exc, "error_list"):
+                errors = get_errors(exc)
+            else:
+                errors = [
+                    _("An error occurred during password validation. Please try again.")
+                ]
+
+            raise serializers.ValidationError({"password": errors}) from exc
+
+        return data
+
+
 class UserProfileSerializer(serializers.ModelSerializer):
     roles = serializers.SerializerMethodField()
 

@@ -377,6 +377,8 @@ REST_FRAMEWORK = {
         "user_login": "5/minute",
         "register_request": "5/hour",
         "register_verify": "20/hour",
+        "password_reset_request": "5/hour",
+        "password_reset_confirm": "20/hour",
     },
 }
 
