@@ -39,7 +39,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": None,
         "lng": None,
         "price_from_qar": 50000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Premium international school with strong university preparation. Offers IB / American pathways from Pre-K–Grade 12, for ages 3–18. Recognition: International school network."
         ),
@@ -68,7 +68,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": 25.2286,
         "lng": 51.4869,
         "price_from_qar": 15000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Combines English education with Islamic values. Offers British-based with Islamic studies from KG–Grade 12, for ages 3–18. Recognition: Qatar private school system."
         ),
@@ -94,7 +94,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": 25.2419,
         "lng": 51.5008,
         "price_from_qar": 20000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "American-style education with Arabic and Islamic studies. Offers American Curriculum from Pre-K–Grade 12, for ages 3–18. Recognition: American curriculum school."
         ),
@@ -120,7 +120,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": 25.684,
         "lng": 51.497,
         "price_from_qar": 25000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "One of Qatar’s largest international schools. Offers British / IB pathways from Foundation–Year 13, for ages 3–18. Recognition: International school."
         ),
@@ -149,7 +149,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": 25.2606,
         "lng": 51.4494,
         "price_from_qar": 22000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Boys’ British school. Offers British Curriculum from Foundation–Year 13, for ages 3–18. Recognition: British curriculum."
         ),
@@ -176,7 +176,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": 25.2606,
         "lng": 51.4494,
         "price_from_qar": 22000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Girls’ British school. Offers British Curriculum from Foundation–Year 13, for ages 3–18. Recognition: British curriculum."
         ),
@@ -203,7 +203,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": None,
         "lng": None,
         "price_from_qar": 30000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Child-centred learning approach. Offers Montessori / International from Early Years–Secondary, for ages 3–18. Recognition: Montessori-based education."
         ),
@@ -225,7 +225,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": 25.2286,
         "lng": 51.4869,
         "price_from_qar": 18000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "American-style education. Offers American Curriculum from KG–Grade 12, for ages 3–18. Recognition: American curriculum."
         ),
@@ -249,7 +249,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": None,
         "lng": None,
         "price_from_qar": 27000,
-        "age_groups": ["3-5", "6-12"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Specialist British primary school. Offers British Primary Curriculum from FS1–Year 6, for ages 3–11. Recognition: British curriculum."
         ),
@@ -272,7 +272,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": None,
         "lng": None,
         "price_from_qar": 18000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "American pathway school. Offers American Curriculum from KG–Grade 12, for ages 3–18. Recognition: American curriculum."
         ),
@@ -296,7 +296,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": 25.2606,
         "lng": 51.4494,
         "price_from_qar": 45000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "One of Qatar’s leading American schools. Offers American Curriculum (AP) from Pre-K–Grade 12, for ages 3–18. Recognition: Internationally recognised American school."
         ),
@@ -323,7 +323,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": 25.3236,
         "lng": 51.4602,
         "price_from_qar": 45000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "IB education with Arabic cultural focus. Offers IB Curriculum from Early Years–Grade 12, for ages 3–18. Recognition: IB World School."
         ),
@@ -348,7 +348,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": None,
         "lng": None,
         "price_from_qar": 18000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "International learning environment. Offers International Curriculum from KG–Grade 12, for ages 3–18. Recognition: Qatar private education system."
         ),
@@ -371,7 +371,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": None,
         "lng": None,
         "price_from_qar": 18000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Cambridge examination pathway. Offers Cambridge / British from KG–Year 13, for ages 3–18. Recognition: Cambridge pathway."
         ),
@@ -399,7 +399,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": None,
         "lng": None,
         "price_from_qar": 20000,
-        "age_groups": ["6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "British-style education. Offers British Curriculum from Primary–Secondary, for ages 5–18. Recognition: British curriculum."
         ),
@@ -421,7 +421,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": 25.2286,
         "lng": 51.4869,
         "price_from_qar": 14000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Established Indian international school. Offers CBSE from KG–Grade 12, for ages 3–18. Recognition: CBSE affiliated."
         ),
@@ -446,7 +446,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": None,
         "lng": None,
         "price_from_qar": 12000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Indian curriculum pathway. Offers CBSE from KG–Grade 12, for ages 3–18. Recognition: CBSE affiliated."
         ),
@@ -470,7 +470,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": None,
         "lng": None,
         "price_from_qar": 18000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Cambridge qualifications. Offers Cambridge / British from KG–Year 13, for ages 3–18. Recognition: Cambridge International."
         ),
@@ -499,7 +499,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": None,
         "lng": None,
         "price_from_qar": 45000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Premium international school. Offers British / IB pathway from Early Years–Year 13, for ages 3–18. Recognition: Nord Anglia Education."
         ),
@@ -529,7 +529,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": None,
         "lng": None,
         "price_from_qar": 40000,
-        "age_groups": ["3-5", "6-12"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Primary specialist campus. Offers British Curriculum from Early Years–Year 6, for ages 3–11. Recognition: Nord Anglia Education."
         ),
@@ -551,7 +551,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": 25.3339,
         "lng": 51.4408,
         "price_from_qar": 40000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Full pathway campus. Offers British Curriculum from Early Years–Year 13, for ages 3–18. Recognition: Nord Anglia Education."
         ),
@@ -579,7 +579,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": 25.2606,
         "lng": 51.4494,
         "price_from_qar": 24000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Established British school offering IGCSE and A Levels. Offers British Curriculum (Cambridge/Pearson) from EYFS–Year 13, for ages 3–18. Recognition: British curriculum school."
         ),
@@ -607,7 +607,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": 25.2244,
         "lng": 51.4525,
         "price_from_qar": 33000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "One of Qatar’s leading British schools. Offers British National Curriculum from FS1–Year 13, for ages 3–18. Recognition: British Schools Overseas recognised."
         ),
@@ -636,7 +636,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": 25.1659,
         "lng": 51.5988,
         "price_from_qar": 31000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Serves families in southern Qatar. Offers British National Curriculum from FS1–Year 13, for ages 3–18. Recognition: British curriculum."
         ),
@@ -663,7 +663,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": 25.4247,
         "lng": 51.4694,
         "price_from_qar": 34000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Newer DBS campus. Offers British National Curriculum from FS1–Year 13, for ages 3–18. Recognition: British curriculum."
         ),
@@ -689,7 +689,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": 25.3739,
         "lng": 51.5133,
         "price_from_qar": 42000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "One of Qatar’s highest-performing British schools. Offers British Curriculum (IGCSE/A Levels) from FS1–Year 13, for ages 3–18. Recognition: British Schools Overseas recognised."
         ),
@@ -718,7 +718,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": 25.2842,
         "lng": 51.5289,
         "price_from_qar": 35000,
-        "age_groups": ["3-5", "6-12"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Prestigious British preparatory school. Offers British Primary Curriculum from FS1–Year 8, for ages 3–13. Recognition: British Schools Overseas recognised."
         ),
@@ -743,7 +743,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": 25.43,
         "lng": 50.785,
         "price_from_qar": 25000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Community school serving western Qatar. Offers British Curriculum from Nursery–Year 13, for ages 3–18. Recognition: British curriculum."
         ),
@@ -772,7 +772,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": 25.2231,
         "lng": 51.4886,
         "price_from_qar": 27000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Girls-only British school. Offers British Curriculum from FS1–Year 13, for ages 3–18. Recognition: British curriculum."
         ),
@@ -799,7 +799,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": None,
         "lng": None,
         "price_from_qar": 20000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "British pathway school. Offers British Curriculum from EYFS–Year 13, for ages 3–18. Recognition: British curriculum."
         ),
@@ -825,7 +825,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": 25.2286,
         "lng": 51.4869,
         "price_from_qar": 16000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Offers multiple curriculum pathways. Offers British & CBSE pathways from KG–Grade 12, for ages 3–18. Recognition: Qatar private education system."
         ),
@@ -853,7 +853,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": 25.684,
         "lng": 51.497,
         "price_from_qar": 15000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Northern Qatar campus. Offers British & CBSE pathways from KG–Grade 12, for ages 3–18. Recognition: Qatar private education system."
         ),
@@ -880,7 +880,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": 25.3236,
         "lng": 51.4602,
         "price_from_qar": 42000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Premium American school. Offers American Curriculum (AP) from Pre-K–Grade 12, for ages 3–18. Recognition: GEMS Education network."
         ),
@@ -908,7 +908,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": 25.2419,
         "lng": 51.5008,
         "price_from_qar": 38000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "German-language education with international focus. Offers German Curriculum from Kindergarten–Grade 12, for ages 3–18. Recognition: German education system."
         ),
@@ -932,7 +932,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": None,
         "lng": None,
         "price_from_qar": 18000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Multicultural American-style school. Offers American Curriculum from KG–Grade 12, for ages 3–18. Recognition: American curriculum."
         ),
@@ -956,7 +956,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": 25.3339,
         "lng": 51.4408,
         "price_from_qar": 25000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Established British school. Offers British Curriculum from Foundation–Year 13, for ages 3–18. Recognition: British curriculum."
         ),
@@ -983,7 +983,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": 25.43,
         "lng": 51.49,
         "price_from_qar": 36000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Modern premium British school. Offers British Curriculum from Pre-School–Year 13, for ages 3–18. Recognition: Nord Anglia Education."
         ),
@@ -1012,7 +1012,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": 25.2286,
         "lng": 51.4869,
         "price_from_qar": 17000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Focus on academics and character development. Offers American Curriculum from KG–Grade 12, for ages 3–18. Recognition: American curriculum."
         ),
@@ -1037,7 +1037,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": 25.2286,
         "lng": 51.4869,
         "price_from_qar": 26000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Structured international programme with global university preparation. Offers SABIS® Curriculum from KG–Grade 12, for ages 3–18. Recognition: SABIS® Network."
         ),
@@ -1063,7 +1063,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": 25.3494,
         "lng": 51.4794,
         "price_from_qar": 47000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Offers IB PYP, MYP and Diploma Programme. Offers IB Curriculum from Early Years–Grade 12, for ages 3–18. Recognition: IB World School."
         ),
@@ -1092,7 +1092,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": None,
         "lng": None,
         "price_from_qar": 25000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Serves Japanese families and follows Japan’s curriculum. Offers Japanese National Curriculum from Kindergarten–Junior High, for ages 3–15. Recognition: Japanese Ministry of Education system."
         ),
@@ -1115,7 +1115,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": 25.2378,
         "lng": 51.5308,
         "price_from_qar": 39000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Inspired by King’s College UK traditions. Offers British Curriculum from Pre-School–Year 13, for ages 3–18. Recognition: British curriculum."
         ),
@@ -1143,7 +1143,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": None,
         "lng": None,
         "price_from_qar": 15000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Bilingual education environment. Offers Lebanese Curriculum / International pathway from KG–Grade 12, for ages 3–18. Recognition: Lebanese education system."
         ),
@@ -1168,7 +1168,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": 25.14,
         "lng": 51.535,
         "price_from_qar": 15000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Indian curriculum school. Offers CBSE from KG–Grade 12, for ages 3–18. Recognition: CBSE affiliated."
         ),
@@ -1194,7 +1194,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": 25.3212,
         "lng": 51.531,
         "price_from_qar": 32000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "French education leading to Baccalauréat. Offers French National Curriculum from Preschool–Terminale, for ages 3–18. Recognition: AEFE network."
         ),
@@ -1219,7 +1219,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": None,
         "lng": None,
         "price_from_qar": 30000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "French bilingual international school. Offers French National Curriculum from Preschool–Terminale, for ages 3–18. Recognition: French Ministry of Education."
         ),
@@ -1245,7 +1245,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": 24.9917,
         "lng": 51.55,
         "price_from_qar": 25000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Serves Mesaieed industrial community. Offers British Curriculum from Foundation–Year 13, for ages 3–18. Recognition: British curriculum."
         ),
@@ -1273,7 +1273,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": None,
         "lng": None,
         "price_from_qar": 19000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "American education pathway. Offers American Curriculum from KG–Grade 12, for ages 3–18. Recognition: American curriculum."
         ),
@@ -1297,7 +1297,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": 25.2064,
         "lng": 51.4747,
         "price_from_qar": 27000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Part of Newton group of schools. Offers British Curriculum from EYFS–Year 13, for ages 3–18. Recognition: British curriculum."
         ),
@@ -1324,7 +1324,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": 25.2064,
         "lng": 51.4747,
         "price_from_qar": 24000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Offers English National Curriculum. Offers British Curriculum from EYFS–Year 13, for ages 3–18. Recognition: British curriculum."
         ),
@@ -1350,7 +1350,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": 25.3739,
         "lng": 51.5133,
         "price_from_qar": 23000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Newton group campus. Offers British Curriculum from EYFS–Year 13, for ages 3–18. Recognition: British curriculum."
         ),
@@ -1377,7 +1377,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": 25.25,
         "lng": 51.52,
         "price_from_qar": 22000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Newton group campus. Offers British Curriculum from EYFS–Year 13, for ages 3–18. Recognition: British curriculum."
         ),
@@ -1403,7 +1403,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": 25.3212,
         "lng": 51.531,
         "price_from_qar": 25000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Serves central Doha families. Offers British Curriculum from EYFS–Year 13, for ages 3–18. Recognition: British curriculum."
         ),
@@ -1427,7 +1427,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": None,
         "lng": None,
         "price_from_qar": 14000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Indian curriculum school. Offers CBSE from KG–Grade 12, for ages 3–18. Recognition: CBSE affiliated."
         ),
@@ -1452,7 +1452,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": 25.684,
         "lng": 51.497,
         "price_from_qar": 38000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "International school serving northern Qatar. Offers British & IB from Early Years–Year 13, for ages 3–18. Recognition: Nord Anglia Education."
         ),
@@ -1481,7 +1481,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": 25.2231,
         "lng": 51.4886,
         "price_from_qar": 38000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Established in partnership with Qatar Airways. Offers British Curriculum from Early Years–Year 13, for ages 3–18. Recognition: British curriculum."
         ),
@@ -1509,7 +1509,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": None,
         "lng": None,
         "price_from_qar": 6000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Affordable Indian curriculum option. Offers CBSE from KG–Grade 12, for ages 3–18. Recognition: CBSE affiliated."
         ),
@@ -1533,7 +1533,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": None,
         "lng": None,
         "price_from_qar": 10000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "One of Qatar’s oldest Pakistani schools. Offers Pakistani Curriculum (FBISE) from KG–Grade 12, for ages 3–18. Recognition: Federal Board of Intermediate and Secondary Education."
         ),
@@ -1558,7 +1558,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": None,
         "lng": None,
         "price_from_qar": 10000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Community-focused Pakistani school. Offers Pakistani Curriculum from KG–Grade 12, for ages 3–18. Recognition: Pakistan curriculum."
         ),
@@ -1581,7 +1581,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": 25.2231,
         "lng": 51.4886,
         "price_from_qar": 34000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Established British independent school. Offers British Curriculum from Foundation–Year 13, for ages 3–18. Recognition: British curriculum."
         ),
@@ -1608,7 +1608,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": None,
         "lng": None,
         "price_from_qar": 17000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "British pathway school. Offers British Curriculum from KG–Year 13, for ages 3–18. Recognition: British curriculum."
         ),
@@ -1634,7 +1634,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": 25.2286,
         "lng": 51.4869,
         "price_from_qar": 14000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Serves Filipino community. Offers Philippine Curriculum from Kindergarten–Grade 12, for ages 4–18. Recognition: Philippine education system."
         ),
@@ -1659,7 +1659,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": None,
         "lng": None,
         "price_from_qar": 12000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Part of Podar Education network. Offers CBSE from KG–Grade 12, for ages 3–18. Recognition: CBSE affiliated."
         ),
@@ -1686,7 +1686,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": 25.3153,
         "lng": 51.4361,
         "price_from_qar": 55000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Flagship Qatar Foundation school. Offers IB Curriculum from Pre-K–Grade 12, for ages 3–18. Recognition: IB World School."
         ),
@@ -1713,7 +1713,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": 25.684,
         "lng": 51.497,
         "price_from_qar": 40000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Serves northern Qatar. Offers IB Curriculum from Pre-K–Grade 12, for ages 3–18. Recognition: IB World School."
         ),
@@ -1741,7 +1741,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": 25.1659,
         "lng": 51.5988,
         "price_from_qar": 40000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Qatar Foundation school. Offers IB Curriculum from Pre-K–Grade 12, for ages 3–18. Recognition: IB World School."
         ),
@@ -1767,7 +1767,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": 25.2886,
         "lng": 51.5253,
         "price_from_qar": 45000,
-        "age_groups": ["3-5", "6-12"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Urban Qatar Foundation campus. Offers IB Curriculum from Early Years–Primary, for ages 3–11. Recognition: IB World School."
         ),
@@ -1790,7 +1790,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": 25.3153,
         "lng": 51.4361,
         "price_from_qar": 50000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Qatar Foundation campus. Offers IB Curriculum from Early Years–Grade 12, for ages 3–18. Recognition: IB World School."
         ),
@@ -1818,7 +1818,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": None,
         "lng": None,
         "price_from_qar": 28000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Canadian education pathway. Offers Canadian Curriculum (Alberta) from KG–Grade 12, for ages 3–18. Recognition: Alberta curriculum."
         ),
@@ -1843,7 +1843,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": 25.3172,
         "lng": 51.5289,
         "price_from_qar": 30000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "One of Doha’s oldest British schools. Offers British Curriculum from EYFS–Year 13, for ages 3–18. Recognition: British curriculum."
         ),
@@ -1871,7 +1871,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": 25.2244,
         "lng": 51.4525,
         "price_from_qar": 15000,
-        "age_groups": ["6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Turkish national curriculum. Offers Turkish Curriculum from Primary–Secondary, for ages 6–18. Recognition: Turkish Ministry of Education."
         ),
@@ -1886,7 +1886,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": 25.155,
         "lng": 51.48,
         "price_from_qar": 42000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Inspired by RGS Guildford UK. Offers British Curriculum from Pre-School–Year 13, for ages 3–18. Recognition: British curriculum."
         ),
@@ -1913,7 +1913,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": 25.3212,
         "lng": 51.531,
         "price_from_qar": 46000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Full IB continuum. Offers IB Curriculum from Pre-School–Grade 12, for ages 3–18. Recognition: IB World School."
         ),
@@ -1941,7 +1941,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": 25.32,
         "lng": 51.39,
         "price_from_qar": 36000,
-        "age_groups": ["3-5", "6-12"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Preparatory campus. Offers British Curriculum from Pre-School–Year 6, for ages 3–11. Recognition: British curriculum."
         ),
@@ -1965,7 +1965,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": 25.2919,
         "lng": 51.4244,
         "price_from_qar": 38000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Boys’ senior school. Offers British Curriculum from Pre-School–Year 13, for ages 3–18. Recognition: British curriculum."
         ),
@@ -1990,7 +1990,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": 25.2244,
         "lng": 51.4525,
         "price_from_qar": 38000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Girls’ senior school. Offers British Curriculum from Pre-School–Year 13, for ages 3–18. Recognition: British curriculum."
         ),
@@ -2016,7 +2016,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": None,
         "lng": None,
         "price_from_qar": 10000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Indian curriculum school. Offers CBSE from KG–Grade 12, for ages 3–18. Recognition: CBSE affiliated."
         ),
@@ -2041,7 +2041,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": None,
         "lng": None,
         "price_from_qar": 21000,
-        "age_groups": ["3-5", "6-12"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Primary-focused international school. Offers British / Cambridge Primary from Kindergarten–Primary, for ages 3–11. Recognition: Cambridge pathway."
         ),
@@ -2067,7 +2067,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": None,
         "lng": None,
         "price_from_qar": 10000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Sri Lankan community school. Offers Sri Lankan Curriculum from Nursery–Grade 13, for ages 3–18. Recognition: Sri Lankan education system."
         ),
@@ -2092,7 +2092,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": 25.3236,
         "lng": 51.4602,
         "price_from_qar": 44000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "IB and multilingual education. Offers IB Curriculum from Pre-School–Grade 12, for ages 3–18. Recognition: IB World School."
         ),
@@ -2119,7 +2119,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": None,
         "lng": None,
         "price_from_qar": 18000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Cambridge examination pathway. Offers Cambridge / British from KG–Year 13, for ages 3–18. Recognition: Cambridge International."
         ),
@@ -2148,7 +2148,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": None,
         "lng": None,
         "price_from_qar": 20000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "British international school. Offers British Curriculum from KG–Year 13, for ages 3–18. Recognition: British curriculum."
         ),
@@ -2173,7 +2173,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": 25.3697,
         "lng": 51.5508,
         "price_from_qar": 39000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "Premium school on The Pearl. Offers British Curriculum from Early Years–Year 13, for ages 3–18. Recognition: British curriculum."
         ),
@@ -2200,7 +2200,7 @@ SCHOOLS: tuple[dict, ...] = (
         "lat": 25.2606,
         "lng": 51.4494,
         "price_from_qar": 27000,
-        "age_groups": ["3-5", "6-12", "13-18"],
+        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": (
             "American pathway school. Offers American Curriculum from KG–Grade 12, for ages 3–18. Recognition: American curriculum."
         ),
