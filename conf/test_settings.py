@@ -26,3 +26,9 @@ LOGGING["loggers"]["apps"]["level"] = "DEBUG"  # noqa
 REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]["user_login"] = "1000/minute"  # noqa
 REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]["user"] = "1000/minute"  # noqa
 REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]["anon"] = "1000/minute"  # noqa
+REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]["password_reset_request"] = (  # noqa: F405
+    "1000/minute"
+)
+REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]["password_reset_confirm"] = (  # noqa: F405
+    "1000/minute"
+)
