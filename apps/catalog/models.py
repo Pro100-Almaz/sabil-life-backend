@@ -124,6 +124,7 @@ class Listing(models.Model):
     comment = models.TextField(blank=True)
     is_online = models.BooleanField(default=True)
     meeting_url = models.URLField(blank=True, default="")
+    registration_url = models.URLField(blank=True, default="")
     # --- Phase 5 private fields (never exposed on public catalog endpoints) ---
     session_schedule = models.TextField(blank=True, default="")
     exact_address = models.TextField(blank=True, default="")
