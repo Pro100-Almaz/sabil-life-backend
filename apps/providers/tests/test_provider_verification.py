@@ -1,5 +1,6 @@
 import uuid
 
+from django.core.files.uploadedfile import SimpleUploadedFile
 from knox.models import AuthToken
 from rest_framework.test import APIClient, APITestCase
 
@@ -40,6 +41,17 @@ def auth_client(user: CustomUser) -> APIClient:
     return client
 
 
+def masterclass_payload() -> dict:
+    return {
+        "provider_type": ProviderChoices.MASTERCLASS,
+        "cv": SimpleUploadedFile(
+            "resume.pdf",
+            b"%PDF-1.4\n% test PDF",
+            content_type="application/pdf",
+        ),
+    }
+
+
 class VerificationLifecycleFromTutorDetailTests(APITestCase):
     def setUp(self):
         self.user = make_user(role=UserRole.TUTOR)
@@ -77,6 +89,51 @@ class VerificationLifecycleFromTutorDetailTests(APITestCase):
         self.client.post(TUTOR_DETAIL_URL, {"bio": "Hello"}, format="json")
         self.client.patch(TUTOR_DETAIL_URL, {"bio": "Edit"}, format="json")
         self.assertEqual(ProviderVerification.objects.filter(user=self.user).count(), 1)
+
+
+class MasterclassCvVerificationTests(APITestCase):
+    def setUp(self):
+        self.user = make_user(role=UserRole.FAMILY)
+        self.client = auth_client(self.user)
+
+    def test_masterclass_request_requires_cv(self):
+        response = self.client.post(
+            VERIFY_URL,
+            {"provider_type": ProviderChoices.MASTERCLASS},
+            format="multipart",
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("cv", response.data)
+
+    def test_masterclass_request_accepts_pdf_cv(self):
+        cv = SimpleUploadedFile(
+            "resume.pdf",
+            b"%PDF-1.4\n% test PDF",
+            content_type="application/pdf",
+        )
+        response = self.client.post(
+            VERIFY_URL,
+            {"provider_type": ProviderChoices.MASTERCLASS, "cv": cv},
+            format="multipart",
+        )
+        self.assertEqual(response.status_code, 201)
+        verification = ProviderVerification.objects.get(user=self.user)
+        self.assertTrue(verification.cv.name.endswith(".pdf"))
+        self.assertTrue(response.data["has_cv"])
+
+    def test_masterclass_request_rejects_non_pdf(self):
+        cv = SimpleUploadedFile(
+            "resume.txt",
+            b"not a PDF",
+            content_type="text/plain",
+        )
+        response = self.client.post(
+            VERIFY_URL,
+            {"provider_type": ProviderChoices.MASTERCLASS, "cv": cv},
+            format="multipart",
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("cv", response.data)
 
 
 class ProviderVerificationReadTests(APITestCase):
@@ -120,7 +177,7 @@ class RequestVerificationTests(APITestCase):
         # is only granted once an admin approves.
         user = make_user(role=UserRole.FAMILY)
         client = auth_client(user)
-        resp = client.post(VERIFY_URL, {"provider_type": "MASTERCLASS"}, format="json")
+        resp = client.post(VERIFY_URL, masterclass_payload(), format="multipart")
         self.assertEqual(resp.status_code, 201)
         self.assertEqual(resp.data["status"], StatusChoices.PENDING)
         self.assertEqual(resp.data["provider_type"], "MASTERCLASS")
@@ -132,9 +189,7 @@ class RequestVerificationTests(APITestCase):
 
     def test_request_does_not_grant_role(self):
         user = make_user(role=UserRole.FAMILY)
-        auth_client(user).post(
-            VERIFY_URL, {"provider_type": "MASTERCLASS"}, format="json"
-        )
+        auth_client(user).post(VERIFY_URL, masterclass_payload(), format="multipart")
         if hasattr(user, "_role_names_cache"):
             del user._role_names_cache
         self.assertFalse(user.has_role(UserRole.MASTERCLASS))
@@ -149,20 +204,20 @@ class RequestVerificationTests(APITestCase):
     def test_duplicate_pending_request_conflicts(self):
         user = make_user(role=UserRole.MASTERCLASS)
         client = auth_client(user)
-        client.post(VERIFY_URL, {"provider_type": "MASTERCLASS"}, format="json")
-        resp = client.post(VERIFY_URL, {"provider_type": "MASTERCLASS"}, format="json")
+        client.post(VERIFY_URL, masterclass_payload(), format="multipart")
+        resp = client.post(VERIFY_URL, masterclass_payload(), format="multipart")
         self.assertEqual(resp.status_code, 409)
 
     def test_can_rerequest_after_rejection(self):
         user = make_user(role=UserRole.MASTERCLASS)
         client = auth_client(user)
-        client.post(VERIFY_URL, {"provider_type": "MASTERCLASS"}, format="json")
+        client.post(VERIFY_URL, masterclass_payload(), format="multipart")
         v = ProviderVerification.objects.get(user=user)
         v.status = StatusChoices.REJECTED
         v.comment = "Need more info"
         v.save()
 
-        resp = client.post(VERIFY_URL, {"provider_type": "MASTERCLASS"}, format="json")
+        resp = client.post(VERIFY_URL, masterclass_payload(), format="multipart")
         self.assertEqual(resp.status_code, 200)
         v.refresh_from_db()
         self.assertEqual(v.status, StatusChoices.UPDATED)
@@ -171,11 +226,11 @@ class RequestVerificationTests(APITestCase):
     def test_cannot_rerequest_when_approved(self):
         user = make_user(role=UserRole.MASTERCLASS)
         client = auth_client(user)
-        client.post(VERIFY_URL, {"provider_type": "MASTERCLASS"}, format="json")
+        client.post(VERIFY_URL, masterclass_payload(), format="multipart")
         v = ProviderVerification.objects.get(user=user)
         v.status = StatusChoices.APPROVED
         v.save()
-        resp = client.post(VERIFY_URL, {"provider_type": "MASTERCLASS"}, format="json")
+        resp = client.post(VERIFY_URL, masterclass_payload(), format="multipart")
         self.assertEqual(resp.status_code, 409)
 
 
@@ -238,9 +293,7 @@ class AdminReviewTests(APITestCase):
     def test_approve_grants_role(self):
         # A user with no provider role gets it granted on approval.
         user = make_user(role=UserRole.FAMILY)
-        auth_client(user).post(
-            VERIFY_URL, {"provider_type": "MASTERCLASS"}, format="json"
-        )
+        auth_client(user).post(VERIFY_URL, masterclass_payload(), format="multipart")
         v = ProviderVerification.objects.get(user=user)
         self.client.patch(f"{ADMIN_URL}{v.pk}/", {"status": "APPROVED"}, format="json")
 
