@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('catalog', '0010_alter_listingtaggroup_name'),
+        ("catalog", "0010_alter_listingtaggroup_name"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='listing',
-            name='registration_url',
-            field=models.URLField(blank=True, default=''),
+            model_name="listing",
+            name="registration_url",
+            field=models.URLField(blank=True, default=""),
         ),
     ]
