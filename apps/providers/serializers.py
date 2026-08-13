@@ -149,6 +149,7 @@ class ProviderListingSerializer(serializers.ModelSerializer):
             "updated_at",
             "is_online",
             "meeting_url",
+            "registration_url",
         ]
         read_only_fields = [
             "id",
