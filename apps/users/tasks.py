@@ -50,3 +50,25 @@ def send_password_reset_email(self, email: str, code: str) -> None:
         fail_silently=False,
     )
     logger.info("Password reset email sent.")
+
+
+@shared_task(bind=True, base=BaseTaskWithRetry)
+def send_password_changed_email(self, email: str) -> None:
+    """Notify a user after their password and sessions have been secured."""
+    subject = _("Your Sabil Life password was changed")
+    body = _(
+        "Your Sabil Life password was changed successfully.\n\n"
+        "If you made this change, no action is required.\n\n"
+        "If you did not make this change, open the Sabil Life app, reset "
+        "your password using the Forgot password option. "
+        "All existing sessions have been signed out."
+    )
+
+    send_mail(
+        subject,
+        body,
+        settings.DEFAULT_FROM_EMAIL,
+        [email],
+        fail_silently=False,
+    )
+    logger.info("Password-change notification sent.")

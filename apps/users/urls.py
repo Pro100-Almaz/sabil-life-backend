@@ -2,6 +2,7 @@ from django.urls import path
 from knox import views as knox_views
 
 from apps.users.views import (
+    ChangePasswordView,
     CreateUserView,
     ForgotPasswordConfirmView,
     ForgotPasswordView,
@@ -23,6 +24,7 @@ urlpatterns = [
     # Current-user profile — renamed from profile/ to me/ per spec §9
     path("me/", UserMeView.as_view(), name="me"),
     # Auth
+    path("change-password/", ChangePasswordView.as_view(), name="change-password"),
     path("forgot-password/", ForgotPasswordView.as_view(), name="forgot-password"),
     path(
         "forgot-password/confirm/",
