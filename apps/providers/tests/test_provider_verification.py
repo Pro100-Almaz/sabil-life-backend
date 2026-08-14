@@ -44,6 +44,7 @@ def auth_client(user: CustomUser) -> APIClient:
 def masterclass_payload() -> dict:
     return {
         "provider_type": ProviderChoices.MASTERCLASS,
+        "ai_processing_consent": True,
         "cv": SimpleUploadedFile(
             "resume.pdf",
             b"%PDF-1.4\n% test PDF",
@@ -99,7 +100,10 @@ class MasterclassCvVerificationTests(APITestCase):
     def test_masterclass_request_requires_cv(self):
         response = self.client.post(
             VERIFY_URL,
-            {"provider_type": ProviderChoices.MASTERCLASS},
+            {
+                "provider_type": ProviderChoices.MASTERCLASS,
+                "ai_processing_consent": True,
+            },
             format="multipart",
         )
         self.assertEqual(response.status_code, 400)
@@ -113,13 +117,31 @@ class MasterclassCvVerificationTests(APITestCase):
         )
         response = self.client.post(
             VERIFY_URL,
-            {"provider_type": ProviderChoices.MASTERCLASS, "cv": cv},
+            {
+                "provider_type": ProviderChoices.MASTERCLASS,
+                "cv": cv,
+                "ai_processing_consent": True,
+            },
             format="multipart",
         )
         self.assertEqual(response.status_code, 201)
         verification = ProviderVerification.objects.get(user=self.user)
         self.assertTrue(verification.cv.name.endswith(".pdf"))
         self.assertTrue(response.data["has_cv"])
+
+    def test_masterclass_request_requires_ai_processing_consent(self):
+        cv = SimpleUploadedFile(
+            "resume.pdf",
+            b"%PDF-1.4\n% test PDF",
+            content_type="application/pdf",
+        )
+        response = self.client.post(
+            VERIFY_URL,
+            {"provider_type": ProviderChoices.MASTERCLASS, "cv": cv},
+            format="multipart",
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("ai_processing_consent", response.data)
 
     def test_masterclass_request_rejects_non_pdf(self):
         cv = SimpleUploadedFile(
@@ -129,7 +151,11 @@ class MasterclassCvVerificationTests(APITestCase):
         )
         response = self.client.post(
             VERIFY_URL,
-            {"provider_type": ProviderChoices.MASTERCLASS, "cv": cv},
+            {
+                "provider_type": ProviderChoices.MASTERCLASS,
+                "cv": cv,
+                "ai_processing_consent": True,
+            },
             format="multipart",
         )
         self.assertEqual(response.status_code, 400)
