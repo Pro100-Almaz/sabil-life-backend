@@ -1,7 +1,11 @@
 from django import forms
 from django.contrib import admin, messages
 from django.contrib.admin.helpers import ACTION_CHECKBOX_NAME
+from django.core.files.storage import default_storage
+from django.http import FileResponse, Http404
 from django.template.response import TemplateResponse
+from django.urls import path, reverse
+from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 from unfold.admin import ModelAdmin
 from unfold.decorators import action, display
@@ -175,7 +179,53 @@ class ProviderVerificationAdmin(ModelAdmin):
     )
     list_filter = ("status", "provider_type")
     search_fields = ("user__email", "user__full_name", "comment")
-    readonly_fields = ("user", "provider_type", "created_at", "updated_at")
+    readonly_fields = (
+        "user",
+        "provider_type",
+        "cv_link",
+        "created_at",
+        "updated_at",
+    )
+
+    def get_urls(self):
+        custom_urls = [
+            path(
+                "<path:object_id>/cv/",
+                self.admin_site.admin_view(self.view_cv),
+                name="providers_providerverification_cv",
+            ),
+        ]
+        return custom_urls + super().get_urls()
+
+    def view_cv(self, request, object_id):
+        verification = self.get_object(request, object_id)
+        if verification is None or not verification.cv:
+            raise Http404("CV not found.")
+
+        storage_key = verification.cv.name
+        if not default_storage.exists(storage_key):
+            raise Http404("CV file not found.")
+
+        return FileResponse(
+            default_storage.open(storage_key, "rb"),
+            content_type="application/pdf",
+            as_attachment=False,
+            filename=storage_key.rsplit("/", 1)[-1],
+        )
+
+    @admin.display(description=_("CV (PDF)"))
+    def cv_link(self, obj: ProviderVerification):
+        if not obj.cv:
+            return _("No CV uploaded")
+        url = reverse(
+            "admin:providers_providerverification_cv",
+            args=[obj.pk],
+        )
+        return format_html(
+            '<a href="{}" target="_blank" rel="noopener">{}</a>',
+            url,
+            _("View CV"),
+        )
 
     @admin.display(description=_("Email"), ordering="user__email")
     def user_email(self, obj: ProviderVerification) -> str:

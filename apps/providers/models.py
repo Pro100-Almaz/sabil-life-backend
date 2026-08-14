@@ -156,6 +156,12 @@ class ProviderVerification(models.Model):
         blank=True,
         help_text=_("Reviewer note — e.g. the reason a verification was rejected."),
     )
+    cv = models.FileField(
+        _("CV"),
+        upload_to="provider-verifications/cvs/%Y/%m/",
+        blank=True,
+        help_text=_("Required PDF CV for masterclass provider applications."),
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

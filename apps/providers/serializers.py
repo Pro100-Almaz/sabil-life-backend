@@ -5,6 +5,7 @@ from apps.catalog.models import Listing, ListingCategory
 from apps.catalog.serializers import ListingImageSerializer
 from apps.providers.models import (
     AvatarImage,
+    ProviderChoices,
     ProviderVerification,
     StatusChoices,
     TutorDetail,
@@ -236,6 +237,7 @@ class VerifyProviderSerializer(serializers.ModelSerializer):
     user_id = serializers.IntegerField(source="user.id", read_only=True)
     email = serializers.EmailField(source="user.email", read_only=True)
     full_name = serializers.CharField(source="user.full_name", read_only=True)
+    has_cv = serializers.SerializerMethodField()
 
     class Meta:
         model = ProviderVerification
@@ -247,10 +249,36 @@ class VerifyProviderSerializer(serializers.ModelSerializer):
             "provider_type",
             "status",
             "comment",
+            "has_cv",
             "created_at",
             "updated_at",
         ]
         read_only_fields = fields
+
+    def get_has_cv(self, obj: ProviderVerification) -> bool:
+        return bool(obj.cv)
+
+
+class ProviderVerificationRequestSerializer(serializers.Serializer):
+    provider_type = serializers.ChoiceField(choices=ProviderChoices.choices)
+    cv = serializers.FileField(required=False)
+
+    def validate(self, attrs: dict) -> dict:
+        cv = attrs.get("cv")
+        if attrs["provider_type"] == ProviderChoices.MASTERCLASS:
+            if cv is None:
+                raise serializers.ValidationError(
+                    {"cv": "A PDF CV is required for masterclass applications."}
+                )
+            if not cv.name.lower().endswith(".pdf"):
+                raise serializers.ValidationError({"cv": "The CV must be a PDF file."})
+            header = cv.read(5)
+            cv.seek(0)
+            if header != b"%PDF-":
+                raise serializers.ValidationError(
+                    {"cv": "The CV must be a valid PDF file."}
+                )
+        return attrs
 
 
 class ProviderVerificationReviewSerializer(serializers.ModelSerializer):

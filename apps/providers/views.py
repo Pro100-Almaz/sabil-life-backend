@@ -40,6 +40,7 @@ from apps.providers.schema import (
 from apps.providers.serializers import (
     AvatarImageSerializer,
     ProviderListingSerializer,
+    ProviderVerificationRequestSerializer,
     ProviderVerificationReviewSerializer,
     TutorDetailSerializer,
     VerifyProviderSerializer,
@@ -332,17 +333,17 @@ class VerifyProviderView(generics.ListAPIView):
         return ProviderVerification.objects.filter(user=self.request.user)
 
     def post(self, request, *args, **kwargs):
-        provider_type = (request.data.get("provider_type") or "").upper()
-        if provider_type not in ProviderChoices.values:
-            return Response(
-                {"provider_type": [f"Unknown provider type '{provider_type}'."]},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        request_data = request.data.copy()
+        request_data["provider_type"] = (request_data.get("provider_type") or "").upper()
+        request_serializer = ProviderVerificationRequestSerializer(data=request_data)
+        request_serializer.is_valid(raise_exception=True)
+        provider_type = request_serializer.validated_data["provider_type"]
+        cv = request_serializer.validated_data.get("cv")
 
         verification, created = ProviderVerification.objects.get_or_create(
             user=request.user,
             provider_type=provider_type,
-            defaults={"status": StatusChoices.PENDING},
+            defaults={"status": StatusChoices.PENDING, "cv": cv},
         )
 
         if created:
@@ -361,7 +362,9 @@ class VerifyProviderView(generics.ListAPIView):
         if verification.status in (StatusChoices.REJECTED, StatusChoices.CANCELLED):
             verification.status = StatusChoices.UPDATED
             verification.comment = ""
-            verification.save(update_fields=["status", "comment", "updated_at"])
+            if cv is not None:
+                verification.cv = cv
+            verification.save(update_fields=["status", "comment", "cv", "updated_at"])
             logger.info(
                 "Provider %s re-requested %s verification.",
                 request.user.email,
