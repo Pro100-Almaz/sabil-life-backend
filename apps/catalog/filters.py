@@ -150,4 +150,4 @@ class TutorFilter(BaseFilter):
         return self._filter_json_any(queryset, "languages", value)
 
     def filter_subject(self, queryset: QuerySet, name: str, value: str) -> QuerySet:
-        return queryset.filter(subjects__contains=[value])
+        return queryset.with_subject(value)
