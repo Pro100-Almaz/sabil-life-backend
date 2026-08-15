@@ -18,7 +18,21 @@ class StatusChoices(models.TextChoices):
     CANCELLED = "CANCELLED", _("Cancelled")
 
 
+class TutorDetailQuerySet(models.QuerySet):
+    def with_subject(self, value: str) -> "TutorDetailQuerySet":
+        return self.extra(
+            where=[
+                "EXISTS ("
+                "SELECT 1 FROM jsonb_array_elements_text(subjects) AS elem "
+                "WHERE lower(trim(elem)) = lower(trim(%s))"
+                ")"
+            ],
+            params=[value],
+        )
+
+
 class TutorDetail(models.Model):
+    objects = TutorDetailQuerySet.as_manager()
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -30,7 +44,16 @@ class TutorDetail(models.Model):
         max_length=120,
         blank=True,
     )
-    subjects = models.JSONField(_("subjects"), default=list, blank=True)
+    subjects = models.JSONField(
+        _("subjects"),
+        default=list,
+        blank=True,
+        help_text=_(
+            'Free-text subject names, e.g. ["Chemistry", "Biology"]. '
+            "Whitespace is trimmed automatically on save; matching against "
+            "the subject filter is case/whitespace-insensitive."
+        ),
+    )
     formats = models.JSONField(
         _("formats"),
         default=list,
@@ -86,6 +109,10 @@ class TutorDetail(models.Model):
 
     def save(self, *args, **kwargs) -> None:
         self.clean()
+        if isinstance(self.subjects, list):
+            self.subjects = [
+                s.strip() for s in self.subjects if isinstance(s, str) and s.strip()
+            ]
         super().save(*args, **kwargs)
 
     def __str__(self) -> str:
