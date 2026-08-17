@@ -17,6 +17,7 @@ class StatusChoices(models.TextChoices):
     UPDATED = "UPDATED", _("Updated")
     CANCELLED = "CANCELLED", _("Cancelled")
 
+
 class AIScreeningStatus(models.TextChoices):
     QUEUED = "QUEUED", _("Queued")
     PROCESSING = "PROCESSING", _("Processing")
@@ -24,6 +25,7 @@ class AIScreeningStatus(models.TextChoices):
     NEEDS_REVIEW = "NEEDS_REVIEW", _("Needs review")
     INSUFFICIENT = "INSUFFICIENT", _("Insufficient information")
     FAILED = "FAILED", _("Failed")
+
 
 class TutorDetailQuerySet(models.QuerySet):
     def with_subject(self, value: str) -> "TutorDetailQuerySet":
@@ -253,4 +255,3 @@ class ProviderVerificationAIScreening(models.Model):
 
     def __str__(self) -> str:
         return f"AI screening {self.pk} ({self.status})"
-        
