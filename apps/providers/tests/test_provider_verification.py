@@ -90,6 +90,47 @@ class VerificationLifecycleFromTutorDetailTests(APITestCase):
         self.client.patch(TUTOR_DETAIL_URL, {"bio": "Edit"}, format="json")
         self.assertEqual(ProviderVerification.objects.filter(user=self.user).count(), 1)
 
+    def test_linkedin_url_is_optional(self):
+        response = self.client.post(TUTOR_DETAIL_URL, {"bio": "Hello"}, format="json")
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data["linkedin_url"], "")
+
+    def test_accepts_linkedin_url(self):
+        linkedin_url = "https://www.linkedin.com/in/example-tutor/"
+        response = self.client.post(
+            TUTOR_DETAIL_URL,
+            {"bio": "Hello", "linkedin_url": linkedin_url},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data["linkedin_url"], linkedin_url)
+
+        public_response = APIClient().get("/api/v1/tutors/")
+        self.assertEqual(public_response.status_code, 200)
+        self.assertEqual(public_response.data["results"][0]["linkedin_url"], linkedin_url)
+
+    def test_rejects_non_url_linkedin_value(self):
+        response = self.client.post(
+            TUTOR_DETAIL_URL,
+            {"linkedin_url": "this is not a link"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("linkedin_url", response.data)
+
+    def test_rejects_non_linkedin_url(self):
+        response = self.client.post(
+            TUTOR_DETAIL_URL,
+            {"linkedin_url": "https://example.com/in/example-tutor"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("linkedin_url", response.data)
+
 
 class MasterclassCvVerificationTests(APITestCase):
     def setUp(self):
