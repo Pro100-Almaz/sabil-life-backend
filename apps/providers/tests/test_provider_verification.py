@@ -14,6 +14,7 @@ from apps.users.models import CustomUser
 
 TUTOR_DETAIL_URL = "/api/v1/provider/tutor-detail/"
 VERIFY_URL = "/api/v1/provider/verify/"
+PROFILE_URL = "/api/v1/provider/profile/"
 # Cancellation is a DELETE on the per-provider-type verify URL.
 CANCEL_URL = "/api/v1/provider/verify/TUTOR/"
 ADMIN_URL = "/api/v1/provider/verify/admin/"
@@ -77,6 +78,60 @@ class VerificationLifecycleFromTutorDetailTests(APITestCase):
         self.client.post(TUTOR_DETAIL_URL, {"bio": "Hello"}, format="json")
         self.client.patch(TUTOR_DETAIL_URL, {"bio": "Edit"}, format="json")
         self.assertEqual(ProviderVerification.objects.filter(user=self.user).count(), 1)
+
+    def test_provider_cannot_set_deleted_status(self):
+        self.client.post(TUTOR_DETAIL_URL, {"bio": "Hello"}, format="json")
+
+        response = self.client.patch(
+            TUTOR_DETAIL_URL,
+            {"status": "DELETED"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("Only the server", response.data["status"][0])
+
+    def test_pausing_tutor_does_not_resubmit_verification(self):
+        self.client.post(TUTOR_DETAIL_URL, {"bio": "Hello"}, format="json")
+        verification = self._verification()
+        verification.status = StatusChoices.APPROVED
+        verification.save(update_fields=["status"])
+
+        response = self.client.patch(
+            TUTOR_DETAIL_URL,
+            {"status": "PAUSED"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["status"], "PAUSED")
+        verification.refresh_from_db()
+        self.assertEqual(verification.status, StatusChoices.APPROVED)
+
+
+class ProviderProfileReadTests(APITestCase):
+    def test_returns_tutor_detail_for_current_tutor(self):
+        user = make_user(role=UserRole.TUTOR, email="profile-tutor@example.com")
+        TutorDetail.objects.create(user=user, bio="Hello", availability="Weekdays")
+
+        response = auth_client(user).get(PROFILE_URL)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["user_id"], user.id)
+        self.assertEqual(response.data["availability"], "Weekdays")
+        self.assertEqual(response.data["role"], UserRole.TUTOR)
+
+    def test_returns_fallback_profile_for_masterclass_provider(self):
+        user = make_user(
+            role=UserRole.MASTERCLASS,
+            email="profile-masterclass@example.com",
+        )
+
+        response = auth_client(user).get(PROFILE_URL)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["user_id"], user.id)
+        self.assertEqual(response.data["role"], UserRole.MASTERCLASS)
 
 
 class ProviderVerificationReadTests(APITestCase):

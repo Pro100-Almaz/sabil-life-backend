@@ -8,6 +8,7 @@ from apps.providers.models import (
     ProviderVerification,
     StatusChoices,
     TutorDetail,
+    TutorStatus,
 )
 from apps.users.enums import UserRole
 
@@ -47,6 +48,9 @@ class AvatarImageSerializer(serializers.ModelSerializer):
 class TutorDetailSerializer(serializers.ModelSerializer):
     user_id = serializers.IntegerField(source="user.id", read_only=True)
     full_name = serializers.CharField(source="user.full_name", read_only=True)
+    email = serializers.EmailField(source="user.email", read_only=True)
+    display_name = serializers.CharField(required=False, allow_blank=True)
+    role = serializers.SerializerMethodField(read_only=True)
     avatar_url = serializers.SerializerMethodField(read_only=True)
     avatar = AvatarImageSerializer(many=False, read_only=True)
 
@@ -55,6 +59,9 @@ class TutorDetailSerializer(serializers.ModelSerializer):
         fields = [
             "user_id",
             "full_name",
+            "email",
+            "display_name",
+            "role",
             "avatar_url",
             "avatar",
             "affiliation_listing_id",
@@ -69,6 +76,7 @@ class TutorDetailSerializer(serializers.ModelSerializer):
             "languages",
             "trial_available",
             "bio",
+            "availability",
             "is_verified",
             "created_at",
             "updated_at",
@@ -82,6 +90,32 @@ class TutorDetailSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
+
+    def get_role(self, obj: TutorDetail) -> str:
+        return UserRole.TUTOR
+
+    def validate_status(self, value: str) -> str:
+        if value == TutorStatus.DELETED:
+            raise serializers.ValidationError(
+                "Only the server can delete a tutor profile."
+            )
+        return value
+
+    def create(self, validated_data: dict) -> TutorDetail:
+        display_name = validated_data.pop("display_name", None)
+        detail = super().create(validated_data)
+        if display_name is not None and detail.user.full_name != display_name:
+            detail.user.full_name = display_name
+            detail.user.save(update_fields=["full_name"])
+        return detail
+
+    def update(self, instance: TutorDetail, validated_data: dict) -> TutorDetail:
+        display_name = validated_data.pop("display_name", None)
+        detail = super().update(instance, validated_data)
+        if display_name is not None and detail.user.full_name != display_name:
+            detail.user.full_name = display_name
+            detail.user.save(update_fields=["full_name"])
+        return detail
 
     def get_avatar_url(self, obj: TutorDetail) -> str:
         avatar = getattr(obj, "avatar", None)

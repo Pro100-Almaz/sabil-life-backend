@@ -78,11 +78,12 @@ class TutorDetail(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     city = models.CharField(_("city"), max_length=120, blank=True, null=True)
+    availability = models.TextField(_("availability"), blank=True)
     status = models.CharField(
         _("status"),
         max_length=20,
         choices=TutorStatus.choices,
-        default=TutorStatus.ACTIVE
+        default=TutorStatus.ACTIVE,
     )
 
     class Meta:

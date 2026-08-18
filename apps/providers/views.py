@@ -53,6 +53,65 @@ logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
+# Current Provider Profile
+# ---------------------------------------------------------------------------
+
+
+class ProviderProfileView(views.APIView):
+    """Return a profile-shaped payload for the authenticated provider."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        detail = (
+            TutorDetail.objects.select_related("user")
+            .select_related("avatar")
+            .filter(user=request.user, deleted_at__isnull=True)
+            .first()
+        )
+        if detail is not None:
+            return Response(TutorDetailSerializer(detail).data)
+
+        provider_type = None
+        if request.user.has_role(UserRole.MASTERCLASS):
+            provider_type = ProviderChoices.MASTERCLASS
+        elif request.user.has_role(UserRole.TUTOR):
+            provider_type = ProviderChoices.TUTOR
+
+        is_verified = bool(
+            provider_type
+            and ProviderVerification.objects.filter(
+                user=request.user,
+                provider_type=provider_type,
+                status=StatusChoices.APPROVED,
+            ).exists()
+        )
+        return Response(
+            {
+                "user_id": request.user.id,
+                "email": request.user.email,
+                "full_name": request.user.full_name,
+                "display_name": request.user.full_name,
+                "role": provider_type or request.user.role,
+                "is_verified": is_verified,
+                "bio": "",
+                "subjects": [],
+                "price_per_hour_qar": None,
+                "availability": "",
+                "formats": [],
+                "age_groups": [],
+                "languages": [],
+                "years_experience": 0,
+                "credentials": "",
+                "avatar_url": "",
+                "trial_available": False,
+                "city": "",
+                "status": "ACTIVE",
+            }
+        )
+
+
+# ---------------------------------------------------------------------------
 # Tutor Detail
 # ---------------------------------------------------------------------------
 
@@ -116,8 +175,10 @@ class TutorDetailView(generics.CreateAPIView, generics.RetrieveUpdateAPIView):
         self._sync_verification(StatusChoices.PENDING)
 
     def perform_update(self, serializer) -> None:
+        is_status_only = set(serializer.validated_data) == {"status"}
         serializer.save()
-        self._sync_verification(StatusChoices.UPDATED)
+        if not is_status_only:
+            self._sync_verification(StatusChoices.UPDATED)
 
     def create(self, request, *args, **kwargs):
         if TutorDetail.objects.filter(
@@ -132,7 +193,8 @@ class TutorDetailView(generics.CreateAPIView, generics.RetrieveUpdateAPIView):
     def delete(self, request, *args, **kwargs):
         detail = self.get_object()
         detail.deleted_at = timezone.now()
-        detail.save(update_fields=["deleted_at", "updated_at"])
+        detail.status = "DELETED"
+        detail.save(update_fields=["deleted_at", "status", "updated_at"])
 
         user = request.user
         tutor_role = Role.objects.filter(name=UserRole.TUTOR).first()

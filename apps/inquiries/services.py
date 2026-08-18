@@ -9,7 +9,7 @@ from django.conf import settings
 
 from apps.inquiries.models import Inquiry, InquiryStatus
 from apps.notifications.tasks import notify_inquiry_result
-from apps.providers.models import TutorDetail
+from apps.providers.models import TutorDetail, TutorStatus
 
 # Statuses a TUTOR is allowed to move an inquiry into.
 TUTOR_SETTABLE_STATUSES: frozenset[str] = frozenset(
@@ -46,12 +46,16 @@ def create_inquiry(family, tutor: TutorDetail, message: str) -> Inquiry:
     Create a new Inquiry addressed to a tutor.
 
     Validates:
-    - tutor profile is not soft-deleted.
+    - tutor profile is public and accepting inquiries.
 
     No duplicate-prevention: families may re-inquire after a DECLINED or
     CANCELLED inquiry.
     """
-    if tutor.deleted_at is not None:
+    if (
+        tutor.deleted_at is not None
+        or tutor.status != TutorStatus.ACTIVE
+        or not tutor.user.is_active
+    ):
         raise ValueError("This tutor is no longer available.")
 
     inquiry = Inquiry.objects.create(
