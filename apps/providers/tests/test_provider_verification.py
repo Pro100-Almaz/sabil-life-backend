@@ -79,6 +79,22 @@ class VerificationLifecycleFromTutorDetailTests(APITestCase):
         self.client.patch(TUTOR_DETAIL_URL, {"bio": "Edit"}, format="json")
         self.assertEqual(ProviderVerification.objects.filter(user=self.user).count(), 1)
 
+    def test_profile_fields_round_trip_through_tutor_detail_api(self):
+        response = self.client.post(
+            TUTOR_DETAIL_URL,
+            {
+                "display_name": "Amina Hassan",
+                "availability": "Weekday evenings",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data["display_name"], "Amina Hassan")
+        self.assertEqual(response.data["availability"], "Weekday evenings")
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.full_name, "Amina Hassan")
+
     def test_provider_cannot_set_deleted_status(self):
         self.client.post(TUTOR_DETAIL_URL, {"bio": "Hello"}, format="json")
 
