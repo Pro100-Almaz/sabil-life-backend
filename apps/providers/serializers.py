@@ -73,6 +73,7 @@ class TutorDetailSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
             "city",
+            "status"
         ]
         read_only_fields = [
             "rating",
