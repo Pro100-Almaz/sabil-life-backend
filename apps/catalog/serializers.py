@@ -152,6 +152,7 @@ class TutorCardSerializer(serializers.ModelSerializer):
             "trial_available",
             "bio",
             "city",
+            "status",
         ]
 
     def get_avatar_url(self, obj):
