@@ -442,11 +442,6 @@ CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = "UTC"
 CELERY_RESULT_EXTENDED = True
 
-# Advisory CV screening. The AI result never grants a provider role.
-AI_CV_SCREENING_ENABLED = env.bool("AI_CV_SCREENING_ENABLED", default=False)
-OPENAI_API_KEY = env("OPENAI_API_KEY", default="")
-OPENAI_CV_MODEL = env("OPENAI_CV_MODEL", default="gpt-5.6-luna")
-
 # -----------------------------------------------------------------------------
 # Push notifications (Firebase Cloud Messaging)
 # -----------------------------------------------------------------------------

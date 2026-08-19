@@ -7,7 +7,6 @@ PUSH_NOTIFICATIONS_ENABLED = False  # noqa
 # during tests, and task failures should surface as test failures.
 CELERY_TASK_ALWAYS_EAGER = True  # noqa
 CELERY_TASK_EAGER_PROPAGATES = True  # noqa
-AI_CV_SCREENING_ENABLED = False  # noqa
 
 # Use local memory cache so throttles don't persist across test runs
 CACHES = {
