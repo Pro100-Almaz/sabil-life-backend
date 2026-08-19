@@ -12,12 +12,15 @@ from unfold.decorators import action, display
 from unfold.widgets import UnfoldAdminTextareaWidget
 
 from apps.providers.models import (
+    AIScreeningStatus,
     ProviderVerification,
+    ProviderVerificationAIScreening,
     StatusChoices,
     TutorDetail,
     TutorSubject,
 )
 from apps.providers.services import apply_verification_outcome
+from apps.providers.tasks import queue_cv_screening
 
 
 class RejectionForm(forms.Form):
@@ -70,12 +73,34 @@ def approve_provider_request(modeladmin, request, queryset):
             _("%(n)d verification(s) APPROVED.") % {"n": approved},
             messages.SUCCESS,
         )
-
     if skipped:
         modeladmin.message_user(
             request,
             _("%(n)d only PENDING or REJECTED verifications are eligible for APPROVE")
             % {"n": skipped},
+            messages.WARNING,
+        )
+
+
+@action(description=_("Run AI CV screening"), icon="smart_toy")
+def run_ai_cv_screening(modeladmin, request, queryset):
+    queued = 0
+    for verification in queryset.filter(provider_type="MASTERCLASS").exclude(cv=""):
+        if queue_cv_screening(verification):
+            queued += 1
+    if queued:
+        modeladmin.message_user(
+            request,
+            _("%(n)d CV screening(s) queued.") % {"n": queued},
+            messages.SUCCESS,
+        )
+    else:
+        modeladmin.message_user(
+            request,
+            _(
+                "No screenings queued. Check that AI screening is enabled "
+                "and a CV exists."
+            ),
             messages.WARNING,
         )
 
@@ -173,14 +198,46 @@ class TutorSubjectAdmin(ModelAdmin):
     search_fields = ("name",)
 
 
+class AIScreeningInline(admin.StackedInline):
+    model = ProviderVerificationAIScreening
+    extra = 0
+    can_delete = False
+    readonly_fields = (
+        "status",
+        "summary",
+        "strengths",
+        "concerns",
+        "missing_information",
+        "manual_checks",
+        "criteria",
+        "confidence",
+        "provider",
+        "model",
+        "rubric_version",
+        "error_message",
+        "created_at",
+        "started_at",
+        "completed_at",
+    )
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+
 @admin.register(ProviderVerification)
 class ProviderVerificationAdmin(ModelAdmin):
-    actions = [reject_provider_request, approve_provider_request]
+    actions = [
+        reject_provider_request,
+        approve_provider_request,
+        run_ai_cv_screening,
+    ]
+    inlines = [AIScreeningInline]
 
     list_display = (
         "user_email",
         "provider_type",
         "status_badge",
+        "ai_screening_badge",
         "updated_at",
     )
     list_filter = ("status", "provider_type")
@@ -189,6 +246,7 @@ class ProviderVerificationAdmin(ModelAdmin):
         "user",
         "provider_type",
         "cv_link",
+        "ai_processing_consent_at",
         "created_at",
         "updated_at",
     )
@@ -250,3 +308,20 @@ class ProviderVerificationAdmin(ModelAdmin):
     )
     def status_badge(self, obj: ProviderVerification):
         return obj.status, obj.get_status_display()
+
+    @display(
+        description=_("AI CV screening"),
+        label={
+            AIScreeningStatus.RECOMMENDED: "success",
+            AIScreeningStatus.NEEDS_REVIEW: "warning",
+            AIScreeningStatus.INSUFFICIENT: "warning",
+            AIScreeningStatus.FAILED: "danger",
+            AIScreeningStatus.QUEUED: "info",
+            AIScreeningStatus.PROCESSING: "info",
+        },
+    )
+    def ai_screening_badge(self, obj: ProviderVerification):
+        screening = obj.ai_screenings.first()
+        if screening is None:
+            return None
+        return screening.status, screening.get_status_display()
