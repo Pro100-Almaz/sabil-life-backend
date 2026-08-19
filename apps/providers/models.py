@@ -17,10 +17,12 @@ class StatusChoices(models.TextChoices):
     UPDATED = "UPDATED", _("Updated")
     CANCELLED = "CANCELLED", _("Cancelled")
 
+
 class TutorStatus(models.TextChoices):
     ACTIVE = "ACTIVE", _("Active")
     PAUSED = "PAUSED", _("Paused")
     DELETED = "DELETED", _("Deleted")
+
 
 class AIScreeningStatus(models.TextChoices):
     QUEUED = "QUEUED", _("Queued")

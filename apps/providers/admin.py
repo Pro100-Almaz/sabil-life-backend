@@ -17,8 +17,8 @@ from apps.providers.models import (
     ProviderVerificationAIScreening,
     StatusChoices,
     TutorDetail,
-    TutorSubject,
     TutorStatus,
+    TutorSubject,
 )
 from apps.providers.services import apply_verification_outcome
 from apps.providers.tasks import queue_cv_screening
@@ -186,7 +186,7 @@ class TutorDetailAdmin(ModelAdmin):
     @admin.display(description=_("Name"), ordering="user__full_name")
     def user_full_name(self, obj: TutorDetail) -> str:
         return obj.user.full_name
-    
+
     @display(
         description=("Status"),
         ordering="status",
@@ -194,10 +194,11 @@ class TutorDetailAdmin(ModelAdmin):
             TutorStatus.ACTIVE: "success",
             TutorStatus.PAUSED: "info",
             TutorStatus.DELETED: "danger",
-        }
+        },
     )
     def status_badge(self, obj: TutorDetail):
-            return obj.status, obj.get_status_display()
+        return obj.status, obj.get_status_display()
+
 
 @admin.register(TutorSubject)
 class TutorSubjectAdmin(ModelAdmin):

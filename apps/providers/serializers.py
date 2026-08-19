@@ -85,7 +85,7 @@ class TutorDetailSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
             "city",
-            "status"
+            "status",
         ]
         read_only_fields = [
             "rating",
@@ -97,6 +97,11 @@ class TutorDetailSerializer(serializers.ModelSerializer):
 
     def get_role(self, obj: TutorDetail) -> str:
         return UserRole.TUTOR
+
+    def to_representation(self, instance: TutorDetail) -> dict:
+        representation = super().to_representation(instance)
+        representation["display_name"] = instance.user.full_name
+        return representation
 
     def validate_status(self, value: str) -> str:
         if value == TutorStatus.DELETED:

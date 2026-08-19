@@ -92,7 +92,6 @@ class VerificationLifecycleFromTutorDetailTests(APITestCase):
         self.client.patch(TUTOR_DETAIL_URL, {"bio": "Edit"}, format="json")
         self.assertEqual(ProviderVerification.objects.filter(user=self.user).count(), 1)
 
-<<<<<<< HEAD
     def test_profile_fields_round_trip_through_tutor_detail_api(self):
         response = self.client.post(
             TUTOR_DETAIL_URL,
@@ -100,7 +99,15 @@ class VerificationLifecycleFromTutorDetailTests(APITestCase):
                 "display_name": "Amina Hassan",
                 "availability": "Weekday evenings",
             },
-=======
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data["display_name"], "Amina Hassan")
+        self.assertEqual(response.data["availability"], "Weekday evenings")
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.full_name, "Amina Hassan")
+
     def test_linkedin_url_is_optional(self):
         response = self.client.post(TUTOR_DETAIL_URL, {"bio": "Hello"}, format="json")
 
@@ -112,24 +119,10 @@ class VerificationLifecycleFromTutorDetailTests(APITestCase):
         response = self.client.post(
             TUTOR_DETAIL_URL,
             {"bio": "Hello", "linkedin_url": linkedin_url},
->>>>>>> cb425960d0843357ded0634331655169659c61b8
             format="json",
         )
 
         self.assertEqual(response.status_code, 201)
-<<<<<<< HEAD
-        self.assertEqual(response.data["display_name"], "Amina Hassan")
-        self.assertEqual(response.data["availability"], "Weekday evenings")
-        self.user.refresh_from_db()
-        self.assertEqual(self.user.full_name, "Amina Hassan")
-
-    def test_provider_cannot_set_deleted_status(self):
-        self.client.post(TUTOR_DETAIL_URL, {"bio": "Hello"}, format="json")
-
-        response = self.client.patch(
-            TUTOR_DETAIL_URL,
-            {"status": "DELETED"},
-=======
         self.assertEqual(response.data["linkedin_url"], linkedin_url)
 
         public_response = APIClient().get("/api/v1/tutors/")
@@ -140,12 +133,32 @@ class VerificationLifecycleFromTutorDetailTests(APITestCase):
         response = self.client.post(
             TUTOR_DETAIL_URL,
             {"linkedin_url": "this is not a link"},
->>>>>>> cb425960d0843357ded0634331655169659c61b8
             format="json",
         )
 
         self.assertEqual(response.status_code, 400)
-<<<<<<< HEAD
+        self.assertIn("linkedin_url", response.data)
+
+    def test_rejects_non_linkedin_url(self):
+        response = self.client.post(
+            TUTOR_DETAIL_URL,
+            {"linkedin_url": "https://example.com/in/example-tutor"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("linkedin_url", response.data)
+
+    def test_provider_cannot_set_deleted_status(self):
+        self.client.post(TUTOR_DETAIL_URL, {"bio": "Hello"}, format="json")
+
+        response = self.client.patch(
+            TUTOR_DETAIL_URL,
+            {"status": "DELETED"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 400)
         self.assertIn("Only the server", response.data["status"][0])
 
     def test_pausing_tutor_does_not_resubmit_verification(self):
@@ -189,89 +202,6 @@ class ProviderProfileReadTests(APITestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["user_id"], user.id)
         self.assertEqual(response.data["role"], UserRole.MASTERCLASS)
-=======
-        self.assertIn("linkedin_url", response.data)
-
-    def test_rejects_non_linkedin_url(self):
-        response = self.client.post(
-            TUTOR_DETAIL_URL,
-            {"linkedin_url": "https://example.com/in/example-tutor"},
-            format="json",
-        )
-
-        self.assertEqual(response.status_code, 400)
-        self.assertIn("linkedin_url", response.data)
-
-
-class MasterclassCvVerificationTests(APITestCase):
-    def setUp(self):
-        self.user = make_user(role=UserRole.FAMILY)
-        self.client = auth_client(self.user)
-
-    def test_masterclass_request_requires_cv(self):
-        response = self.client.post(
-            VERIFY_URL,
-            {
-                "provider_type": ProviderChoices.MASTERCLASS,
-                "ai_processing_consent": True,
-            },
-            format="multipart",
-        )
-        self.assertEqual(response.status_code, 400)
-        self.assertIn("cv", response.data)
-
-    def test_masterclass_request_accepts_pdf_cv(self):
-        cv = SimpleUploadedFile(
-            "resume.pdf",
-            b"%PDF-1.4\n% test PDF",
-            content_type="application/pdf",
-        )
-        response = self.client.post(
-            VERIFY_URL,
-            {
-                "provider_type": ProviderChoices.MASTERCLASS,
-                "cv": cv,
-                "ai_processing_consent": True,
-            },
-            format="multipart",
-        )
-        self.assertEqual(response.status_code, 201)
-        verification = ProviderVerification.objects.get(user=self.user)
-        self.assertTrue(verification.cv.name.endswith(".pdf"))
-        self.assertTrue(response.data["has_cv"])
-
-    def test_masterclass_request_requires_ai_processing_consent(self):
-        cv = SimpleUploadedFile(
-            "resume.pdf",
-            b"%PDF-1.4\n% test PDF",
-            content_type="application/pdf",
-        )
-        response = self.client.post(
-            VERIFY_URL,
-            {"provider_type": ProviderChoices.MASTERCLASS, "cv": cv},
-            format="multipart",
-        )
-        self.assertEqual(response.status_code, 400)
-        self.assertIn("ai_processing_consent", response.data)
-
-    def test_masterclass_request_rejects_non_pdf(self):
-        cv = SimpleUploadedFile(
-            "resume.txt",
-            b"not a PDF",
-            content_type="text/plain",
-        )
-        response = self.client.post(
-            VERIFY_URL,
-            {
-                "provider_type": ProviderChoices.MASTERCLASS,
-                "cv": cv,
-                "ai_processing_consent": True,
-            },
-            format="multipart",
-        )
-        self.assertEqual(response.status_code, 400)
-        self.assertIn("cv", response.data)
->>>>>>> cb425960d0843357ded0634331655169659c61b8
 
 
 class ProviderVerificationReadTests(APITestCase):

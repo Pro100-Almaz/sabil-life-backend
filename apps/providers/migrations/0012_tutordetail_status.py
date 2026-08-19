@@ -4,15 +4,23 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('providers', '0011_alter_tutordetail_age_groups'),
+        ("providers", "0011_alter_tutordetail_age_groups"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='tutordetail',
-            name='status',
-            field=models.CharField(choices=[('ACTIVE', 'Active'), ('PAUSED', 'Paused'), ('DELETED', 'Deleted')], default='ACTIVE', max_length=20, verbose_name='status'),
+            model_name="tutordetail",
+            name="status",
+            field=models.CharField(
+                choices=[
+                    ("ACTIVE", "Active"),
+                    ("PAUSED", "Paused"),
+                    ("DELETED", "Deleted"),
+                ],
+                default="ACTIVE",
+                max_length=20,
+                verbose_name="status",
+            ),
         ),
     ]
