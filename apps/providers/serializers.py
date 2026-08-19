@@ -1,7 +1,12 @@
 from django.core.files.storage import default_storage
+from django.utils import timezone
 from rest_framework import serializers
 
-from apps.catalog.models import Listing, ListingCategory
+from apps.catalog.models import (
+    Listing,
+    ListingCategory,
+    MasterclassEventType,
+)
 from apps.catalog.serializers import ListingImageSerializer
 from apps.providers.models import (
     AvatarImage,
@@ -151,6 +156,8 @@ class ProviderListingSerializer(serializers.ModelSerializer):
             "is_online",
             "meeting_url",
             "registration_url",
+            "event_type",
+            "starts_at",
         ]
         read_only_fields = [
             "id",
@@ -191,6 +198,7 @@ class ProviderListingSerializer(serializers.ModelSerializer):
         return value
 
     def validate(self, attrs):
+        attrs = super().validate(attrs)
         is_online = attrs.get("is_online", getattr(self.instance, "is_online", False))
         meeting_url = attrs.get("meeting_url", getattr(self.instance, "meeting_url", ""))
         neighborhood = attrs.get(
@@ -212,6 +220,43 @@ class ProviderListingSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {"neighborhood": "Required for offline listings"}
             )
+
+        category = attrs.get(
+            "category",
+            getattr(self.instance, "category", None),
+        )
+        event_fields_submitted = (
+            "category" in attrs or "event_type" in attrs or "starts_at" in attrs
+        )
+        if category == ListingCategory.MASTERCLASSES and (
+            not partial or event_fields_submitted
+        ):
+            event_type = attrs.get(
+                "event_type",
+                getattr(
+                    self.instance,
+                    "event_type",
+                    MasterclassEventType.ONGOING,
+                ),
+            )
+            starts_at = attrs.get(
+                "starts_at",
+                getattr(self.instance, "starts_at", None),
+            )
+            if starts_at is None:
+                raise serializers.ValidationError(
+                    {"starts_at": "Choose when this masterclass will take place."}
+                )
+            if starts_at <= timezone.now():
+                raise serializers.ValidationError(
+                    {
+                        "starts_at": (
+                            "The masterclass date and time must be in the future."
+                        )
+                    }
+                )
+            if event_type not in MasterclassEventType.values:
+                raise serializers.ValidationError({"event_type": "Invalid event type."})
 
         return attrs
 

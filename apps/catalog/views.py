@@ -1,6 +1,8 @@
 import logging
+from datetime import timedelta
 
-from django.db.models import Count, QuerySet
+from django.db.models import Count, Q, QuerySet
+from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import filters, mixins, permissions, viewsets
@@ -17,6 +19,7 @@ from apps.catalog.models import (
     ListingStatus,
     ListingTag,
     ListingTagGroup,
+    MasterclassEventType,
 )
 from apps.catalog.schema import (
     CATEGORIES_SCHEMA,
@@ -77,6 +80,10 @@ class ListingViewSet(viewsets.ReadOnlyModelViewSet):
     def get_queryset(self) -> QuerySet:
         qs = (
             Listing.objects.filter(status=ListingStatus.ACTIVE)
+            .exclude(
+                Q(event_type=MasterclassEventType.ONE_TIME)
+                & Q(starts_at__lte=timezone.now() - timedelta(hours=1))
+            )
             .prefetch_related("images")
             .prefetch_related("tags")
         )

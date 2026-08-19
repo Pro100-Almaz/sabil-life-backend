@@ -63,6 +63,8 @@ class ListingCardSerializer(serializers.ModelSerializer):
             "age_groups",
             "is_featured",
             "distance_km",
+            "event_type",
+            "starts_at",
         ]
 
     def get_distance_km(self, obj: Listing) -> float | None:

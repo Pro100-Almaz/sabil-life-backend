@@ -441,6 +441,12 @@ CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = "UTC"
 CELERY_RESULT_EXTENDED = True
+CELERY_BEAT_SCHEDULE = {
+    "archive-expired-one-time-masterclasses": {
+        "task": "apps.catalog.tasks.archive_expired_one_time_masterclasses",
+        "schedule": 15 * 60,
+    },
+}
 
 # -----------------------------------------------------------------------------
 # Push notifications (Firebase Cloud Messaging)
