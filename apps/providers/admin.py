@@ -149,7 +149,13 @@ class TutorDetailAdmin(ModelAdmin):
         "trial_available",
     )
     list_filter = ("is_verified", "trial_available", "languages")
-    search_fields = ("user__email", "user__full_name", "credentials", "bio")
+    search_fields = (
+        "user__email",
+        "user__full_name",
+        "credentials",
+        "linkedin_url",
+        "bio",
+    )
     readonly_fields = ("user", "created_at", "updated_at")
 
     @admin.display(description=_("Email"), ordering="user__email")

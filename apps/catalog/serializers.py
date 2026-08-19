@@ -149,6 +149,7 @@ class TutorCardSerializer(serializers.ModelSerializer):
             "review_count",
             "years_experience",
             "credentials",
+            "linkedin_url",
             "languages",
             "trial_available",
             "bio",

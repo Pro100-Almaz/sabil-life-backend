@@ -1,3 +1,5 @@
+from urllib.parse import urlsplit
+
 from django.core.files.storage import default_storage
 from rest_framework import serializers
 
@@ -67,6 +69,7 @@ class TutorDetailSerializer(serializers.ModelSerializer):
             "review_count",
             "years_experience",
             "credentials",
+            "linkedin_url",
             "languages",
             "trial_available",
             "bio",
@@ -86,6 +89,17 @@ class TutorDetailSerializer(serializers.ModelSerializer):
     def get_avatar_url(self, obj: TutorDetail) -> str:
         avatar = getattr(obj, "avatar", None)
         return default_storage.url(avatar.key) if avatar else ""
+
+    def validate_linkedin_url(self, value: str) -> str:
+        if not value:
+            return ""
+        parts = urlsplit(value)
+        hostname = (parts.hostname or "").lower()
+        if parts.scheme not in {"http", "https"} or (
+            hostname != "linkedin.com" and not hostname.endswith(".linkedin.com")
+        ):
+            raise serializers.ValidationError("Enter a valid LinkedIn URL.")
+        return value
 
 
 # ---------------------------------------------------------------------------

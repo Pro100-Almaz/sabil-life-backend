@@ -84,6 +84,7 @@ class TutorDetail(models.Model):
         blank=True,
     )
     credentials = models.CharField(_("credentials"), max_length=300, blank=True)
+    linkedin_url = models.URLField(_("LinkedIn URL"), max_length=500, blank=True)
     languages = models.JSONField(
         _("languages"),
         default=list,
