@@ -18,15 +18,6 @@ class StatusChoices(models.TextChoices):
     CANCELLED = "CANCELLED", _("Cancelled")
 
 
-class AIScreeningStatus(models.TextChoices):
-    QUEUED = "QUEUED", _("Queued")
-    PROCESSING = "PROCESSING", _("Processing")
-    RECOMMENDED = "RECOMMENDED", _("Recommended")
-    NEEDS_REVIEW = "NEEDS_REVIEW", _("Needs review")
-    INSUFFICIENT = "INSUFFICIENT", _("Insufficient information")
-    FAILED = "FAILED", _("Failed")
-
-
 class TutorDetailQuerySet(models.QuerySet):
     def with_subject(self, value: str) -> "TutorDetailQuerySet":
         return self.extra(
@@ -199,7 +190,6 @@ class ProviderVerification(models.Model):
         blank=True,
         help_text=_("Required PDF CV for masterclass provider applications."),
     )
-    ai_processing_consent_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -219,40 +209,3 @@ class ProviderVerification(models.Model):
             f"ProviderVerification({self.user.email}, {self.provider_type}, "
             f"{self.status})"
         )
-
-
-class ProviderVerificationAIScreening(models.Model):
-    """Advisory AI assessment; it never changes the verification decision."""
-
-    verification = models.ForeignKey(
-        ProviderVerification,
-        on_delete=models.CASCADE,
-        related_name="ai_screenings",
-    )
-    status = models.CharField(
-        max_length=20,
-        choices=AIScreeningStatus.choices,
-        default=AIScreeningStatus.QUEUED,
-    )
-    summary = models.TextField(blank=True)
-    strengths = models.JSONField(default=list, blank=True)
-    concerns = models.JSONField(default=list, blank=True)
-    missing_information = models.JSONField(default=list, blank=True)
-    manual_checks = models.JSONField(default=list, blank=True)
-    criteria = models.JSONField(default=list, blank=True)
-    confidence = models.PositiveSmallIntegerField(null=True, blank=True)
-    provider = models.CharField(max_length=40, default="openai")
-    model = models.CharField(max_length=80, blank=True)
-    rubric_version = models.CharField(max_length=20, default="1.0")
-    error_message = models.TextField(blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    started_at = models.DateTimeField(null=True, blank=True)
-    completed_at = models.DateTimeField(null=True, blank=True)
-
-    class Meta:
-        ordering = ["-created_at"]
-        verbose_name = _("AI CV screening")
-        verbose_name_plural = _("AI CV screenings")
-
-    def __str__(self) -> str:
-        return f"AI screening {self.pk} ({self.status})"

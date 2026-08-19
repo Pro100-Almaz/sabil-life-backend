@@ -46,7 +46,6 @@ from apps.providers.serializers import (
     VerifyProviderSerializer,
 )
 from apps.providers.services import apply_verification_outcome, delete_avatar_image
-from apps.providers.tasks import queue_cv_screening
 from apps.users.enums import UserRole
 from apps.users.models import Role
 from apps.users.permissions import IsManagerOrAdmin, IsMasterclassManagerOrAdmin
@@ -344,17 +343,10 @@ class VerifyProviderView(generics.ListAPIView):
         verification, created = ProviderVerification.objects.get_or_create(
             user=request.user,
             provider_type=provider_type,
-            defaults={
-                "status": StatusChoices.PENDING,
-                "cv": cv,
-                "ai_processing_consent_at": timezone.now()
-                if provider_type == ProviderChoices.MASTERCLASS
-                else None,
-            },
+            defaults={"status": StatusChoices.PENDING, "cv": cv},
         )
 
         if created:
-            queue_cv_screening(verification)
             logger.info(
                 "Provider %s requested %s verification.",
                 request.user.email,
@@ -372,18 +364,7 @@ class VerifyProviderView(generics.ListAPIView):
             verification.comment = ""
             if cv is not None:
                 verification.cv = cv
-            if provider_type == ProviderChoices.MASTERCLASS:
-                verification.ai_processing_consent_at = timezone.now()
-            verification.save(
-                update_fields=[
-                    "status",
-                    "comment",
-                    "cv",
-                    "ai_processing_consent_at",
-                    "updated_at",
-                ]
-            )
-            queue_cv_screening(verification)
+            verification.save(update_fields=["status", "comment", "cv", "updated_at"])
             logger.info(
                 "Provider %s re-requested %s verification.",
                 request.user.email,

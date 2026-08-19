@@ -252,7 +252,6 @@ class VerifyProviderSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(source="user.email", read_only=True)
     full_name = serializers.CharField(source="user.full_name", read_only=True)
     has_cv = serializers.SerializerMethodField()
-    ai_screening_status = serializers.SerializerMethodField()
 
     class Meta:
         model = ProviderVerification
@@ -265,7 +264,6 @@ class VerifyProviderSerializer(serializers.ModelSerializer):
             "status",
             "comment",
             "has_cv",
-            "ai_screening_status",
             "created_at",
             "updated_at",
         ]
@@ -274,33 +272,20 @@ class VerifyProviderSerializer(serializers.ModelSerializer):
     def get_has_cv(self, obj: ProviderVerification) -> bool:
         return bool(obj.cv)
 
-    def get_ai_screening_status(self, obj: ProviderVerification) -> str | None:
-        screening = obj.ai_screenings.first()
-        return screening.status if screening else None
-
 
 class ProviderVerificationRequestSerializer(serializers.Serializer):
     provider_type = serializers.ChoiceField(choices=ProviderChoices.choices)
     cv = serializers.FileField(required=False)
-    ai_processing_consent = serializers.BooleanField(required=False)
 
     def validate(self, attrs: dict) -> dict:
         cv = attrs.get("cv")
         if attrs["provider_type"] == ProviderChoices.MASTERCLASS:
-            if attrs.get("ai_processing_consent") is not True:
-                raise serializers.ValidationError(
-                    {"ai_processing_consent": "Consent to AI CV processing is required."}
-                )
             if cv is None:
                 raise serializers.ValidationError(
                     {"cv": "A PDF CV is required for masterclass applications."}
                 )
             if not cv.name.lower().endswith(".pdf"):
                 raise serializers.ValidationError({"cv": "The CV must be a PDF file."})
-            if cv.size > 10 * 1024 * 1024:
-                raise serializers.ValidationError(
-                    {"cv": "The CV must be 10 MB or smaller."}
-                )
             header = cv.read(5)
             cv.seek(0)
             if header != b"%PDF-":
