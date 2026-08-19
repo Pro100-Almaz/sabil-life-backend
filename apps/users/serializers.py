@@ -185,6 +185,59 @@ class ForgotPasswordConfirmSerializer(serializers.Serializer):
         return data
 
 
+class ChangePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField(
+        write_only=True,
+        trim_whitespace=False,
+        style={"input_type": "password"},
+    )
+    new_password = serializers.CharField(
+        write_only=True,
+        min_length=MIN_PASSWORD_LENGTH,
+        trim_whitespace=False,
+        style={"input_type": "password"},
+    )
+    new_password2 = serializers.CharField(
+        write_only=True,
+        min_length=MIN_PASSWORD_LENGTH,
+        trim_whitespace=False,
+        style={"input_type": "password"},
+    )
+
+    def validate_old_password(self, value: str) -> str:
+        user = self.context["request"].user
+        if not user.check_password(value):
+            raise serializers.ValidationError(_("Current password is incorrect."))
+        return value
+
+    def validate(self, data: dict) -> dict:
+        user = self.context["request"].user
+        new_password = data["new_password"]
+
+        if new_password != data["new_password2"]:
+            raise serializers.ValidationError(
+                {"new_password2": [_("Passwords do not match.")]}
+            )
+
+        if user.check_password(new_password):
+            raise serializers.ValidationError(
+                {"new_password": [_("New password must differ from current password.")]}
+            )
+
+        try:
+            validate_password(new_password, user=user)
+        except Exception as exc:
+            if hasattr(exc, "error_list"):
+                errors = get_errors(exc)
+            else:
+                errors = [
+                    _("An error occurred during password validation. Please try again.")
+                ]
+            raise serializers.ValidationError({"new_password": errors}) from exc
+
+        return data
+
+
 class UserProfileSerializer(serializers.ModelSerializer):
     roles = serializers.SerializerMethodField()
 
@@ -201,42 +254,15 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "home_lng",
             "first_name",
             "last_name",
-            "password",
         )
         extra_kwargs = {
             "id": {"read_only": True},
             "email": {"read_only": True},
             "is_verified": {"read_only": True},
-            "password": {"write_only": True, "min_length": MIN_PASSWORD_LENGTH},
         }
 
     def get_roles(self, obj: CustomUser) -> list[str]:
         return list(obj.roles.values_list("name", flat=True))
-
-    def validate(self, data: dict) -> dict:
-        if "password" in data:
-            try:
-                user = self.instance if self.instance else self.Meta.model(**data)
-                validate_password(data["password"], user=user)
-            except Exception as e:
-                if hasattr(e, "error_list"):
-                    errors = get_errors(e)
-                else:
-                    errors = ["Password validation error. Please try again."]
-
-                raise serializers.ValidationError({"password": errors}) from e
-
-        return data
-
-    def update(self, instance: CustomUser, validated_data: dict) -> CustomUser:
-        password = validated_data.pop("password", None)
-        user: CustomUser = super().update(instance, validated_data)
-
-        if password:
-            user.set_password(password)
-            user.save()
-
-        return user
 
 
 class LoginResponseSerializer(serializers.Serializer):

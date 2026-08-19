@@ -49,31 +49,18 @@ api.sabil-life.com {
 }
 
 admin.sabil-life.com {
-	encode zstd gzip
+    encode zstd gzip
 
-	request_body {
-		max_size 25MB
-	}
+    request_body {
+        max_size 25MB
+    }
 
-	handle /admin-panel* {
-		reverse_proxy backend:8000 {
-			header_up X-Forwarded-Proto {scheme}
-			header_up Host {host}
-		}
-	}
+    rewrite / /admin-panel/
 
-	handle /static* {
-		reverse_proxy backend:8000 {
-			header_up X-Forwarded-Proto {scheme}
-			header_up Host {host}
-		}
-	}
-
-	handle / {
-		redir /admin-panel/ 302
-	}
-
-	handle {
-		respond "Not found" 404
-	}
+    handle {
+        reverse_proxy backend:8000 {
+            header_up X-Forwarded-Proto {scheme}
+            header_up Host {host}
+        }
+    }
 }

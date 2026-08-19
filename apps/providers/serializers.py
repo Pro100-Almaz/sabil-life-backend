@@ -1,3 +1,5 @@
+from urllib.parse import urlsplit
+
 from django.core.files.storage import default_storage
 from rest_framework import serializers
 
@@ -5,6 +7,7 @@ from apps.catalog.models import Listing, ListingCategory
 from apps.catalog.serializers import ListingImageSerializer
 from apps.providers.models import (
     AvatarImage,
+    ProviderChoices,
     ProviderVerification,
     StatusChoices,
     TutorDetail,
@@ -73,6 +76,7 @@ class TutorDetailSerializer(serializers.ModelSerializer):
             "review_count",
             "years_experience",
             "credentials",
+            "linkedin_url",
             "languages",
             "trial_available",
             "bio",
@@ -120,6 +124,17 @@ class TutorDetailSerializer(serializers.ModelSerializer):
     def get_avatar_url(self, obj: TutorDetail) -> str:
         avatar = getattr(obj, "avatar", None)
         return default_storage.url(avatar.key) if avatar else ""
+
+    def validate_linkedin_url(self, value: str) -> str:
+        if not value:
+            return ""
+        parts = urlsplit(value)
+        hostname = (parts.hostname or "").lower()
+        if parts.scheme not in {"http", "https"} or (
+            hostname != "linkedin.com" and not hostname.endswith(".linkedin.com")
+        ):
+            raise serializers.ValidationError("Enter a valid LinkedIn URL.")
+        return value
 
 
 # ---------------------------------------------------------------------------
@@ -184,6 +199,7 @@ class ProviderListingSerializer(serializers.ModelSerializer):
             "updated_at",
             "is_online",
             "meeting_url",
+            "registration_url",
         ]
         read_only_fields = [
             "id",
@@ -270,6 +286,8 @@ class VerifyProviderSerializer(serializers.ModelSerializer):
     user_id = serializers.IntegerField(source="user.id", read_only=True)
     email = serializers.EmailField(source="user.email", read_only=True)
     full_name = serializers.CharField(source="user.full_name", read_only=True)
+    has_cv = serializers.SerializerMethodField()
+    ai_screening_status = serializers.SerializerMethodField()
 
     class Meta:
         model = ProviderVerification
@@ -281,10 +299,50 @@ class VerifyProviderSerializer(serializers.ModelSerializer):
             "provider_type",
             "status",
             "comment",
+            "has_cv",
+            "ai_screening_status",
             "created_at",
             "updated_at",
         ]
         read_only_fields = fields
+
+    def get_has_cv(self, obj: ProviderVerification) -> bool:
+        return bool(obj.cv)
+
+    def get_ai_screening_status(self, obj: ProviderVerification) -> str | None:
+        screening = obj.ai_screenings.first()
+        return screening.status if screening else None
+
+
+class ProviderVerificationRequestSerializer(serializers.Serializer):
+    provider_type = serializers.ChoiceField(choices=ProviderChoices.choices)
+    cv = serializers.FileField(required=False)
+    ai_processing_consent = serializers.BooleanField(required=False)
+
+    def validate(self, attrs: dict) -> dict:
+        cv = attrs.get("cv")
+        if attrs["provider_type"] == ProviderChoices.MASTERCLASS:
+            if attrs.get("ai_processing_consent") is not True:
+                raise serializers.ValidationError(
+                    {"ai_processing_consent": "Consent to AI CV processing is required."}
+                )
+            if cv is None:
+                raise serializers.ValidationError(
+                    {"cv": "A PDF CV is required for masterclass applications."}
+                )
+            if not cv.name.lower().endswith(".pdf"):
+                raise serializers.ValidationError({"cv": "The CV must be a PDF file."})
+            if cv.size > 10 * 1024 * 1024:
+                raise serializers.ValidationError(
+                    {"cv": "The CV must be 10 MB or smaller."}
+                )
+            header = cv.read(5)
+            cv.seek(0)
+            if header != b"%PDF-":
+                raise serializers.ValidationError(
+                    {"cv": "The CV must be a valid PDF file."}
+                )
+        return attrs
 
 
 class ProviderVerificationReviewSerializer(serializers.ModelSerializer):
