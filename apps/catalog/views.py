@@ -35,7 +35,7 @@ from apps.catalog.serializers import (
     TutorCardSerializer,
 )
 from apps.catalog.services import annotate_distance_km
-from apps.providers.models import TutorDetail, TutorSubject
+from apps.providers.models import TutorDetail, TutorStatus, TutorSubject
 from apps.users.enums import UserRole
 from apps.users.permissions import IsFamily, IsMasterclass
 
@@ -214,7 +214,12 @@ class TutorListViewSet(viewsets.ReadOnlyModelViewSet):
         qs = (
             TutorDetail.objects.select_related("user")
             .select_related("avatar")
-            .filter(user__roles__name=UserRole.TUTOR)
+            .filter(
+                user__roles__name=UserRole.TUTOR,
+                user__is_active=True,
+                deleted_at__isnull=True,
+                status=TutorStatus.ACTIVE,
+            )
             .order_by("-rating", "-review_count")
         )
         if self.request.user.is_authenticated:

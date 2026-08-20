@@ -17,6 +17,7 @@ from apps.providers.models import (
     ProviderVerificationAIScreening,
     StatusChoices,
     TutorDetail,
+    TutorStatus,
     TutorSubject,
 )
 from apps.providers.services import apply_verification_outcome
@@ -172,15 +173,10 @@ class TutorDetailAdmin(ModelAdmin):
         "review_count",
         "price_per_hour_qar",
         "trial_available",
+        "status_badge",
     )
-    list_filter = ("is_verified", "trial_available", "languages")
-    search_fields = (
-        "user__email",
-        "user__full_name",
-        "credentials",
-        "linkedin_url",
-        "bio",
-    )
+    list_filter = ("is_verified", "trial_available", "languages", "status")
+    search_fields = ("user__email", "user__full_name", "credentials", "bio")
     readonly_fields = ("user", "created_at", "updated_at")
 
     @admin.display(description=_("Email"), ordering="user__email")
@@ -190,6 +186,18 @@ class TutorDetailAdmin(ModelAdmin):
     @admin.display(description=_("Name"), ordering="user__full_name")
     def user_full_name(self, obj: TutorDetail) -> str:
         return obj.user.full_name
+
+    @display(
+        description=("Status"),
+        ordering="status",
+        label={
+            TutorStatus.ACTIVE: "success",
+            TutorStatus.PAUSED: "info",
+            TutorStatus.DELETED: "danger",
+        },
+    )
+    def status_badge(self, obj: TutorDetail):
+        return obj.status, obj.get_status_display()
 
 
 @admin.register(TutorSubject)

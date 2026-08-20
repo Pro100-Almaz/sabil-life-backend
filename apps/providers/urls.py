@@ -6,6 +6,7 @@ from apps.providers.views import (
     ListingImageDetailView,
     ListingImageView,
     ProviderListingViewSet,
+    ProviderProfileView,
     ProviderVerificationAdminViewSet,
     TutorDetailView,
     VerifyProviderView,
@@ -26,6 +27,7 @@ urlpatterns = router.urls + [
     # router.urls first so "verify/admin/" is matched by the admin viewset
     # before the catch-all "verify/<provider_type>/" below can swallow it.
     path("verify/", VerifyProviderView.as_view(), name="provider-verify"),
+    path("profile/", ProviderProfileView.as_view(), name="provider-profile"),
     path(
         "verify/<str:provider_type>/",
         VerifyProviderView.as_view(),
