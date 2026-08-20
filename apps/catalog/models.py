@@ -23,6 +23,11 @@ class ListingStatus(models.TextChoices):
     REJECTED = "REJECTED", _("Rejected")
 
 
+class MasterclassEventType(models.TextChoices):
+    ONE_TIME = "ONE_TIME", _("One-time event")
+    ONGOING = "ONGOING", _("Ongoing masterclass")
+
+
 class ListingClientStatus(models.TextChoices):
     PENDING = "PENDING", _("Pending")
     ACCEPTED = "ACCEPTED", _("Accepted")
@@ -125,6 +130,12 @@ class Listing(models.Model):
     is_online = models.BooleanField(default=True)
     meeting_url = models.URLField(blank=True, default="")
     registration_url = models.URLField(blank=True, default="")
+    event_type = models.CharField(
+        max_length=16,
+        choices=MasterclassEventType.choices,
+        default=MasterclassEventType.ONGOING,
+    )
+    starts_at = models.DateTimeField(null=True, blank=True, db_index=True)
     # --- Phase 5 private fields (never exposed on public catalog endpoints) ---
     session_schedule = models.TextField(blank=True, default="")
     exact_address = models.TextField(blank=True, default="")
@@ -135,6 +146,12 @@ class Listing(models.Model):
 
     class Meta:
         ordering = ["-is_featured", "-created_at"]
+        indexes = [
+            models.Index(
+                fields=["category", "event_type", "status", "starts_at"],
+                name="listing_expiry_idx",
+            )
+        ]
 
     def __str__(self) -> str:
         return f"{self.title} ({self.category})"

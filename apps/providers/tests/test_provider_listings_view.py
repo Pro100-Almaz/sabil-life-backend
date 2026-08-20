@@ -1,10 +1,17 @@
 import uuid
+from datetime import timedelta
 
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.utils import timezone
 from knox.models import AuthToken
 from rest_framework.test import APIClient, APITestCase
 
-from apps.catalog.models import Listing, ListingCategory, ListingStatus
+from apps.catalog.models import (
+    Listing,
+    ListingCategory,
+    ListingStatus,
+    MasterclassEventType,
+)
 from apps.users.enums import UserRole
 from apps.users.models import CustomUser, Role
 
@@ -46,6 +53,8 @@ def _listing_payload(**kwargs) -> dict:
         "neighborhood": "West Bay",
         "price_from_qar": 100,
         "description": "Great masterclass.",
+        "event_type": MasterclassEventType.ONGOING,
+        "starts_at": (timezone.now() + timedelta(days=7)).isoformat(),
     }
     defaults.update(kwargs)
     return defaults
@@ -76,6 +85,32 @@ class ProviderListingCreateTests(APITestCase):
         self.assertEqual(resp.data["status"], ListingStatus.PENDING)
         self.assertEqual(resp.data["owner_id"], str(user.id))
         self.assertEqual(resp.data["category"], ListingCategory.MASTERCLASSES)
+        self.assertEqual(resp.data["event_type"], MasterclassEventType.ONGOING)
+        self.assertIsNotNone(resp.data["starts_at"])
+
+    def test_one_time_masterclass_requires_start_time(self):
+        user = make_user(roles=[UserRole.MASTERCLASS], verified=True)
+        client = auth_client(user)
+        payload = _listing_payload(event_type=MasterclassEventType.ONE_TIME)
+        payload.pop("starts_at")
+
+        resp = client.post(LISTINGS_URL, payload, format="json")
+
+        self.assertEqual(resp.status_code, 400)
+        self.assertIn("starts_at", resp.data)
+
+    def test_masterclass_start_time_must_be_in_future(self):
+        user = make_user(roles=[UserRole.MASTERCLASS], verified=True)
+        client = auth_client(user)
+        payload = _listing_payload(
+            event_type=MasterclassEventType.ONE_TIME,
+            starts_at=(timezone.now() - timedelta(minutes=1)).isoformat(),
+        )
+
+        resp = client.post(LISTINGS_URL, payload, format="json")
+
+        self.assertEqual(resp.status_code, 400)
+        self.assertIn("starts_at", resp.data)
 
     def test_masterclass_cannot_create_tutoring_listing(self):
         user = make_user(roles=[UserRole.MASTERCLASS], verified=True)

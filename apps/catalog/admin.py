@@ -257,6 +257,8 @@ class ListingAdmin(ModelAdmin):
                     "age_groups",
                     "uploaded_images",
                     "session_schedule",
+                    "event_type",
+                    "starts_at",
                     "exact_address",
                     "materials_required",
                 )
