@@ -1,5 +1,6 @@
 import uuid
 
+from django.core.files.uploadedfile import SimpleUploadedFile
 from knox.models import AuthToken
 from rest_framework.test import APIClient, APITestCase
 
@@ -14,6 +15,7 @@ from apps.users.models import CustomUser
 
 TUTOR_DETAIL_URL = "/api/v1/provider/tutor-detail/"
 VERIFY_URL = "/api/v1/provider/verify/"
+PROFILE_URL = "/api/v1/provider/profile/"
 # Cancellation is a DELETE on the per-provider-type verify URL.
 CANCEL_URL = "/api/v1/provider/verify/TUTOR/"
 ADMIN_URL = "/api/v1/provider/verify/admin/"
@@ -38,6 +40,18 @@ def auth_client(user: CustomUser) -> APIClient:
     _, token = AuthToken.objects.create(user)
     client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
     return client
+
+
+def masterclass_payload() -> dict:
+    return {
+        "provider_type": ProviderChoices.MASTERCLASS,
+        "ai_processing_consent": True,
+        "cv": SimpleUploadedFile(
+            "resume.pdf",
+            b"%PDF-1.4\n% test PDF",
+            content_type="application/pdf",
+        ),
+    }
 
 
 class VerificationLifecycleFromTutorDetailTests(APITestCase):
@@ -77,6 +91,117 @@ class VerificationLifecycleFromTutorDetailTests(APITestCase):
         self.client.post(TUTOR_DETAIL_URL, {"bio": "Hello"}, format="json")
         self.client.patch(TUTOR_DETAIL_URL, {"bio": "Edit"}, format="json")
         self.assertEqual(ProviderVerification.objects.filter(user=self.user).count(), 1)
+
+    def test_profile_fields_round_trip_through_tutor_detail_api(self):
+        response = self.client.post(
+            TUTOR_DETAIL_URL,
+            {
+                "display_name": "Amina Hassan",
+                "availability": "Weekday evenings",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data["display_name"], "Amina Hassan")
+        self.assertEqual(response.data["availability"], "Weekday evenings")
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.full_name, "Amina Hassan")
+
+    def test_linkedin_url_is_optional(self):
+        response = self.client.post(TUTOR_DETAIL_URL, {"bio": "Hello"}, format="json")
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data["linkedin_url"], "")
+
+    def test_accepts_linkedin_url(self):
+        linkedin_url = "https://www.linkedin.com/in/example-tutor/"
+        response = self.client.post(
+            TUTOR_DETAIL_URL,
+            {"bio": "Hello", "linkedin_url": linkedin_url},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data["linkedin_url"], linkedin_url)
+
+        public_response = APIClient().get("/api/v1/tutors/")
+        self.assertEqual(public_response.status_code, 200)
+        self.assertEqual(public_response.data["results"][0]["linkedin_url"], linkedin_url)
+
+    def test_rejects_non_url_linkedin_value(self):
+        response = self.client.post(
+            TUTOR_DETAIL_URL,
+            {"linkedin_url": "this is not a link"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("linkedin_url", response.data)
+
+    def test_rejects_non_linkedin_url(self):
+        response = self.client.post(
+            TUTOR_DETAIL_URL,
+            {"linkedin_url": "https://example.com/in/example-tutor"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("linkedin_url", response.data)
+
+    def test_provider_cannot_set_deleted_status(self):
+        self.client.post(TUTOR_DETAIL_URL, {"bio": "Hello"}, format="json")
+
+        response = self.client.patch(
+            TUTOR_DETAIL_URL,
+            {"status": "DELETED"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("Only the server", response.data["status"][0])
+
+    def test_pausing_tutor_does_not_resubmit_verification(self):
+        self.client.post(TUTOR_DETAIL_URL, {"bio": "Hello"}, format="json")
+        verification = self._verification()
+        verification.status = StatusChoices.APPROVED
+        verification.save(update_fields=["status"])
+
+        response = self.client.patch(
+            TUTOR_DETAIL_URL,
+            {"status": "PAUSED"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["status"], "PAUSED")
+        verification.refresh_from_db()
+        self.assertEqual(verification.status, StatusChoices.APPROVED)
+
+
+class ProviderProfileReadTests(APITestCase):
+    def test_returns_tutor_detail_for_current_tutor(self):
+        user = make_user(role=UserRole.TUTOR, email="profile-tutor@example.com")
+        TutorDetail.objects.create(user=user, bio="Hello", availability="Weekdays")
+
+        response = auth_client(user).get(PROFILE_URL)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["user_id"], user.id)
+        self.assertEqual(response.data["availability"], "Weekdays")
+        self.assertEqual(response.data["role"], UserRole.TUTOR)
+
+    def test_returns_fallback_profile_for_masterclass_provider(self):
+        user = make_user(
+            role=UserRole.MASTERCLASS,
+            email="profile-masterclass@example.com",
+        )
+
+        response = auth_client(user).get(PROFILE_URL)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["user_id"], user.id)
+        self.assertEqual(response.data["role"], UserRole.MASTERCLASS)
 
 
 class ProviderVerificationReadTests(APITestCase):
@@ -120,7 +245,7 @@ class RequestVerificationTests(APITestCase):
         # is only granted once an admin approves.
         user = make_user(role=UserRole.FAMILY)
         client = auth_client(user)
-        resp = client.post(VERIFY_URL, {"provider_type": "MASTERCLASS"}, format="json")
+        resp = client.post(VERIFY_URL, masterclass_payload(), format="multipart")
         self.assertEqual(resp.status_code, 201)
         self.assertEqual(resp.data["status"], StatusChoices.PENDING)
         self.assertEqual(resp.data["provider_type"], "MASTERCLASS")
@@ -132,9 +257,7 @@ class RequestVerificationTests(APITestCase):
 
     def test_request_does_not_grant_role(self):
         user = make_user(role=UserRole.FAMILY)
-        auth_client(user).post(
-            VERIFY_URL, {"provider_type": "MASTERCLASS"}, format="json"
-        )
+        auth_client(user).post(VERIFY_URL, masterclass_payload(), format="multipart")
         if hasattr(user, "_role_names_cache"):
             del user._role_names_cache
         self.assertFalse(user.has_role(UserRole.MASTERCLASS))
@@ -149,20 +272,20 @@ class RequestVerificationTests(APITestCase):
     def test_duplicate_pending_request_conflicts(self):
         user = make_user(role=UserRole.MASTERCLASS)
         client = auth_client(user)
-        client.post(VERIFY_URL, {"provider_type": "MASTERCLASS"}, format="json")
-        resp = client.post(VERIFY_URL, {"provider_type": "MASTERCLASS"}, format="json")
+        client.post(VERIFY_URL, masterclass_payload(), format="multipart")
+        resp = client.post(VERIFY_URL, masterclass_payload(), format="multipart")
         self.assertEqual(resp.status_code, 409)
 
     def test_can_rerequest_after_rejection(self):
         user = make_user(role=UserRole.MASTERCLASS)
         client = auth_client(user)
-        client.post(VERIFY_URL, {"provider_type": "MASTERCLASS"}, format="json")
+        client.post(VERIFY_URL, masterclass_payload(), format="multipart")
         v = ProviderVerification.objects.get(user=user)
         v.status = StatusChoices.REJECTED
         v.comment = "Need more info"
         v.save()
 
-        resp = client.post(VERIFY_URL, {"provider_type": "MASTERCLASS"}, format="json")
+        resp = client.post(VERIFY_URL, masterclass_payload(), format="multipart")
         self.assertEqual(resp.status_code, 200)
         v.refresh_from_db()
         self.assertEqual(v.status, StatusChoices.UPDATED)
@@ -171,11 +294,11 @@ class RequestVerificationTests(APITestCase):
     def test_cannot_rerequest_when_approved(self):
         user = make_user(role=UserRole.MASTERCLASS)
         client = auth_client(user)
-        client.post(VERIFY_URL, {"provider_type": "MASTERCLASS"}, format="json")
+        client.post(VERIFY_URL, masterclass_payload(), format="multipart")
         v = ProviderVerification.objects.get(user=user)
         v.status = StatusChoices.APPROVED
         v.save()
-        resp = client.post(VERIFY_URL, {"provider_type": "MASTERCLASS"}, format="json")
+        resp = client.post(VERIFY_URL, masterclass_payload(), format="multipart")
         self.assertEqual(resp.status_code, 409)
 
 
@@ -238,9 +361,7 @@ class AdminReviewTests(APITestCase):
     def test_approve_grants_role(self):
         # A user with no provider role gets it granted on approval.
         user = make_user(role=UserRole.FAMILY)
-        auth_client(user).post(
-            VERIFY_URL, {"provider_type": "MASTERCLASS"}, format="json"
-        )
+        auth_client(user).post(VERIFY_URL, masterclass_payload(), format="multipart")
         v = ProviderVerification.objects.get(user=user)
         self.client.patch(f"{ADMIN_URL}{v.pk}/", {"status": "APPROVED"}, format="json")
 

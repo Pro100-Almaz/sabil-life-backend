@@ -18,7 +18,36 @@ class StatusChoices(models.TextChoices):
     CANCELLED = "CANCELLED", _("Cancelled")
 
 
+class TutorStatus(models.TextChoices):
+    ACTIVE = "ACTIVE", _("Active")
+    PAUSED = "PAUSED", _("Paused")
+    DELETED = "DELETED", _("Deleted")
+
+
+class AIScreeningStatus(models.TextChoices):
+    QUEUED = "QUEUED", _("Queued")
+    PROCESSING = "PROCESSING", _("Processing")
+    RECOMMENDED = "RECOMMENDED", _("Recommended")
+    NEEDS_REVIEW = "NEEDS_REVIEW", _("Needs review")
+    INSUFFICIENT = "INSUFFICIENT", _("Insufficient information")
+    FAILED = "FAILED", _("Failed")
+
+
+class TutorDetailQuerySet(models.QuerySet):
+    def with_subject(self, value: str) -> "TutorDetailQuerySet":
+        return self.extra(
+            where=[
+                "EXISTS ("
+                "SELECT 1 FROM jsonb_array_elements_text(subjects) AS elem "
+                "WHERE lower(trim(elem)) = lower(trim(%s))"
+                ")"
+            ],
+            params=[value],
+        )
+
+
 class TutorDetail(models.Model):
+    objects = TutorDetailQuerySet.as_manager()
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -30,7 +59,16 @@ class TutorDetail(models.Model):
         max_length=120,
         blank=True,
     )
-    subjects = models.JSONField(_("subjects"), default=list, blank=True)
+    subjects = models.JSONField(
+        _("subjects"),
+        default=list,
+        blank=True,
+        help_text=_(
+            'Free-text subject names, e.g. ["Chemistry", "Biology"]. '
+            "Whitespace is trimmed automatically on save; matching against "
+            "the subject filter is case/whitespace-insensitive."
+        ),
+    )
     formats = models.JSONField(
         _("formats"),
         default=list,
@@ -61,6 +99,7 @@ class TutorDetail(models.Model):
         blank=True,
     )
     credentials = models.CharField(_("credentials"), max_length=300, blank=True)
+    linkedin_url = models.URLField(_("LinkedIn URL"), max_length=500, blank=True)
     languages = models.JSONField(
         _("languages"),
         default=list,
@@ -74,6 +113,13 @@ class TutorDetail(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     city = models.CharField(_("city"), max_length=120, blank=True, null=True)
+    availability = models.TextField(_("availability"), blank=True)
+    status = models.CharField(
+        _("status"),
+        max_length=20,
+        choices=TutorStatus.choices,
+        default=TutorStatus.ACTIVE,
+    )
 
     class Meta:
         verbose_name = _("tutor detail")
@@ -86,6 +132,10 @@ class TutorDetail(models.Model):
 
     def save(self, *args, **kwargs) -> None:
         self.clean()
+        if isinstance(self.subjects, list):
+            self.subjects = [
+                s.strip() for s in self.subjects if isinstance(s, str) and s.strip()
+            ]
         super().save(*args, **kwargs)
 
     def __str__(self) -> str:
@@ -156,6 +206,13 @@ class ProviderVerification(models.Model):
         blank=True,
         help_text=_("Reviewer note — e.g. the reason a verification was rejected."),
     )
+    cv = models.FileField(
+        _("CV"),
+        upload_to="provider-verifications/cvs/%Y/%m/",
+        blank=True,
+        help_text=_("Required PDF CV for masterclass provider applications."),
+    )
+    ai_processing_consent_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -175,3 +232,40 @@ class ProviderVerification(models.Model):
             f"ProviderVerification({self.user.email}, {self.provider_type}, "
             f"{self.status})"
         )
+
+
+class ProviderVerificationAIScreening(models.Model):
+    """Advisory AI assessment; it never changes the verification decision."""
+
+    verification = models.ForeignKey(
+        ProviderVerification,
+        on_delete=models.CASCADE,
+        related_name="ai_screenings",
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=AIScreeningStatus.choices,
+        default=AIScreeningStatus.QUEUED,
+    )
+    summary = models.TextField(blank=True)
+    strengths = models.JSONField(default=list, blank=True)
+    concerns = models.JSONField(default=list, blank=True)
+    missing_information = models.JSONField(default=list, blank=True)
+    manual_checks = models.JSONField(default=list, blank=True)
+    criteria = models.JSONField(default=list, blank=True)
+    confidence = models.PositiveSmallIntegerField(null=True, blank=True)
+    provider = models.CharField(max_length=40, default="openai")
+    model = models.CharField(max_length=80, blank=True)
+    rubric_version = models.CharField(max_length=20, default="1.0")
+    error_message = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    started_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = _("AI CV screening")
+        verbose_name_plural = _("AI CV screenings")
+
+    def __str__(self) -> str:
+        return f"AI screening {self.pk} ({self.status})"

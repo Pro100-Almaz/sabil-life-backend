@@ -63,6 +63,8 @@ class ListingCardSerializer(serializers.ModelSerializer):
             "age_groups",
             "is_featured",
             "distance_km",
+            "event_type",
+            "starts_at",
         ]
 
     def get_distance_km(self, obj: Listing) -> float | None:
@@ -101,6 +103,7 @@ class ListingDetailSerializer(ListingCardSerializer):
             "images",
             "is_online",
             "meeting_url",
+            "registration_url",
         ]
 
     def get_owner_id(self, obj: Listing) -> str | None:
@@ -148,10 +151,12 @@ class TutorCardSerializer(serializers.ModelSerializer):
             "review_count",
             "years_experience",
             "credentials",
+            "linkedin_url",
             "languages",
             "trial_available",
             "bio",
             "city",
+            "status",
         ]
 
     def get_avatar_url(self, obj):

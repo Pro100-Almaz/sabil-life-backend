@@ -1,19 +1,27 @@
 from django import forms
 from django.contrib import admin, messages
 from django.contrib.admin.helpers import ACTION_CHECKBOX_NAME
+from django.core.files.storage import default_storage
+from django.http import FileResponse, Http404
 from django.template.response import TemplateResponse
+from django.urls import path, reverse
+from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 from unfold.admin import ModelAdmin
 from unfold.decorators import action, display
 from unfold.widgets import UnfoldAdminTextareaWidget
 
 from apps.providers.models import (
+    AIScreeningStatus,
     ProviderVerification,
+    ProviderVerificationAIScreening,
     StatusChoices,
     TutorDetail,
+    TutorStatus,
     TutorSubject,
 )
 from apps.providers.services import apply_verification_outcome
+from apps.providers.tasks import queue_cv_screening
 
 
 class RejectionForm(forms.Form):
@@ -66,12 +74,34 @@ def approve_provider_request(modeladmin, request, queryset):
             _("%(n)d verification(s) APPROVED.") % {"n": approved},
             messages.SUCCESS,
         )
-
     if skipped:
         modeladmin.message_user(
             request,
             _("%(n)d only PENDING or REJECTED verifications are eligible for APPROVE")
             % {"n": skipped},
+            messages.WARNING,
+        )
+
+
+@action(description=_("Run AI CV screening"), icon="smart_toy")
+def run_ai_cv_screening(modeladmin, request, queryset):
+    queued = 0
+    for verification in queryset.filter(provider_type="MASTERCLASS").exclude(cv=""):
+        if queue_cv_screening(verification):
+            queued += 1
+    if queued:
+        modeladmin.message_user(
+            request,
+            _("%(n)d CV screening(s) queued.") % {"n": queued},
+            messages.SUCCESS,
+        )
+    else:
+        modeladmin.message_user(
+            request,
+            _(
+                "No screenings queued. Check that AI screening is enabled "
+                "and a CV exists."
+            ),
             messages.WARNING,
         )
 
@@ -143,8 +173,9 @@ class TutorDetailAdmin(ModelAdmin):
         "review_count",
         "price_per_hour_qar",
         "trial_available",
+        "status_badge",
     )
-    list_filter = ("is_verified", "trial_available", "languages")
+    list_filter = ("is_verified", "trial_available", "languages", "status")
     search_fields = ("user__email", "user__full_name", "credentials", "bio")
     readonly_fields = ("user", "created_at", "updated_at")
 
@@ -156,6 +187,18 @@ class TutorDetailAdmin(ModelAdmin):
     def user_full_name(self, obj: TutorDetail) -> str:
         return obj.user.full_name
 
+    @display(
+        description=("Status"),
+        ordering="status",
+        label={
+            TutorStatus.ACTIVE: "success",
+            TutorStatus.PAUSED: "info",
+            TutorStatus.DELETED: "danger",
+        },
+    )
+    def status_badge(self, obj: TutorDetail):
+        return obj.status, obj.get_status_display()
+
 
 @admin.register(TutorSubject)
 class TutorSubjectAdmin(ModelAdmin):
@@ -163,19 +206,98 @@ class TutorSubjectAdmin(ModelAdmin):
     search_fields = ("name",)
 
 
+class AIScreeningInline(admin.StackedInline):
+    model = ProviderVerificationAIScreening
+    extra = 0
+    can_delete = False
+    readonly_fields = (
+        "status",
+        "summary",
+        "strengths",
+        "concerns",
+        "missing_information",
+        "manual_checks",
+        "criteria",
+        "confidence",
+        "provider",
+        "model",
+        "rubric_version",
+        "error_message",
+        "created_at",
+        "started_at",
+        "completed_at",
+    )
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+
 @admin.register(ProviderVerification)
 class ProviderVerificationAdmin(ModelAdmin):
-    actions = [reject_provider_request, approve_provider_request]
+    actions = [
+        reject_provider_request,
+        approve_provider_request,
+        run_ai_cv_screening,
+    ]
+    inlines = [AIScreeningInline]
 
     list_display = (
         "user_email",
         "provider_type",
         "status_badge",
+        "ai_screening_badge",
         "updated_at",
     )
     list_filter = ("status", "provider_type")
     search_fields = ("user__email", "user__full_name", "comment")
-    readonly_fields = ("user", "provider_type", "created_at", "updated_at")
+    readonly_fields = (
+        "user",
+        "provider_type",
+        "cv_link",
+        "ai_processing_consent_at",
+        "created_at",
+        "updated_at",
+    )
+
+    def get_urls(self):
+        custom_urls = [
+            path(
+                "<path:object_id>/cv/",
+                self.admin_site.admin_view(self.view_cv),
+                name="providers_providerverification_cv",
+            ),
+        ]
+        return custom_urls + super().get_urls()
+
+    def view_cv(self, request, object_id):
+        verification = self.get_object(request, object_id)
+        if verification is None or not verification.cv:
+            raise Http404("CV not found.")
+
+        storage_key = verification.cv.name
+        if not default_storage.exists(storage_key):
+            raise Http404("CV file not found.")
+
+        return FileResponse(
+            default_storage.open(storage_key, "rb"),
+            content_type="application/pdf",
+            as_attachment=False,
+            filename=storage_key.rsplit("/", 1)[-1],
+        )
+
+    @admin.display(description=_("CV (PDF)"))
+    def cv_link(self, obj: ProviderVerification):
+        if not obj.cv:
+            return _("No CV uploaded")
+        url = reverse(
+            "admin:providers_providerverification_cv",
+            args=[obj.pk],
+        )
+        return format_html(
+            '<a href="{}" target="_blank" rel="noopener">{}</a>',
+            url,
+            _("View CV"),
+        )
 
     @admin.display(description=_("Email"), ordering="user__email")
     def user_email(self, obj: ProviderVerification) -> str:
@@ -194,3 +316,20 @@ class ProviderVerificationAdmin(ModelAdmin):
     )
     def status_badge(self, obj: ProviderVerification):
         return obj.status, obj.get_status_display()
+
+    @display(
+        description=_("AI CV screening"),
+        label={
+            AIScreeningStatus.RECOMMENDED: "success",
+            AIScreeningStatus.NEEDS_REVIEW: "warning",
+            AIScreeningStatus.INSUFFICIENT: "warning",
+            AIScreeningStatus.FAILED: "danger",
+            AIScreeningStatus.QUEUED: "info",
+            AIScreeningStatus.PROCESSING: "info",
+        },
+    )
+    def ai_screening_badge(self, obj: ProviderVerification):
+        screening = obj.ai_screenings.first()
+        if screening is None:
+            return None
+        return screening.status, screening.get_status_display()

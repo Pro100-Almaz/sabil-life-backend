@@ -11,7 +11,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from apps.inquiries.models import Inquiry, InquiryStatus
-from apps.providers.models import TutorDetail
+from apps.providers.models import TutorDetail, TutorStatus
 from apps.users.enums import UserRole
 
 User = get_user_model()
@@ -163,6 +163,17 @@ class InquiryCreateViewTests(APITestCase):
             {"tutor_id": 999999, "message": "Hi."},
         )
         self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_inquiry_to_paused_tutor_returns_400(self):
+        self.tutor.status = TutorStatus.PAUSED
+        self.tutor.save(update_fields=["status"])
+        self._auth(self.family)
+        resp = self.client.post(
+            self.url,
+            {"tutor_id": self.tutor.id, "message": "Hi."},
+        )
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("no longer available", resp.data["detail"].lower())
 
     def test_inquiry_to_deleted_tutor_returns_400(self):
         self._auth(self.family)

@@ -32,7 +32,6 @@ class MeViewTests(APITestCase):
         cls.valid_update_data = {
             "first_name": "Updated",
             "last_name": "Name",
-            "password": "newpassword123",
         }
 
     def test_retrieve_me_success(self):
@@ -69,14 +68,12 @@ class MeViewTests(APITestCase):
         data = {
             "first_name": "Updated",
             "last_name": "Name",
-            "password": "newpassword123",
         }
         response = self.client.put(self.url, data, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.user.refresh_from_db()
         self.assertEqual(self.user.first_name, "Updated")
         self.assertEqual(self.user.last_name, "Name")
-        self.assertTrue(self.user.check_password("newpassword123"))
 
     def test_update_me_patch(self):
         """Partial profile update with PATCH."""
@@ -87,12 +84,13 @@ class MeViewTests(APITestCase):
         self.user.refresh_from_db()
         self.assertEqual(self.user.full_name, "Patched Name")
 
-    def test_update_me_invalid_password(self):
-        """Short password is rejected."""
+    def test_update_me_ignores_password(self):
+        """Profile updates cannot bypass the dedicated password endpoint."""
         self.client.force_authenticate(user=self.user)
         response = self.client.patch(self.url, {"password": "short"}, format="json")
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("password", response.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password("testpassword123"))
 
     def test_me_unauthorized_access(self):
         """Unauthenticated request is rejected with 401."""
@@ -104,45 +102,6 @@ class MeViewTests(APITestCase):
         self.client.force_authenticate(user=self.user)
         response = self.client.delete(self.url)
         self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
-
-    def test_password_validation_success(self):
-        """Valid strong password is accepted."""
-        self.client.force_authenticate(user=self.user)
-        response = self.client.patch(
-            self.url, {"password": "ValidPass123!"}, format="json"
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.user.refresh_from_db()
-        self.assertTrue(self.user.check_password("ValidPass123!"))
-
-    def test_password_too_short(self):
-        """Password shorter than MIN_PASSWORD_LENGTH is rejected at field level."""
-        self.client.force_authenticate(user=self.user)
-        response = self.client.patch(self.url, {"password": "short"}, format="json")
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("password", response.data)
-
-    def test_numeric_only_password(self):
-        """All-numeric password is rejected."""
-        self.client.force_authenticate(user=self.user)
-        response = self.client.patch(self.url, {"password": "12345678"}, format="json")
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("password", response.data)
-        self.assertTrue(
-            any("entirely numeric" in msg for msg in response.data["password"]),
-            "Expected 'entirely numeric' error not found",
-        )
-
-    def test_common_weak_password(self):
-        """Common password is rejected."""
-        self.client.force_authenticate(user=self.user)
-        response = self.client.patch(self.url, {"password": "password"}, format="json")
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("password", response.data)
-        self.assertTrue(
-            any("too common" in msg for msg in response.data["password"]),
-            "Expected 'too common' error not found",
-        )
 
     def test_roles_is_read_only(self):
         """Roles cannot be changed via PATCH."""

@@ -5,11 +5,19 @@ Covers: public access, status filtering, pagination shape, category/q/price/age
 filters, and sort by rating / price_low.
 """
 
+from datetime import timedelta
+
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from apps.catalog.models import Listing, ListingCategory, ListingStatus
+from apps.catalog.models import (
+    Listing,
+    ListingCategory,
+    ListingStatus,
+    MasterclassEventType,
+)
 
 
 def make_listing(**kwargs) -> Listing:
@@ -54,6 +62,26 @@ class ListingListViewTests(APITestCase):
         ids = [r["id"] for r in response.data["results"]]
         self.assertIn(str(active.id), ids)
         self.assertEqual(len(ids), 1)
+
+    def test_expired_one_time_masterclass_is_hidden_during_task_delay(self):
+        expired = make_listing(
+            title="Expired event",
+            category=ListingCategory.MASTERCLASSES,
+            event_type=MasterclassEventType.ONE_TIME,
+            starts_at=timezone.now() - timedelta(hours=2),
+        )
+        upcoming = make_listing(
+            title="Upcoming event",
+            category=ListingCategory.MASTERCLASSES,
+            event_type=MasterclassEventType.ONE_TIME,
+            starts_at=timezone.now() + timedelta(days=1),
+        )
+
+        response = self.client.get(self.url)
+
+        ids = [item["id"] for item in response.data["results"]]
+        self.assertNotIn(str(expired.id), ids)
+        self.assertIn(str(upcoming.id), ids)
 
     # ------------------------------------------------------------------
     # Pagination shape

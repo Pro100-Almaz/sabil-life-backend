@@ -3,7 +3,7 @@ import uuid
 from knox.models import AuthToken
 from rest_framework.test import APIClient, APITestCase
 
-from apps.providers.models import TutorDetail
+from apps.providers.models import TutorDetail, TutorStatus
 from apps.users.enums import UserRole
 from apps.users.models import CustomUser
 
@@ -45,6 +45,11 @@ class TutorDetailSoftDeleteTests(APITestCase):
         self.client.delete(TUTOR_DETAIL_URL)
         detail = TutorDetail.objects.get(user=self.user)
         self.assertIsNotNone(detail.deleted_at)
+
+    def test_soft_delete_sets_deleted_status(self):
+        self.client.delete(TUTOR_DETAIL_URL)
+        detail = TutorDetail.objects.get(user=self.user)
+        self.assertEqual(detail.status, TutorStatus.DELETED)
 
     def test_soft_delete_removes_tutor_role(self):
         self.assertTrue(self.user.has_role(UserRole.TUTOR))

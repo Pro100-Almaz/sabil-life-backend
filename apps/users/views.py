@@ -27,6 +27,7 @@ from apps.users.schema import (
 )
 from apps.users.serializers import (
     AuthTokenSerializer,
+    ChangePasswordSerializer,
     CreateUserSerializer,
     ForgotPasswordConfirmSerializer,
     ForgotPasswordRequestSerializer,
@@ -34,7 +35,11 @@ from apps.users.serializers import (
     RegistrationVerifySerializer,
     UserProfileSerializer,
 )
-from apps.users.tasks import send_password_reset_email, send_verification_email
+from apps.users.tasks import (
+    send_password_changed_email,
+    send_password_reset_email,
+    send_verification_email,
+)
 from apps.users.throttles import (
     PasswordResetRequestThrottle,
     RegistrationCodeThrottle,
@@ -42,6 +47,33 @@ from apps.users.throttles import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+class ChangePasswordView(generics.GenericAPIView):
+    permission_classes = (permissions.IsAuthenticated,)
+    authentication_classes = (TokenAuthentication,)
+    serializer_class = ChangePasswordSerializer
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "change_password"
+
+    def post(self, request, *args, **kwargs) -> Response:
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user = request.user
+        new_password = serializer.validated_data["new_password"]
+
+        with transaction.atomic():
+            user.set_password(new_password)
+            user.save(update_fields=["password"])
+            AuthToken.objects.filter(user=user).delete()
+            transaction.on_commit(lambda: send_password_changed_email.delay(user.email))
+
+        logger.info("Password changed for user ID %s.", user.pk)
+        return Response(
+            {"detail": "Password changed successfully. Please sign in again."},
+            status=status.HTTP_200_OK,
+        )
 
 
 class ForgotPasswordView(generics.GenericAPIView):

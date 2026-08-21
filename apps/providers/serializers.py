@@ -1,13 +1,22 @@
+from urllib.parse import urlsplit
+
 from django.core.files.storage import default_storage
+from django.utils import timezone
 from rest_framework import serializers
 
-from apps.catalog.models import Listing, ListingCategory
+from apps.catalog.models import (
+    Listing,
+    ListingCategory,
+    MasterclassEventType,
+)
 from apps.catalog.serializers import ListingImageSerializer
 from apps.providers.models import (
     AvatarImage,
+    ProviderChoices,
     ProviderVerification,
     StatusChoices,
     TutorDetail,
+    TutorStatus,
 )
 from apps.users.enums import UserRole
 
@@ -47,6 +56,9 @@ class AvatarImageSerializer(serializers.ModelSerializer):
 class TutorDetailSerializer(serializers.ModelSerializer):
     user_id = serializers.IntegerField(source="user.id", read_only=True)
     full_name = serializers.CharField(source="user.full_name", read_only=True)
+    email = serializers.EmailField(source="user.email", read_only=True)
+    display_name = serializers.CharField(required=False, allow_blank=True)
+    role = serializers.SerializerMethodField(read_only=True)
     avatar_url = serializers.SerializerMethodField(read_only=True)
     avatar = AvatarImageSerializer(many=False, read_only=True)
 
@@ -55,6 +67,9 @@ class TutorDetailSerializer(serializers.ModelSerializer):
         fields = [
             "user_id",
             "full_name",
+            "email",
+            "display_name",
+            "role",
             "avatar_url",
             "avatar",
             "affiliation_listing_id",
@@ -66,13 +81,16 @@ class TutorDetailSerializer(serializers.ModelSerializer):
             "review_count",
             "years_experience",
             "credentials",
+            "linkedin_url",
             "languages",
             "trial_available",
             "bio",
+            "availability",
             "is_verified",
             "created_at",
             "updated_at",
             "city",
+            "status",
         ]
         read_only_fields = [
             "rating",
@@ -82,9 +100,51 @@ class TutorDetailSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
 
+    def get_role(self, obj: TutorDetail) -> str:
+        return UserRole.TUTOR
+
+    def to_representation(self, instance: TutorDetail) -> dict:
+        representation = super().to_representation(instance)
+        representation["display_name"] = instance.user.full_name
+        return representation
+
+    def validate_status(self, value: str) -> str:
+        if value == TutorStatus.DELETED:
+            raise serializers.ValidationError(
+                "Only the server can delete a tutor profile."
+            )
+        return value
+
+    def create(self, validated_data: dict) -> TutorDetail:
+        display_name = validated_data.pop("display_name", None)
+        detail = super().create(validated_data)
+        if display_name is not None and detail.user.full_name != display_name:
+            detail.user.full_name = display_name
+            detail.user.save(update_fields=["full_name"])
+        return detail
+
+    def update(self, instance: TutorDetail, validated_data: dict) -> TutorDetail:
+        display_name = validated_data.pop("display_name", None)
+        detail = super().update(instance, validated_data)
+        if display_name is not None and detail.user.full_name != display_name:
+            detail.user.full_name = display_name
+            detail.user.save(update_fields=["full_name"])
+        return detail
+
     def get_avatar_url(self, obj: TutorDetail) -> str:
         avatar = getattr(obj, "avatar", None)
         return default_storage.url(avatar.key) if avatar else ""
+
+    def validate_linkedin_url(self, value: str) -> str:
+        if not value:
+            return ""
+        parts = urlsplit(value)
+        hostname = (parts.hostname or "").lower()
+        if parts.scheme not in {"http", "https"} or (
+            hostname != "linkedin.com" and not hostname.endswith(".linkedin.com")
+        ):
+            raise serializers.ValidationError("Enter a valid LinkedIn URL.")
+        return value
 
 
 # ---------------------------------------------------------------------------
@@ -149,6 +209,9 @@ class ProviderListingSerializer(serializers.ModelSerializer):
             "updated_at",
             "is_online",
             "meeting_url",
+            "registration_url",
+            "event_type",
+            "starts_at",
         ]
         read_only_fields = [
             "id",
@@ -189,6 +252,7 @@ class ProviderListingSerializer(serializers.ModelSerializer):
         return value
 
     def validate(self, attrs):
+        attrs = super().validate(attrs)
         is_online = attrs.get("is_online", getattr(self.instance, "is_online", False))
         meeting_url = attrs.get("meeting_url", getattr(self.instance, "meeting_url", ""))
         neighborhood = attrs.get(
@@ -210,6 +274,43 @@ class ProviderListingSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {"neighborhood": "Required for offline listings"}
             )
+
+        category = attrs.get(
+            "category",
+            getattr(self.instance, "category", None),
+        )
+        event_fields_submitted = (
+            "category" in attrs or "event_type" in attrs or "starts_at" in attrs
+        )
+        if category == ListingCategory.MASTERCLASSES and (
+            not partial or event_fields_submitted
+        ):
+            event_type = attrs.get(
+                "event_type",
+                getattr(
+                    self.instance,
+                    "event_type",
+                    MasterclassEventType.ONGOING,
+                ),
+            )
+            starts_at = attrs.get(
+                "starts_at",
+                getattr(self.instance, "starts_at", None),
+            )
+            if starts_at is None:
+                raise serializers.ValidationError(
+                    {"starts_at": "Choose when this masterclass will take place."}
+                )
+            if starts_at <= timezone.now():
+                raise serializers.ValidationError(
+                    {
+                        "starts_at": (
+                            "The masterclass date and time must be in the future."
+                        )
+                    }
+                )
+            if event_type not in MasterclassEventType.values:
+                raise serializers.ValidationError({"event_type": "Invalid event type."})
 
         return attrs
 
@@ -235,6 +336,8 @@ class VerifyProviderSerializer(serializers.ModelSerializer):
     user_id = serializers.IntegerField(source="user.id", read_only=True)
     email = serializers.EmailField(source="user.email", read_only=True)
     full_name = serializers.CharField(source="user.full_name", read_only=True)
+    has_cv = serializers.SerializerMethodField()
+    ai_screening_status = serializers.SerializerMethodField()
 
     class Meta:
         model = ProviderVerification
@@ -246,10 +349,50 @@ class VerifyProviderSerializer(serializers.ModelSerializer):
             "provider_type",
             "status",
             "comment",
+            "has_cv",
+            "ai_screening_status",
             "created_at",
             "updated_at",
         ]
         read_only_fields = fields
+
+    def get_has_cv(self, obj: ProviderVerification) -> bool:
+        return bool(obj.cv)
+
+    def get_ai_screening_status(self, obj: ProviderVerification) -> str | None:
+        screening = obj.ai_screenings.first()
+        return screening.status if screening else None
+
+
+class ProviderVerificationRequestSerializer(serializers.Serializer):
+    provider_type = serializers.ChoiceField(choices=ProviderChoices.choices)
+    cv = serializers.FileField(required=False)
+    ai_processing_consent = serializers.BooleanField(required=False)
+
+    def validate(self, attrs: dict) -> dict:
+        cv = attrs.get("cv")
+        if attrs["provider_type"] == ProviderChoices.MASTERCLASS:
+            if attrs.get("ai_processing_consent") is not True:
+                raise serializers.ValidationError(
+                    {"ai_processing_consent": "Consent to AI CV processing is required."}
+                )
+            if cv is None:
+                raise serializers.ValidationError(
+                    {"cv": "A PDF CV is required for masterclass applications."}
+                )
+            if not cv.name.lower().endswith(".pdf"):
+                raise serializers.ValidationError({"cv": "The CV must be a PDF file."})
+            if cv.size > 10 * 1024 * 1024:
+                raise serializers.ValidationError(
+                    {"cv": "The CV must be 10 MB or smaller."}
+                )
+            header = cv.read(5)
+            cv.seek(0)
+            if header != b"%PDF-":
+                raise serializers.ValidationError(
+                    {"cv": "The CV must be a valid PDF file."}
+                )
+        return attrs
 
 
 class ProviderVerificationReviewSerializer(serializers.ModelSerializer):

@@ -1,6 +1,8 @@
 import logging
+from datetime import timedelta
 
-from django.db.models import Count, QuerySet
+from django.db.models import Count, Q, QuerySet
+from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import filters, mixins, permissions, viewsets
@@ -17,6 +19,7 @@ from apps.catalog.models import (
     ListingStatus,
     ListingTag,
     ListingTagGroup,
+    MasterclassEventType,
 )
 from apps.catalog.schema import (
     CATEGORIES_SCHEMA,
@@ -35,7 +38,7 @@ from apps.catalog.serializers import (
     TutorCardSerializer,
 )
 from apps.catalog.services import annotate_distance_km
-from apps.providers.models import TutorDetail, TutorSubject
+from apps.providers.models import TutorDetail, TutorStatus, TutorSubject
 from apps.users.enums import UserRole
 from apps.users.permissions import IsFamily, IsMasterclass
 
@@ -77,6 +80,10 @@ class ListingViewSet(viewsets.ReadOnlyModelViewSet):
     def get_queryset(self) -> QuerySet:
         qs = (
             Listing.objects.filter(status=ListingStatus.ACTIVE)
+            .exclude(
+                Q(event_type=MasterclassEventType.ONE_TIME)
+                & Q(starts_at__lte=timezone.now() - timedelta(hours=1))
+            )
             .prefetch_related("images")
             .prefetch_related("tags")
         )
@@ -214,7 +221,12 @@ class TutorListViewSet(viewsets.ReadOnlyModelViewSet):
         qs = (
             TutorDetail.objects.select_related("user")
             .select_related("avatar")
-            .filter(user__roles__name=UserRole.TUTOR)
+            .filter(
+                user__roles__name=UserRole.TUTOR,
+                user__is_active=True,
+                deleted_at__isnull=True,
+                status=TutorStatus.ACTIVE,
+            )
             .order_by("-rating", "-review_count")
         )
         if self.request.user.is_authenticated:
