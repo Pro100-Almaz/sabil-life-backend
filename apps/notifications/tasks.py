@@ -19,6 +19,34 @@ ProviderResponse = {
 
 
 @shared_task(bind=True, base=BaseTaskWithRetry)
+def notify_admin_created_inquiry(self, inquiry_id: str) -> None:
+    """Notify both parties when an administrator creates an inquiry."""
+    try:
+        inquiry = Inquiry.objects.select_related("family", "tutor__user").get(
+            id=inquiry_id
+        )
+    except Inquiry.DoesNotExist:
+        logger.warning("Inquiry %s does not exist; skipping", inquiry_id)
+        return
+
+    data = {"inquiry_id": str(inquiry.id), "status": inquiry.status}
+    notify_user(
+        user=inquiry.tutor.user,
+        type=NotificationType.INQUIRY_REQUEST,
+        title=_("Inquiry received"),
+        body=_("An administrator created an inquiry for you."),
+        data=data,
+    )
+    notify_user(
+        user=inquiry.family,
+        type=NotificationType.INQUIRY_CREATED,
+        title=_("Inquiry created"),
+        body=_("An administrator created an inquiry with your tutor."),
+        data=data,
+    )
+
+
+@shared_task(bind=True, base=BaseTaskWithRetry)
 def notify_inquiry_result(self, inquiryId: str) -> None:
     """
     Notify Provider with iquiry and family user with inquiry results.
