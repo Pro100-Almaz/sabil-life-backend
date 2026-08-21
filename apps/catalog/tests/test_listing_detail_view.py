@@ -11,7 +11,13 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from apps.catalog.models import Listing, ListingCategory, ListingStatus
+from apps.catalog.models import (
+    Listing,
+    ListingCategory,
+    ListingContact,
+    ListingContactType,
+    ListingStatus,
+)
 
 User = get_user_model()
 
@@ -67,10 +73,44 @@ class ListingDetailViewTests(APITestCase):
             "is_featured",
             "distance_km",
         ]
-        detail_extra_fields = ["description", "highlights", "owner_id", "reviews"]
+        detail_extra_fields = [
+            "description",
+            "highlights",
+            "owner_id",
+            "reviews",
+            "contacts",
+        ]
 
         for field in card_fields + detail_extra_fields:
             self.assertIn(field, data, f"Field '{field}' missing from detail response")
+
+    def test_non_masterclass_detail_omits_masterclass_only_fields(self):
+        listing = make_listing(category=ListingCategory.SCHOOLS)
+
+        response = self.client.get(self._url(listing.id))
+
+        for field in (
+            "is_online",
+            "meeting_url",
+            "registration_url",
+            "event_type",
+            "starts_at",
+        ):
+            self.assertNotIn(field, response.data)
+
+    def test_masterclass_detail_contains_masterclass_fields(self):
+        listing = make_listing(category=ListingCategory.MASTERCLASSES)
+
+        response = self.client.get(self._url(listing.id))
+
+        for field in (
+            "is_online",
+            "meeting_url",
+            "registration_url",
+            "event_type",
+            "starts_at",
+        ):
+            self.assertIn(field, response.data)
 
     def test_detail_reviews_is_empty_list(self):
         """Phase 2: reviews is always [] until Phase 7."""
@@ -168,3 +208,27 @@ class ListingDetailViewTests(APITestCase):
         listing = make_listing()
         response = self.client.get(self._url(listing.id))
         self.assertNotIn("materials_required", response.data)
+
+    def test_detail_includes_contacts(self):
+        """Contacts are included in the public listing detail response."""
+        listing = make_listing()
+
+        ListingContact.objects.create(
+            listing=listing,
+            contact_type=ListingContactType.EMAIL,
+            value="contact@example.com",
+        )
+
+        response = self.client.get(self._url(listing.id))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("contacts", response.data)
+        self.assertEqual(len(response.data["contacts"]), 1)
+        self.assertEqual(
+            response.data["contacts"][0]["contact_type"],
+            ListingContactType.EMAIL,
+        )
+        self.assertEqual(
+            response.data["contacts"][0]["value"],
+            "contact@example.com",
+        )

@@ -81,12 +81,15 @@ class ListingViewSet(viewsets.ReadOnlyModelViewSet):
         qs = (
             Listing.objects.filter(status=ListingStatus.ACTIVE)
             .exclude(
-                Q(event_type=MasterclassEventType.ONE_TIME)
+                Q(category=ListingCategory.MASTERCLASSES)
+                & Q(event_type=MasterclassEventType.ONE_TIME)
                 & Q(starts_at__lte=timezone.now() - timedelta(hours=1))
             )
             .prefetch_related("images")
             .prefetch_related("tags")
         )
+        if self.action == "retrieve":
+            qs = qs.prefetch_related("contacts")
         if self.request.user.is_authenticated:
             qs = qs.exclude(owner=self.request.user)
 

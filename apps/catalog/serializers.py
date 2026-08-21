@@ -1,11 +1,19 @@
+import re
+from urllib.parse import urlsplit
+
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.files.storage import default_storage
+from django.core.validators import EmailValidator, URLValidator
 from rest_framework import serializers
 
 from apps.catalog.models import (
     Listing,
+    ListingCategory,
     ListingClient,
     ListingClientStatus,
+    ListingContact,
+    ListingContactType,
     ListingImage,
     ListingTag,
     ListingTagGroup,
@@ -22,6 +30,76 @@ class ListingImageSerializer(serializers.ModelSerializer):
 
     def get_url(self, obj):
         return default_storage.url(obj.key)
+
+
+class ListingContactSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ListingContact
+        fields = ["id", "contact_type", "value", "label", "position"]
+        read_only_fields = ["id"]
+
+    def validate(self, attrs):
+        contact_type = attrs.get("contact_type")
+        value = attrs.get("value", "").strip()
+
+        if not value:
+            raise serializers.ValidationError({"value": "This field may not be blank."})
+
+        if contact_type == ListingContactType.EMAIL:
+            try:
+                EmailValidator()(value)
+            except DjangoValidationError as error:
+                raise serializers.ValidationError(
+                    {"value": "Enter a valid email address."}
+                ) from error
+
+        elif contact_type == ListingContactType.PHONE:
+            if not re.fullmatch(r"[+\d\s().-]+", value):
+                raise serializers.ValidationError(
+                    {"value": "Enter a valid phone number."}
+                )
+
+            digit_count = sum(character.isdigit() for character in value)
+            if not 7 <= digit_count <= 15:
+                raise serializers.ValidationError(
+                    {"value": "Phone number must contain between 7 and 15 digits."}
+                )
+
+        else:
+            try:
+                URLValidator(schemes=["http", "https"])(value)
+            except DjangoValidationError as error:
+                raise serializers.ValidationError(
+                    {"value": "Enter a valid HTTP or HTTPS URL."}
+                ) from error
+
+            hostname = (urlsplit(value).hostname or "").lower()
+
+            allowed_domains = {
+                ListingContactType.INSTAGRAM: {"instagram.com"},
+                ListingContactType.WHATSAPP: {
+                    "wa.me",
+                    "whatsapp.com",
+                    "api.whatsapp.com",
+                },
+                ListingContactType.TELEGRAM: {
+                    "t.me",
+                    "telegram.me",
+                    "telegram.org",
+                },
+            }
+
+            domains = allowed_domains.get(contact_type)
+            if domains and not any(
+                hostname == domain or hostname.endswith(f".{domain}")
+                for domain in domains
+            ):
+                name = ListingContactType(contact_type).label
+                raise serializers.ValidationError({"value": f"Enter a valid {name} URL."})
+
+        attrs["value"] = value
+        attrs["label"] = attrs.get("label", "").strip()
+        return attrs
 
 
 class ListingCardSerializer(serializers.ModelSerializer):
@@ -63,8 +141,6 @@ class ListingCardSerializer(serializers.ModelSerializer):
             "age_groups",
             "is_featured",
             "distance_km",
-            "event_type",
-            "starts_at",
         ]
 
     def get_distance_km(self, obj: Listing) -> float | None:
@@ -93,6 +169,7 @@ class ListingDetailSerializer(ListingCardSerializer):
     owner_id = serializers.SerializerMethodField()
     reviews = serializers.SerializerMethodField()
     images = ListingImageSerializer(many=True, read_only=True)
+    contacts = ListingContactSerializer(many=True, read_only=True)
 
     class Meta(ListingCardSerializer.Meta):
         fields = ListingCardSerializer.Meta.fields + [
@@ -101,10 +178,26 @@ class ListingDetailSerializer(ListingCardSerializer):
             "owner_id",
             "reviews",
             "images",
+            "contacts",
             "is_online",
             "meeting_url",
             "registration_url",
+            "event_type",
+            "starts_at",
         ]
+
+    def to_representation(self, instance: Listing) -> dict:
+        representation = super().to_representation(instance)
+        if instance.category != ListingCategory.MASTERCLASSES:
+            for field in (
+                "is_online",
+                "meeting_url",
+                "registration_url",
+                "event_type",
+                "starts_at",
+            ):
+                representation.pop(field, None)
+        return representation
 
     def get_owner_id(self, obj: Listing) -> str | None:
         pk = obj.owner_id

@@ -322,6 +322,7 @@ class ProviderListingViewSet(
             Listing.objects.filter(owner=self.request.user)
             .prefetch_related("images")
             .prefetch_related("tags")
+            .prefetch_related("contacts")
         )
 
     def perform_destroy(self, instance):
