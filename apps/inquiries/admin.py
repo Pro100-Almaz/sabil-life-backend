@@ -3,10 +3,12 @@ Inquiry admin.
 """
 
 from django.contrib import admin
+from django.db import transaction
 from django.utils.translation import gettext_lazy as _
 from unfold.admin import ModelAdmin
 
 from apps.inquiries.models import Inquiry
+from apps.notifications.tasks import notify_admin_created_inquiry
 
 
 @admin.register(Inquiry)
@@ -38,6 +40,14 @@ class InquiryAdmin(ModelAdmin):
             {"fields": ("created_at", "updated_at")},
         ),
     )
+
+    def save_model(self, request, obj, form, change):
+        """Notify both parties only for inquiries created in Django Admin."""
+        super().save_model(request, obj, form, change)
+        if not change:
+            transaction.on_commit(
+                lambda inquiry_id=obj.id: notify_admin_created_inquiry.delay(inquiry_id)
+            )
 
     @admin.display(description=_("Family email"))
     def family_email(self, obj: Inquiry) -> str:
