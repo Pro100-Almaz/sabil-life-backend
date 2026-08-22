@@ -1,15 +1,17 @@
 from urllib.parse import urlsplit
 
 from django.core.files.storage import default_storage
+from django.db import transaction
 from django.utils import timezone
 from rest_framework import serializers
 
 from apps.catalog.models import (
     Listing,
     ListingCategory,
+    ListingContact,
     MasterclassEventType,
 )
-from apps.catalog.serializers import ListingImageSerializer
+from apps.catalog.serializers import ListingContactSerializer, ListingImageSerializer
 from apps.providers.models import (
     AvatarImage,
     ProviderChoices,
@@ -179,6 +181,7 @@ class ProviderListingSerializer(serializers.ModelSerializer):
 
     owner_id = serializers.SerializerMethodField(read_only=True)
     images = ListingImageSerializer(many=True, read_only=True)
+    contacts = ListingContactSerializer(many=True, required=False)
     image_urls = serializers.SerializerMethodField()
 
     class Meta:
@@ -195,6 +198,7 @@ class ProviderListingSerializer(serializers.ModelSerializer):
             "age_groups",
             "image_urls",
             "images",
+            "contacts",
             "description",
             "highlights",
             "is_featured",
@@ -253,6 +257,19 @@ class ProviderListingSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         attrs = super().validate(attrs)
+        category = attrs.get(
+            "category",
+            getattr(self.instance, "category", None),
+        )
+
+        if category != ListingCategory.MASTERCLASSES:
+            attrs["is_online"] = False
+            attrs["meeting_url"] = ""
+            attrs["registration_url"] = ""
+            attrs["event_type"] = MasterclassEventType.ONGOING
+            attrs["starts_at"] = None
+            return attrs
+
         is_online = attrs.get("is_online", getattr(self.instance, "is_online", False))
         meeting_url = attrs.get("meeting_url", getattr(self.instance, "meeting_url", ""))
         neighborhood = attrs.get(
@@ -275,10 +292,6 @@ class ProviderListingSerializer(serializers.ModelSerializer):
                 {"neighborhood": "Required for offline listings"}
             )
 
-        category = attrs.get(
-            "category",
-            getattr(self.instance, "category", None),
-        )
         event_fields_submitted = (
             "category" in attrs or "event_type" in attrs or "starts_at" in attrs
         )
@@ -313,6 +326,51 @@ class ProviderListingSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError({"event_type": "Invalid event type."})
 
         return attrs
+
+    def validate_contacts(self, contacts):
+        if len(contacts) > 20:
+            raise serializers.ValidationError(
+                "A listing cannot have more than 20 contacts."
+            )
+
+        seen = set()
+        for contact in contacts:
+            identity = (contact["contact_type"], contact["value"].casefold())
+            if identity in seen:
+                raise serializers.ValidationError(
+                    "The same contact cannot be added more than once."
+                )
+            seen.add(identity)
+
+        return contacts
+
+    @transaction.atomic
+    def create(self, validated_data):
+        contacts_data = validated_data.pop("contacts", [])
+        listing = super().create(validated_data)
+        ListingContact.objects.bulk_create(
+            [
+                ListingContact(listing=listing, **contact_data)
+                for contact_data in contacts_data
+            ]
+        )
+        return listing
+
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        contacts_data = validated_data.pop("contacts", serializers.empty)
+        listing = super().update(instance, validated_data)
+
+        if contacts_data is not serializers.empty:
+            listing.contacts.all().delete()
+            ListingContact.objects.bulk_create(
+                [
+                    ListingContact(listing=listing, **contact_data)
+                    for contact_data in contacts_data
+                ]
+            )
+
+        return listing
 
     def get_image_urls(self, obj):
         return [default_storage.url(img.key) for img in obj.images.all()]

@@ -15,6 +15,8 @@ from rest_framework.test import APITestCase
 from apps.catalog.models import (
     Listing,
     ListingCategory,
+    ListingContact,
+    ListingContactType,
     ListingStatus,
     MasterclassEventType,
 )
@@ -241,6 +243,15 @@ class ListingListViewTests(APITestCase):
             ):
                 self.assertIn(field, result)
 
+    def test_list_cards_do_not_include_masterclass_schedule_fields(self):
+        make_listing(title="Card shape")
+
+        response = self.client.get(self.url)
+
+        result = response.data["results"][0]
+        self.assertNotIn("event_type", result)
+        self.assertNotIn("starts_at", result)
+
     def test_distance_km_is_none_when_no_lat_lng(self):
         make_listing(title="No coords", lat=None, lng=None)
         response = self.client.get(self.url)
@@ -269,3 +280,19 @@ class ListingListViewTests(APITestCase):
         response = self.client.get(self.url)
         for result in response.data["results"]:
             self.assertNotIn("materials_required", result)
+
+    def test_list_response_does_not_include_contacts(self):
+        """Contacts belong to detail responses, not listing cards."""
+        listing = make_listing(title="Contact Test")
+        ListingContact.objects.create(
+            listing=listing,
+            contact_type=ListingContactType.PHONE,
+            value="+7 700 123 45 67",
+        )
+
+        response = self.client.get(self.url)
+
+        result = next(
+            item for item in response.data["results"] if item["id"] == str(listing.id)
+        )
+        self.assertNotIn("contacts", result)

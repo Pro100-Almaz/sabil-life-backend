@@ -19,11 +19,15 @@ from unfold.widgets import UnfoldAdminTextareaWidget
 
 from apps.catalog.models import (
     Listing,
+    ListingCategory,
+    ListingContact,
     ListingImage,
     ListingStatus,
     ListingTag,
     ListingTagGroup,
+    MasterclassEventType,
 )
+from apps.catalog.serializers import ListingContactSerializer
 from apps.catalog.services import delete_listing, delete_listing_image
 from apps.notifications.tasks import notify_review_result
 
@@ -83,6 +87,16 @@ class ListingAdminForm(forms.ModelForm):
         self.fields["uploaded_images"].widget.attrs.update(
             {"multiple": True, "accept": "image/*"}
         )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if cleaned_data.get("category") != ListingCategory.MASTERCLASSES:
+            cleaned_data["is_online"] = False
+            cleaned_data["meeting_url"] = ""
+            cleaned_data["registration_url"] = ""
+            cleaned_data["event_type"] = MasterclassEventType.ONGOING
+            cleaned_data["starts_at"] = None
+        return cleaned_data
 
 
 @action(
@@ -212,10 +226,37 @@ class ListingImageInline(TabularInline):
         )
 
 
+class ListingContactAdminForm(forms.ModelForm):
+    class Meta:
+        model = ListingContact
+        fields = ("contact_type", "value", "label", "position")
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if self.errors:
+            return cleaned_data
+
+        serializer = ListingContactSerializer(data=cleaned_data)
+        if not serializer.is_valid():
+            for field, errors in serializer.errors.items():
+                target = field if field in self.fields else None
+                for error in errors:
+                    self.add_error(target, str(error))
+        return cleaned_data
+
+
+class ListingContactInline(TabularInline):
+    model = ListingContact
+    form = ListingContactAdminForm
+    extra = 0
+    fields = ("contact_type", "value", "label", "position")
+    ordering = ("position", "created_at")
+
+
 @admin.register(Listing)
 class ListingAdmin(ModelAdmin):
     form = ListingAdminForm
-    inlines = [ListingImageInline]
+    inlines = [ListingImageInline, ListingContactInline]
     actions = [approve_listings, reject_listings, mark_featured, unmark_featured]
 
     # List view -----------------------------------------------------------

@@ -34,6 +34,15 @@ class ListingClientStatus(models.TextChoices):
     REJECTED = "REJECTED", _("Rejected")
 
 
+class ListingContactType(models.TextChoices):
+    PHONE = "PHONE", _("Phone")
+    EMAIL = "EMAIL", _("Email")
+    WEBSITE = "WEBSITE", _("Website")
+    WHATSAPP = "WHATSAPP", _("WhatsApp")
+    INSTAGRAM = "INSTAGRAM", _("Instagram")
+    TELEGRAM = "TELEGRAM", _("Telegram")
+
+
 class ListingTagGroup(models.Model):
     name = models.CharField(_("name"), max_length=200)
     category = models.CharField(
@@ -127,7 +136,7 @@ class Listing(models.Model):
         related_name="listings",
     )
     comment = models.TextField(blank=True)
-    is_online = models.BooleanField(default=True)
+    is_online = models.BooleanField(default=False)
     meeting_url = models.URLField(blank=True, default="")
     registration_url = models.URLField(blank=True, default="")
     event_type = models.CharField(
@@ -155,6 +164,40 @@ class Listing(models.Model):
 
     def __str__(self) -> str:
         return f"{self.title} ({self.category})"
+
+
+class ListingContact(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    listing = models.ForeignKey(
+        Listing,
+        on_delete=models.CASCADE,
+        related_name="contacts",
+    )
+    contact_type = models.CharField(
+        max_length=16,
+        choices=ListingContactType.choices,
+    )
+    value = models.CharField(max_length=500)
+    label = models.CharField(
+        max_length=100,
+        blank=True,
+        default="",
+    )
+    position = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["position", "created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["listing", "contact_type", "value"],
+                name="unique_contact_per_listing",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.get_contact_type_display()}: {self.value}"
 
 
 class ListingClient(models.Model):

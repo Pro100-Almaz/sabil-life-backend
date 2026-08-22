@@ -9,6 +9,8 @@ from rest_framework.test import APIClient, APITestCase
 from apps.catalog.models import (
     Listing,
     ListingCategory,
+    ListingContact,
+    ListingContactType,
     ListingStatus,
     MasterclassEventType,
 )
@@ -75,6 +77,96 @@ def _test_image(name: str = "test.png") -> SimpleUploadedFile:
 
 
 class ProviderListingCreateTests(APITestCase):
+    def test_create_listing_with_contacts(self):
+        user = make_user(roles=[UserRole.MASTERCLASS], verified=True)
+        client = auth_client(user)
+        payload = _listing_payload(
+            contacts=[
+                {
+                    "contact_type": ListingContactType.PHONE,
+                    "value": "+974 5555 1234",
+                    "label": "Reception",
+                    "position": 0,
+                },
+                {
+                    "contact_type": ListingContactType.WEBSITE,
+                    "value": "https://example.com",
+                    "label": "Website",
+                    "position": 1,
+                },
+            ]
+        )
+
+        response = client.post(LISTINGS_URL, payload, format="json")
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(len(response.data["contacts"]), 2)
+        self.assertEqual(
+            ListingContact.objects.filter(listing_id=response.data["id"]).count(),
+            2,
+        )
+
+    def test_create_rejects_invalid_email(self):
+        user = make_user(roles=[UserRole.MASTERCLASS], verified=True)
+        client = auth_client(user)
+        payload = _listing_payload(
+            contacts=[
+                {
+                    "contact_type": ListingContactType.EMAIL,
+                    "value": "not-an-email",
+                    "position": 0,
+                }
+            ]
+        )
+
+        response = client.post(LISTINGS_URL, payload, format="json")
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("contacts", response.data)
+        self.assertEqual(Listing.objects.filter(owner=user).count(), 0)
+
+    def test_create_rejects_wrong_social_domain(self):
+        user = make_user(roles=[UserRole.MASTERCLASS], verified=True)
+        client = auth_client(user)
+        payload = _listing_payload(
+            contacts=[
+                {
+                    "contact_type": ListingContactType.INSTAGRAM,
+                    "value": "https://youtube.com/example",
+                    "position": 0,
+                }
+            ]
+        )
+
+        response = client.post(LISTINGS_URL, payload, format="json")
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("contacts", response.data)
+
+    def test_create_rejects_duplicate_contacts(self):
+        user = make_user(roles=[UserRole.MASTERCLASS], verified=True)
+        client = auth_client(user)
+        payload = _listing_payload(
+            contacts=[
+                {
+                    "contact_type": ListingContactType.EMAIL,
+                    "value": "hello@example.com",
+                    "position": 0,
+                },
+                {
+                    "contact_type": ListingContactType.EMAIL,
+                    "value": "hello@example.com",
+                    "position": 1,
+                },
+            ]
+        )
+
+        response = client.post(LISTINGS_URL, payload, format="json")
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("contacts", response.data)
+        self.assertEqual(Listing.objects.filter(owner=user).count(), 0)
+
     def test_verified_masterclass_creates_masterclasses_listing(self):
         user = make_user(roles=[UserRole.MASTERCLASS], verified=True)
         client = auth_client(user)
@@ -155,6 +247,11 @@ class ProviderListingCreateTests(APITestCase):
         self.assertEqual(resp.status_code, 201)
         self.assertEqual(resp.data["category"], ListingCategory.TUTORING)
         self.assertEqual(resp.data["owner_id"], str(user.id))
+        self.assertFalse(resp.data["is_online"])
+        self.assertEqual(resp.data["meeting_url"], "")
+        self.assertEqual(resp.data["registration_url"], "")
+        self.assertEqual(resp.data["event_type"], MasterclassEventType.ONGOING)
+        self.assertIsNone(resp.data["starts_at"])
 
     def test_manager_creates_listing(self):
         user = make_user(roles=[UserRole.MANAGER], verified=True)
@@ -256,6 +353,95 @@ class ProviderListingRetrieveTests(APITestCase):
 
 
 class ProviderListingUpdateTests(APITestCase):
+    def test_patch_replaces_contacts_when_provided(self):
+        user = make_user(roles=[UserRole.MASTERCLASS], verified=True)
+        listing = Listing.objects.create(
+            title="Contact Listing",
+            category=ListingCategory.MASTERCLASSES,
+            owner=user,
+            status=ListingStatus.DRAFT,
+            starts_at=timezone.now() + timedelta(days=7),
+        )
+        ListingContact.objects.create(
+            listing=listing,
+            contact_type=ListingContactType.EMAIL,
+            value="old@example.com",
+        )
+        client = auth_client(user)
+
+        response = client.patch(
+            f"{LISTINGS_URL}{listing.id}/",
+            {
+                "contacts": [
+                    {
+                        "contact_type": ListingContactType.PHONE,
+                        "value": "+974 5555 1234",
+                        "position": 0,
+                    }
+                ]
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data["contacts"]), 1)
+        self.assertEqual(
+            response.data["contacts"][0]["contact_type"],
+            ListingContactType.PHONE,
+        )
+        self.assertFalse(listing.contacts.filter(value="old@example.com").exists())
+
+    def test_patch_without_contacts_preserves_existing_contacts(self):
+        user = make_user(roles=[UserRole.MASTERCLASS], verified=True)
+        listing = Listing.objects.create(
+            title="Contact Listing",
+            category=ListingCategory.MASTERCLASSES,
+            owner=user,
+            status=ListingStatus.DRAFT,
+            starts_at=timezone.now() + timedelta(days=7),
+        )
+        contact = ListingContact.objects.create(
+            listing=listing,
+            contact_type=ListingContactType.EMAIL,
+            value="keep@example.com",
+        )
+        client = auth_client(user)
+
+        response = client.patch(
+            f"{LISTINGS_URL}{listing.id}/",
+            {"title": "Updated title"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(ListingContact.objects.filter(id=contact.id).exists())
+
+    def test_patch_empty_contacts_removes_all_contacts(self):
+        user = make_user(roles=[UserRole.MASTERCLASS], verified=True)
+        listing = Listing.objects.create(
+            title="Contact Listing",
+            category=ListingCategory.MASTERCLASSES,
+            owner=user,
+            status=ListingStatus.DRAFT,
+            starts_at=timezone.now() + timedelta(days=7),
+        )
+        ListingContact.objects.create(
+            listing=listing,
+            contact_type=ListingContactType.EMAIL,
+            value="remove@example.com",
+        )
+        client = auth_client(user)
+
+        response = client.patch(
+            f"{LISTINGS_URL}{listing.id}/",
+            {"contacts": []},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["contacts"], [])
+        self.assertFalse(listing.contacts.exists())
+
     def test_masterclass_patch_own_listing(self):
         user = make_user(roles=[UserRole.MASTERCLASS], verified=True)
         listing = Listing.objects.create(
