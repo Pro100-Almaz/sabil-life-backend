@@ -441,13 +441,6 @@ CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = "UTC"
 CELERY_RESULT_EXTENDED = True
-CELERY_BEAT_SCHEDULE = {
-    "archive-expired-one-time-masterclasses": {
-        "task": "apps.catalog.tasks.archive_expired_one_time_masterclasses",
-        "schedule": 15 * 60,
-    },
-}
-
 # Advisory CV screening. The AI result never grants a provider role.
 AI_CV_SCREENING_ENABLED = env.bool("AI_CV_SCREENING_ENABLED", default=False)
 OPENAI_API_KEY = env("OPENAI_API_KEY", default="")
