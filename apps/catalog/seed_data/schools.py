@@ -1,29 +1,9 @@
-"""The 84 Qatar schools from ``SabilLife_Schools.md``, normalised for seeding.
+"""Canonical seed records for Qatar schools.
 
-Derived once from the markdown source and committed as data — the markdown
-lives outside this repo, so parsing it at runtime would make the importer
-depend on a file that is absent in CI and production.
-
-``lat`` / ``lng`` are DISTRICT CENTROIDS, not geocoded school addresses.
-The source has no coordinates, so each school inherits the centre point of
-its district, accurate to roughly 1-2 km. That is enough for "which schools
-are in my part of town" (``?sort=distance``, ``max_distance_km``) and wrong
-for anything finer: all five Al Waab schools share one point, so their order
-within the district is arbitrary. Replace with a real geocoding pass before
-the app promises precise distances.
-
-29 schools have ``lat``/``lng`` of None. 28 of them list only "Doha" as their
-location and the metro is ~25 km across, so a single city point would report
-a school 15 km away as 2 km away; the 29th lists "Doha / Lusail" and picking
-one would be a guess. NULL coordinates drop a listing out of distance-sorted
-results rather than misplacing it. Narrowing those locations in the source
-markdown is what fixes them.
-
-Also absent from the source and NOT invented here:
-  * ``rating`` / ``review_count`` — left at model defaults (0.0 / 0).
-
-``price_from_qar`` is the annual fee floor: the source gives open-ended
-bands ("18,000+"), so the number is a lower bound, not an exact fee.
+Every school is stored as one self-contained dictionary. Coordinates are the
+best currently available school, address, road, or district coordinates;
+``exact_address`` preserves the supplied postal address or Plus Code for later
+verification. ``price_from_qar`` is an approximate annual fee floor.
 """
 
 from apps.catalog.models import ListingCategory
@@ -36,13 +16,13 @@ SCHOOLS: tuple[dict, ...] = (
         "title": "ACS International School Doha",
         "subtitle": "IB / American pathways, Doha",
         "neighborhood": "Doha",
-        "lat": None,
-        "lng": None,
+        "lat": 25.4223658,
+        "lng": 51.4349144,
         "price_from_qar": 50000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Premium international school with strong university preparation. Offers IB / American pathways from Pre-K–Grade 12, for ages 3–18. Recognition: International school network."
-        ),
+        "description": "Premium international school with strong university preparation. "
+        "Offers IB / American pathways from Pre-K–Grade 12, for ages 3–18. "
+        "Recognition: International school network.",
         "highlights": ["STEM labs", "Sports", "Arts", "Library"],
         "tags": [
             "American Curriculum",
@@ -59,6 +39,8 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "Building No. 10, Street No. 161, Area/Zone 70, Al Kheesa, Qatar",
+        "phones": ("+974 3026 6800", "+974 4474 9000"),
     },
     {
         "slug": "schools-al-arqam-academy",
@@ -69,9 +51,9 @@ SCHOOLS: tuple[dict, ...] = (
         "lng": 51.4869,
         "price_from_qar": 15000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Combines English education with Islamic values. Offers British-based with Islamic studies from KG–Grade 12, for ages 3–18. Recognition: Qatar private school system."
-        ),
+        "description": "Combines English education with Islamic values. Offers British-based "
+        "with Islamic studies from KG–Grade 12, for ages 3–18. Recognition: "
+        "Qatar private school system.",
         "highlights": ["Classrooms", "Sports facilities", "Islamic learning areas"],
         "tags": [
             "A Levels",
@@ -85,6 +67,8 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "413 Bu Hamour, District 94, Zone 56 Street, Doha, Qatar",
+        "phones": ("+974 44234234",),
     },
     {
         "slug": "schools-al-hekma-international-school",
@@ -95,9 +79,9 @@ SCHOOLS: tuple[dict, ...] = (
         "lng": 51.5008,
         "price_from_qar": 20000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "American-style education with Arabic and Islamic studies. Offers American Curriculum from Pre-K–Grade 12, for ages 3–18. Recognition: American curriculum school."
-        ),
+        "description": "American-style education with Arabic and Islamic studies. Offers "
+        "American Curriculum from Pre-K–Grade 12, for ages 3–18. Recognition: "
+        "American curriculum school.",
         "highlights": ["Science labs", "ICT", "Activities"],
         "tags": [
             "American Curriculum",
@@ -111,6 +95,8 @@ SCHOOLS: tuple[dict, ...] = (
             "Science Labs",
             "Secondary",
         ],
+        "exact_address": "18 Haloul, Doha, Qatar",
+        "phones": ("+974 44171303",),
     },
     {
         "slug": "schools-al-khor-international-school",
@@ -121,9 +107,9 @@ SCHOOLS: tuple[dict, ...] = (
         "lng": 51.497,
         "price_from_qar": 25000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "One of Qatar’s largest international schools. Offers British / IB pathways from Foundation–Year 13, for ages 3–18. Recognition: International school."
-        ),
+        "description": "One of Qatar’s largest international schools. Offers British / IB "
+        "pathways from Foundation–Year 13, for ages 3–18. Recognition: "
+        "International school.",
         "highlights": ["Large campus", "Sports facilities", "Performing arts"],
         "tags": [
             "A Levels",
@@ -140,6 +126,8 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "PG7H+7V6, Al Khor Community, Al Khor, Qatar",
+        "phones": ("+974 44733688",),
     },
     {
         "slug": "schools-al-maha-academy-for-boys",
@@ -150,9 +138,8 @@ SCHOOLS: tuple[dict, ...] = (
         "lng": 51.4494,
         "price_from_qar": 22000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Boys’ British school. Offers British Curriculum from Foundation–Year 13, for ages 3–18. Recognition: British curriculum."
-        ),
+        "description": "Boys’ British school. Offers British Curriculum from Foundation–Year "
+        "13, for ages 3–18. Recognition: British curriculum.",
         "highlights": ["Sports", "Science labs", "ICT"],
         "tags": [
             "A Levels",
@@ -167,6 +154,8 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "6C9V+64G, Doha, Qatar",
+        "phones": ("+974 44280777",),
     },
     {
         "slug": "schools-al-maha-academy-for-girls",
@@ -177,9 +166,8 @@ SCHOOLS: tuple[dict, ...] = (
         "lng": 51.4494,
         "price_from_qar": 22000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Girls’ British school. Offers British Curriculum from Foundation–Year 13, for ages 3–18. Recognition: British curriculum."
-        ),
+        "description": "Girls’ British school. Offers British Curriculum from Foundation–Year "
+        "13, for ages 3–18. Recognition: British curriculum.",
         "highlights": ["Arts", "Sports", "STEM facilities"],
         "tags": [
             "A Levels",
@@ -194,19 +182,21 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "6C9V+RGC, Doha, Qatar",
+        "phones": ("+974 44280777",),
     },
     {
         "slug": "schools-al-nebras-international-school",
         "title": "Al Nebras International School",
         "subtitle": "Montessori / International, Doha / Lusail",
         "neighborhood": "Doha / Lusail",
-        "lat": None,
-        "lng": None,
+        "lat": 25.4076875,
+        "lng": 51.5073125,
         "price_from_qar": 30000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Child-centred learning approach. Offers Montessori / International from Early Years–Secondary, for ages 3–18. Recognition: Montessori-based education."
-        ),
+        "description": "Child-centred learning approach. Offers Montessori / International "
+        "from Early Years–Secondary, for ages 3–18. Recognition: "
+        "Montessori-based education.",
         "highlights": ["Montessori classrooms", "Activity spaces"],
         "tags": [
             "Co-ed",
@@ -216,6 +206,8 @@ SCHOOLS: tuple[dict, ...] = (
             "Premium (30-45k)",
             "Secondary",
         ],
+        "exact_address": "CG54+3W, Lusail, Qatar",
+        "phones": ("+974 44358251",),
     },
     {
         "slug": "schools-al-rowad-international-school",
@@ -226,9 +218,8 @@ SCHOOLS: tuple[dict, ...] = (
         "lng": 51.4869,
         "price_from_qar": 18000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "American-style education. Offers American Curriculum from KG–Grade 12, for ages 3–18. Recognition: American curriculum."
-        ),
+        "description": "American-style education. Offers American Curriculum from KG–Grade "
+        "12, for ages 3–18. Recognition: American curriculum.",
         "highlights": ["ICT", "Sports", "Clubs"],
         "tags": [
             "American Curriculum",
@@ -240,19 +231,20 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "7F25+V3F, Doha, Qatar",
+        "phones": ("+974 44505795",),
     },
     {
         "slug": "schools-al-wataniya-international-school",
         "title": "Al Wataniya International School",
         "subtitle": "British Primary Curriculum, Doha",
         "neighborhood": "Doha",
-        "lat": None,
-        "lng": None,
+        "lat": 25.3712015,
+        "lng": 51.4991324,
         "price_from_qar": 27000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Specialist British primary school. Offers British Primary Curriculum from FS1–Year 6, for ages 3–11. Recognition: British curriculum."
-        ),
+        "description": "Specialist British primary school. Offers British Primary Curriculum "
+        "from FS1–Year 6, for ages 3–11. Recognition: British curriculum.",
         "highlights": ["Primary learning spaces", "Library", "Sports"],
         "tags": [
             "British Curriculum",
@@ -263,19 +255,20 @@ SCHOOLS: tuple[dict, ...] = (
             "Primary Only",
             "Sports Facilities",
         ],
+        "exact_address": "Doha Expressway / طريق الدوحة السريع, Doha, Qatar",
+        "phones": ("+974 40174930",),
     },
     {
         "slug": "schools-american-academy-school-qatar",
         "title": "American Academy School Qatar",
         "subtitle": "American Curriculum, Doha",
         "neighborhood": "Doha",
-        "lat": None,
-        "lng": None,
+        "lat": 25.220784,
+        "lng": 51.554658,
         "price_from_qar": 18000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "American pathway school. Offers American Curriculum from KG–Grade 12, for ages 3–18. Recognition: American curriculum."
-        ),
+        "description": "American pathway school. Offers American Curriculum from KG–Grade 12, "
+        "for ages 3–18. Recognition: American curriculum.",
         "highlights": ["Technology", "Sports", "Activities"],
         "tags": [
             "American Curriculum",
@@ -287,6 +280,8 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "E Ring Road, Doha, Qatar",
+        "phones": ("+974 40206900",),
     },
     {
         "slug": "schools-american-school-of-doha",
@@ -297,9 +292,9 @@ SCHOOLS: tuple[dict, ...] = (
         "lng": 51.4494,
         "price_from_qar": 45000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "One of Qatar’s leading American schools. Offers American Curriculum (AP) from Pre-K–Grade 12, for ages 3–18. Recognition: Internationally recognised American school."
-        ),
+        "description": "One of Qatar’s leading American schools. Offers American Curriculum "
+        "(AP) from Pre-K–Grade 12, for ages 3–18. Recognition: Internationally "
+        "recognised American school.",
         "highlights": ["Innovation labs", "Athletics", "Arts"],
         "tags": [
             "AP",
@@ -314,6 +309,8 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "Al Waab / Al Luqta, Doha, Qatar",
+        "phones": ("+974 44591501",),
     },
     {
         "slug": "schools-arab-international-academy",
@@ -324,9 +321,8 @@ SCHOOLS: tuple[dict, ...] = (
         "lng": 51.4602,
         "price_from_qar": 45000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "IB education with Arabic cultural focus. Offers IB Curriculum from Early Years–Grade 12, for ages 3–18. Recognition: IB World School."
-        ),
+        "description": "IB education with Arabic cultural focus. Offers IB Curriculum from "
+        "Early Years–Grade 12, for ages 3–18. Recognition: IB World School.",
         "highlights": ["Modern campus", "Bilingual facilities"],
         "tags": [
             "Bilingual Arabic-English",
@@ -339,19 +335,21 @@ SCHOOLS: tuple[dict, ...] = (
             "IB World School",
             "Secondary",
         ],
+        "exact_address": "Al Ghadeeriyat St, Doha, Qatar",
+        "phones": ("+974 40414999",),
     },
     {
         "slug": "schools-awfaz-global-school",
         "title": "Awfaz Global School",
         "subtitle": "International Curriculum, Doha",
         "neighborhood": "Doha",
-        "lat": None,
-        "lng": None,
+        "lat": 25.3511886,
+        "lng": 51.496499,
         "price_from_qar": 18000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "International learning environment. Offers International Curriculum from KG–Grade 12, for ages 3–18. Recognition: Qatar private education system."
-        ),
+        "description": "International learning environment. Offers International Curriculum "
+        "from KG–Grade 12, for ages 3–18. Recognition: Qatar private education "
+        "system.",
         "highlights": ["Technology", "Activities"],
         "tags": [
             "Co-ed",
@@ -362,19 +360,20 @@ SCHOOLS: tuple[dict, ...] = (
             "Mid-Range (15-30k)",
             "Secondary",
         ],
+        "exact_address": "Building 154, Zone 68, Street 871, Doha, Qatar",
+        "phones": ("+974 44980124",),
     },
     {
         "slug": "schools-beta-cambridge-school",
         "title": "Beta Cambridge School",
         "subtitle": "Cambridge / British, Doha",
         "neighborhood": "Doha",
-        "lat": None,
-        "lng": None,
+        "lat": 25.175958,
+        "lng": 51.568782,
         "price_from_qar": 18000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Cambridge examination pathway. Offers Cambridge / British from KG–Year 13, for ages 3–18. Recognition: Cambridge pathway."
-        ),
+        "description": "Cambridge examination pathway. Offers Cambridge / British from "
+        "KG–Year 13, for ages 3–18. Recognition: Cambridge pathway.",
         "highlights": ["ICT", "Science facilities"],
         "tags": [
             "A Levels",
@@ -390,19 +389,20 @@ SCHOOLS: tuple[dict, ...] = (
             "Science Labs",
             "Secondary",
         ],
+        "exact_address": "Street 300, Zone 91, Al Mashaf, Al Wukair, Doha, Qatar",
+        "phones": ("+974 50345649",),
     },
     {
         "slug": "schools-belgravia-high-school",
         "title": "Belgravia High School",
         "subtitle": "British Curriculum, Doha",
         "neighborhood": "Doha",
-        "lat": None,
-        "lng": None,
+        "lat": 25.252382,
+        "lng": 51.457317,
         "price_from_qar": 20000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "British-style education. Offers British Curriculum from Primary–Secondary, for ages 5–18. Recognition: British curriculum."
-        ),
+        "description": "British-style education. Offers British Curriculum from "
+        "Primary–Secondary, for ages 5–18. Recognition: British curriculum.",
         "highlights": ["Classrooms", "Activities"],
         "tags": [
             "A Levels",
@@ -412,6 +412,8 @@ SCHOOLS: tuple[dict, ...] = (
             "Mid-Range (15-30k)",
             "Secondary",
         ],
+        "exact_address": "Sports City St, Doha, Qatar",
+        "phones": ("+974 44850409",),
     },
     {
         "slug": "schools-birla-public-school",
@@ -422,9 +424,8 @@ SCHOOLS: tuple[dict, ...] = (
         "lng": 51.4869,
         "price_from_qar": 14000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Established Indian international school. Offers CBSE from KG–Grade 12, for ages 3–18. Recognition: CBSE affiliated."
-        ),
+        "description": "Established Indian international school. Offers CBSE from KG–Grade "
+        "12, for ages 3–18. Recognition: CBSE affiliated.",
         "highlights": ["Laboratories", "Sports", "Auditorium"],
         "tags": [
             "Budget (under 15k)",
@@ -437,19 +438,21 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "Building No. 160, Plot No. 78, Zone No. 56, Street No. 1011, "
+        "Mesaimeer, opposite Religious Complex, Doha, Qatar",
+        "phones": ("+974 44676701",),
     },
     {
         "slug": "schools-brilliant-indian-international-school",
         "title": "Brilliant Indian International School",
         "subtitle": "CBSE, Doha",
         "neighborhood": "Doha",
-        "lat": None,
-        "lng": None,
+        "lat": 25.344134,
+        "lng": 51.4774832,
         "price_from_qar": 12000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Indian curriculum pathway. Offers CBSE from KG–Grade 12, for ages 3–18. Recognition: CBSE affiliated."
-        ),
+        "description": "Indian curriculum pathway. Offers CBSE from KG–Grade 12, for ages "
+        "3–18. Recognition: CBSE affiliated.",
         "highlights": ["Science labs", "Activities"],
         "tags": [
             "Budget (under 15k)",
@@ -461,19 +464,20 @@ SCHOOLS: tuple[dict, ...] = (
             "Science Labs",
             "Secondary",
         ],
+        "exact_address": "Rawdat Umm Lekhba St, Doha, Qatar",
+        "phones": ("+974 44930039",),
     },
     {
         "slug": "schools-cambridge-international-school-doha",
         "title": "Cambridge International School Doha",
         "subtitle": "Cambridge / British, Doha",
         "neighborhood": "Doha",
-        "lat": None,
-        "lng": None,
+        "lat": 25.2441875,
+        "lng": 51.5349375,
         "price_from_qar": 18000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Cambridge qualifications. Offers Cambridge / British from KG–Year 13, for ages 3–18. Recognition: Cambridge International."
-        ),
+        "description": "Cambridge qualifications. Offers Cambridge / British from KG–Year 13, "
+        "for ages 3–18. Recognition: Cambridge International.",
         "highlights": ["ICT", "Labs", "Sports"],
         "tags": [
             "A Levels",
@@ -490,19 +494,20 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "6GVM+MXM, Building No. 143, Zone 44, Street 940, Doha, Qatar",
+        "phones": ("+974 44659106",),
     },
     {
         "slug": "schools-compass-international-school-doha-themaid-campus",
         "title": "Compass International School Doha – Themaid Campus",
         "subtitle": "British / IB pathway, Doha",
         "neighborhood": "Doha",
-        "lat": None,
-        "lng": None,
+        "lat": 25.3528514,
+        "lng": 51.3920384,
         "price_from_qar": 45000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Premium international school. Offers British / IB pathway from Early Years–Year 13, for ages 3–18. Recognition: Nord Anglia Education."
-        ),
+        "description": "Premium international school. Offers British / IB pathway from Early "
+        "Years–Year 13, for ages 3–18. Recognition: Nord Anglia Education.",
         "highlights": ["STEAM", "Sports", "Arts"],
         "tags": [
             "A Levels",
@@ -520,19 +525,20 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "Building 16, Street 1457, Zone 51, Al Themaid, Qatar",
+        "phones": ("+974 4034 6800",),
     },
     {
         "slug": "schools-compass-international-school-doha-madinat-khalifa-campus",
         "title": "Compass International School Doha – Madinat Khalifa Campus",
         "subtitle": "British Curriculum, Doha",
         "neighborhood": "Doha",
-        "lat": None,
-        "lng": None,
+        "lat": 25.3292196,
+        "lng": 51.4781252,
         "price_from_qar": 40000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Primary specialist campus. Offers British Curriculum from Early Years–Year 6, for ages 3–11. Recognition: Nord Anglia Education."
-        ),
+        "description": "Primary specialist campus. Offers British Curriculum from Early "
+        "Years–Year 6, for ages 3–11. Recognition: Nord Anglia Education.",
         "highlights": ["Primary facilities"],
         "tags": [
             "British Curriculum",
@@ -542,6 +548,8 @@ SCHOOLS: tuple[dict, ...] = (
             "Premium (30-45k)",
             "Primary Only",
         ],
+        "exact_address": "Building 34, Street 926, Al Baihaqi Street, Zone 32, Doha, Qatar",
+        "phones": ("+974 4034 9888",),
     },
     {
         "slug": "schools-compass-international-school-doha-gharaffa-campus",
@@ -552,9 +560,8 @@ SCHOOLS: tuple[dict, ...] = (
         "lng": 51.4408,
         "price_from_qar": 40000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Full pathway campus. Offers British Curriculum from Early Years–Year 13, for ages 3–18. Recognition: Nord Anglia Education."
-        ),
+        "description": "Full pathway campus. Offers British Curriculum from Early Years–Year "
+        "13, for ages 3–18. Recognition: Nord Anglia Education.",
         "highlights": ["Sports", "Science", "Arts"],
         "tags": [
             "A Levels",
@@ -570,19 +577,21 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "Building 55, 670 Al Abareeq Street, Gharaffa Zone 51, Doha, Qatar",
+        "phones": ("+974 4034 9666",),
     },
     {
         "slug": "schools-doha-academy",
-        "title": "Doha Academy",
+        "title": "Doha Academy – Al Waab Campus",
         "subtitle": "British Curriculum (Cambridge/Pearson), Al Waab",
         "neighborhood": "Al Waab",
         "lat": 25.2606,
         "lng": 51.4494,
         "price_from_qar": 24000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Established British school offering IGCSE and A Levels. Offers British Curriculum (Cambridge/Pearson) from EYFS–Year 13, for ages 3–18. Recognition: British curriculum school."
-        ),
+        "description": "Established British school offering IGCSE and A Levels. Offers "
+        "British Curriculum (Cambridge/Pearson) from EYFS–Year 13, for ages "
+        "3–18. Recognition: British curriculum school.",
         "highlights": ["Science labs", "Sports", "Arts"],
         "tags": [
             "A Levels",
@@ -598,6 +607,8 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "220 Duhail Street, Doha, Qatar",
+        "phones": ("+974 4020 2700",),
     },
     {
         "slug": "schools-doha-british-school-ain-khaled",
@@ -608,9 +619,9 @@ SCHOOLS: tuple[dict, ...] = (
         "lng": 51.4525,
         "price_from_qar": 33000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "One of Qatar’s leading British schools. Offers British National Curriculum from FS1–Year 13, for ages 3–18. Recognition: British Schools Overseas recognised."
-        ),
+        "description": "One of Qatar’s leading British schools. Offers British National "
+        "Curriculum from FS1–Year 13, for ages 3–18. Recognition: British "
+        "Schools Overseas recognised.",
         "highlights": ["Sports facilities", "Performing arts", "Labs"],
         "tags": [
             "A Levels",
@@ -627,6 +638,8 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "Rawdat Al Sagah Street, Ain Khaled, Doha, Qatar",
+        "phones": ("+974 4019 8000",),
     },
     {
         "slug": "schools-doha-british-school-al-wakra",
@@ -637,9 +650,8 @@ SCHOOLS: tuple[dict, ...] = (
         "lng": 51.5988,
         "price_from_qar": 31000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Serves families in southern Qatar. Offers British National Curriculum from FS1–Year 13, for ages 3–18. Recognition: British curriculum."
-        ),
+        "description": "Serves families in southern Qatar. Offers British National Curriculum "
+        "from FS1–Year 13, for ages 3–18. Recognition: British curriculum.",
         "highlights": ["Sports", "ICT", "Arts"],
         "tags": [
             "A Levels",
@@ -654,6 +666,8 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "Al Jamiyah Street, Al Wakra, Qatar",
+        "phones": ("+974 4019 8080",),
     },
     {
         "slug": "schools-doha-british-school-rawdat-al-hamama",
@@ -664,9 +678,8 @@ SCHOOLS: tuple[dict, ...] = (
         "lng": 51.4694,
         "price_from_qar": 34000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Newer DBS campus. Offers British National Curriculum from FS1–Year 13, for ages 3–18. Recognition: British curriculum."
-        ),
+        "description": "Newer DBS campus. Offers British National Curriculum from FS1–Year "
+        "13, for ages 3–18. Recognition: British curriculum.",
         "highlights": ["Modern campus", "Sports", "Technology"],
         "tags": [
             "A Levels",
@@ -680,6 +693,8 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "Street 1107, Zone 70, Rawdat Al Hamama, Doha, Qatar",
+        "phones": ("+974 4019 8008",),
     },
     {
         "slug": "schools-doha-college",
@@ -690,9 +705,9 @@ SCHOOLS: tuple[dict, ...] = (
         "lng": 51.5133,
         "price_from_qar": 42000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "One of Qatar’s highest-performing British schools. Offers British Curriculum (IGCSE/A Levels) from FS1–Year 13, for ages 3–18. Recognition: British Schools Overseas recognised."
-        ),
+        "description": "One of Qatar’s highest-performing British schools. Offers British "
+        "Curriculum (IGCSE/A Levels) from FS1–Year 13, for ages 3–18. "
+        "Recognition: British Schools Overseas recognised.",
         "highlights": ["Olympic-size pool", "Sports", "Arts", "Innovation spaces"],
         "tags": [
             "A Levels",
@@ -709,6 +724,8 @@ SCHOOLS: tuple[dict, ...] = (
             "Sports Facilities",
             "Swimming Pool",
         ],
+        "exact_address": "7506 Al Niser Street, Doha, Qatar",
+        "phones": ("+974 4407 6777",),
     },
     {
         "slug": "schools-doha-english-speaking-school-dess",
@@ -719,9 +736,9 @@ SCHOOLS: tuple[dict, ...] = (
         "lng": 51.5289,
         "price_from_qar": 35000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Prestigious British preparatory school. Offers British Primary Curriculum from FS1–Year 8, for ages 3–13. Recognition: British Schools Overseas recognised."
-        ),
+        "description": "Prestigious British preparatory school. Offers British Primary "
+        "Curriculum from FS1–Year 8, for ages 3–13. Recognition: British "
+        "Schools Overseas recognised.",
         "highlights": ["Library", "Sports", "Arts"],
         "tags": [
             "Arts",
@@ -734,6 +751,8 @@ SCHOOLS: tuple[dict, ...] = (
             "Primary Only",
             "Sports Facilities",
         ],
+        "exact_address": "Al Fajr Street, Doha, Qatar",
+        "phones": ("+974 4459 2750",),
     },
     {
         "slug": "schools-dukhan-english-school",
@@ -744,9 +763,8 @@ SCHOOLS: tuple[dict, ...] = (
         "lng": 50.785,
         "price_from_qar": 25000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Community school serving western Qatar. Offers British Curriculum from Nursery–Year 13, for ages 3–18. Recognition: British curriculum."
-        ),
+        "description": "Community school serving western Qatar. Offers British Curriculum "
+        "from Nursery–Year 13, for ages 3–18. Recognition: British curriculum.",
         "highlights": ["Sports", "Labs", "Performing arts"],
         "tags": [
             "A Levels",
@@ -763,6 +781,8 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "CQ9Q+4F5, Dukhan, Qatar",
+        "phones": ("+974 4471 6147",),
     },
     {
         "slug": "schools-durham-school-for-girls-doha",
@@ -773,9 +793,8 @@ SCHOOLS: tuple[dict, ...] = (
         "lng": 51.4886,
         "price_from_qar": 27000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Girls-only British school. Offers British Curriculum from FS1–Year 13, for ages 3–18. Recognition: British curriculum."
-        ),
+        "description": "Girls-only British school. Offers British Curriculum from FS1–Year "
+        "13, for ages 3–18. Recognition: British curriculum.",
         "highlights": ["STEM", "Sports", "Arts"],
         "tags": [
             "A Levels",
@@ -790,19 +809,20 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "Building 81, Street 970, Zone 36, Al Messila, Doha, Qatar",
+        "phones": ("+974 4036 2938",),
     },
     {
         "slug": "schools-edison-international-academy",
-        "title": "Edison International Academy",
+        "title": "Edison International Academy – Al Markhiya",
         "subtitle": "British Curriculum, Doha",
         "neighborhood": "Doha",
-        "lat": None,
-        "lng": None,
+        "lat": 25.32239,
+        "lng": 51.49094,
         "price_from_qar": 20000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "British pathway school. Offers British Curriculum from EYFS–Year 13, for ages 3–18. Recognition: British curriculum."
-        ),
+        "description": "British pathway school. Offers British Curriculum from EYFS–Year 13, "
+        "for ages 3–18. Recognition: British curriculum.",
         "highlights": ["ICT", "Science labs", "Activities"],
         "tags": [
             "A Levels",
@@ -816,6 +836,8 @@ SCHOOLS: tuple[dict, ...] = (
             "Science Labs",
             "Secondary",
         ],
+        "exact_address": "Al Markhiya, Doha, Qatar",
+        "phones": ("+974 4488 7135", "+974 6000 8561", "+974 5591 9581"),
     },
     {
         "slug": "schools-english-modern-school-abu-hamour",
@@ -826,9 +848,9 @@ SCHOOLS: tuple[dict, ...] = (
         "lng": 51.4869,
         "price_from_qar": 16000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Offers multiple curriculum pathways. Offers British & CBSE pathways from KG–Grade 12, for ages 3–18. Recognition: Qatar private education system."
-        ),
+        "description": "Offers multiple curriculum pathways. Offers British & CBSE pathways "
+        "from KG–Grade 12, for ages 3–18. Recognition: Qatar private education "
+        "system.",
         "highlights": ["Labs", "Sports", "Technology"],
         "tags": [
             "A Levels",
@@ -844,6 +866,9 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "8F4F+7QR, Zone 36, Street 984, Building 20, Abu Talha St, Doha, "
+        "Qatar",
+        "phones": ("+974 4488 3806",),
     },
     {
         "slug": "schools-english-modern-school-al-khor",
@@ -854,9 +879,8 @@ SCHOOLS: tuple[dict, ...] = (
         "lng": 51.497,
         "price_from_qar": 15000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Northern Qatar campus. Offers British & CBSE pathways from KG–Grade 12, for ages 3–18. Recognition: Qatar private education system."
-        ),
+        "description": "Northern Qatar campus. Offers British & CBSE pathways from KG–Grade "
+        "12, for ages 3–18. Recognition: Qatar private education system.",
         "highlights": ["Sports", "Labs", "Activities"],
         "tags": [
             "A Levels",
@@ -871,6 +895,8 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "KHOR Complex, CRC, Al Khawr, Qatar",
+        "phones": ("+974 5536 9675",),
     },
     {
         "slug": "schools-gems-american-academy-qatar",
@@ -881,9 +907,8 @@ SCHOOLS: tuple[dict, ...] = (
         "lng": 51.4602,
         "price_from_qar": 42000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Premium American school. Offers American Curriculum (AP) from Pre-K–Grade 12, for ages 3–18. Recognition: GEMS Education network."
-        ),
+        "description": "Premium American school. Offers American Curriculum (AP) from "
+        "Pre-K–Grade 12, for ages 3–18. Recognition: GEMS Education network.",
         "highlights": ["Innovation labs", "Arts", "Athletics"],
         "tags": [
             "AP",
@@ -899,6 +924,8 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "Al Wukair, Qatar",
+        "phones": ("+974 4032 9000",),
     },
     {
         "slug": "schools-german-international-school-doha",
@@ -909,9 +936,9 @@ SCHOOLS: tuple[dict, ...] = (
         "lng": 51.5008,
         "price_from_qar": 38000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "German-language education with international focus. Offers German Curriculum from Kindergarten–Grade 12, for ages 3–18. Recognition: German education system."
-        ),
+        "description": "German-language education with international focus. Offers German "
+        "Curriculum from Kindergarten–Grade 12, for ages 3–18. Recognition: "
+        "German education system.",
         "highlights": ["Language labs", "Sports", "Cultural facilities"],
         "tags": [
             "Co-ed",
@@ -923,19 +950,20 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "Ibn Seena School, Doha, Qatar",
+        "phones": ("+974 4451 6836",),
     },
     {
         "slug": "schools-global-academy-international",
         "title": "Global Academy International",
         "subtitle": "American Curriculum, Doha",
         "neighborhood": "Doha",
-        "lat": None,
-        "lng": None,
+        "lat": 25.2368953,
+        "lng": 51.5718674,
         "price_from_qar": 18000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Multicultural American-style school. Offers American Curriculum from KG–Grade 12, for ages 3–18. Recognition: American curriculum."
-        ),
+        "description": "Multicultural American-style school. Offers American Curriculum from "
+        "KG–Grade 12, for ages 3–18. Recognition: American curriculum.",
         "highlights": ["Technology", "Sports", "Clubs"],
         "tags": [
             "American Curriculum",
@@ -947,6 +975,8 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "Building 7, Street 920, Doha, Qatar",
+        "phones": ("+974 4465 5002",),
     },
     {
         "slug": "schools-gulf-english-school",
@@ -957,9 +987,8 @@ SCHOOLS: tuple[dict, ...] = (
         "lng": 51.4408,
         "price_from_qar": 25000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Established British school. Offers British Curriculum from Foundation–Year 13, for ages 3–18. Recognition: British curriculum."
-        ),
+        "description": "Established British school. Offers British Curriculum from "
+        "Foundation–Year 13, for ages 3–18. Recognition: British curriculum.",
         "highlights": ["Science labs", "Sports", "Arts"],
         "tags": [
             "A Levels",
@@ -974,6 +1003,8 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "2440 Al Gharrafa Street, Al Rayyan, Qatar",
+        "phones": ("+974 4457 8777",),
     },
     {
         "slug": "schools-hamilton-international-school",
@@ -984,9 +1015,9 @@ SCHOOLS: tuple[dict, ...] = (
         "lng": 51.49,
         "price_from_qar": 36000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Modern premium British school. Offers British Curriculum from Pre-School–Year 13, for ages 3–18. Recognition: Nord Anglia Education."
-        ),
+        "description": "Modern premium British school. Offers British Curriculum from "
+        "Pre-School–Year 13, for ages 3–18. Recognition: Nord Anglia "
+        "Education.",
         "highlights": ["STEAM", "Sports", "Performing arts"],
         "tags": [
             "A Levels",
@@ -1003,6 +1034,8 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "Building 117, Street 1117, Zone 56, Mesaimeer, Doha, Qatar",
+        "phones": ("+974 4492 4343",),
     },
     {
         "slug": "schools-hayat-universal-school",
@@ -1013,9 +1046,9 @@ SCHOOLS: tuple[dict, ...] = (
         "lng": 51.4869,
         "price_from_qar": 17000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Focus on academics and character development. Offers American Curriculum from KG–Grade 12, for ages 3–18. Recognition: American curriculum."
-        ),
+        "description": "Focus on academics and character development. Offers American "
+        "Curriculum from KG–Grade 12, for ages 3–18. Recognition: American "
+        "curriculum.",
         "highlights": ["Labs", "Sports", "Technology"],
         "tags": [
             "American Curriculum",
@@ -1028,6 +1061,8 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "992V+3C3, Muaither 53, Al Rayyan, Qatar",
+        "phones": ("+974 4468 7171",),
     },
     {
         "slug": "schools-international-school-of-choueifat-doha",
@@ -1038,9 +1073,9 @@ SCHOOLS: tuple[dict, ...] = (
         "lng": 51.4869,
         "price_from_qar": 26000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Structured international programme with global university preparation. Offers SABIS® Curriculum from KG–Grade 12, for ages 3–18. Recognition: SABIS® Network."
-        ),
+        "description": "Structured international programme with global university "
+        "preparation. Offers SABIS® Curriculum from KG–Grade 12, for ages "
+        "3–18. Recognition: SABIS® Network.",
         "highlights": ["Science labs", "Sports facilities", "Libraries"],
         "tags": [
             "Co-ed",
@@ -1054,6 +1089,8 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "825 Onaiza Street, Doha, Qatar",
+        "phones": ("+974 4495 9595",),
     },
     {
         "slug": "schools-international-school-london-qatar-isl-qatar",
@@ -1064,9 +1101,8 @@ SCHOOLS: tuple[dict, ...] = (
         "lng": 51.4794,
         "price_from_qar": 47000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Offers IB PYP, MYP and Diploma Programme. Offers IB Curriculum from Early Years–Grade 12, for ages 3–18. Recognition: IB World School."
-        ),
+        "description": "Offers IB PYP, MYP and Diploma Programme. Offers IB Curriculum from "
+        "Early Years–Grade 12, for ages 3–18. Recognition: IB World School.",
         "highlights": ["Innovation labs", "Arts", "Sports", "Library"],
         "tags": [
             "Arts",
@@ -1083,19 +1119,21 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "North Duhail, Doha, Qatar",
+        "phones": ("+974 4036 6866",),
     },
     {
         "slug": "schools-japan-school-of-doha",
         "title": "Japan School of Doha",
         "subtitle": "Japanese National Curriculum, Doha",
         "neighborhood": "Doha",
-        "lat": None,
-        "lng": None,
+        "lat": 25.327419,
+        "lng": 51.386387,
         "price_from_qar": 25000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Serves Japanese families and follows Japan’s curriculum. Offers Japanese National Curriculum from Kindergarten–Junior High, for ages 3–15. Recognition: Japanese Ministry of Education system."
-        ),
+        "description": "Serves Japanese families and follows Japan’s curriculum. Offers "
+        "Japanese National Curriculum from Kindergarten–Junior High, for ages "
+        "3–15. Recognition: Japanese Ministry of Education system.",
         "highlights": ["Japanese classrooms", "Sports facilities"],
         "tags": [
             "Co-ed",
@@ -1106,19 +1144,21 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "Street 1194, Area 51, Building 15, Doha, Qatar",
+        "phones": ("+974 5591 5772",),
     },
     {
         "slug": "schools-kings-college-doha",
-        "title": "King’s College Doha",
+        "title": "King's College Doha",
         "subtitle": "British Curriculum, Al Thumama",
         "neighborhood": "Al Thumama",
         "lat": 25.2378,
         "lng": 51.5308,
         "price_from_qar": 39000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Inspired by King’s College UK traditions. Offers British Curriculum from Pre-School–Year 13, for ages 3–18. Recognition: British curriculum."
-        ),
+        "description": "Inspired by King’s College UK traditions. Offers British Curriculum "
+        "from Pre-School–Year 13, for ages 3–18. Recognition: British "
+        "curriculum.",
         "highlights": ["Performing arts", "Sports", "Science facilities"],
         "tags": [
             "A Levels",
@@ -1134,19 +1174,21 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "Umm Al Shuwail Street, Doha, Qatar",
+        "phones": ("+974 4496 5888",),
     },
     {
         "slug": "schools-lebanese-school-qatar",
         "title": "Lebanese School Qatar",
         "subtitle": "Lebanese Curriculum / International pathway, Doha",
         "neighborhood": "Doha",
-        "lat": None,
-        "lng": None,
+        "lat": 25.3275625,
+        "lng": 51.5209375,
         "price_from_qar": 15000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Bilingual education environment. Offers Lebanese Curriculum / International pathway from KG–Grade 12, for ages 3–18. Recognition: Lebanese education system."
-        ),
+        "description": "Bilingual education environment. Offers Lebanese Curriculum / "
+        "International pathway from KG–Grade 12, for ages 3–18. Recognition: "
+        "Lebanese education system.",
         "highlights": ["Labs", "Sports", "Cultural facilities"],
         "tags": [
             "Bilingual Arabic-English",
@@ -1159,6 +1201,8 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "8GHC+29X, Doha, Qatar",
+        "phones": ("+974 4493 4545",),
     },
     {
         "slug": "schools-loyola-international-school",
@@ -1169,9 +1213,8 @@ SCHOOLS: tuple[dict, ...] = (
         "lng": 51.535,
         "price_from_qar": 15000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Indian curriculum school. Offers CBSE from KG–Grade 12, for ages 3–18. Recognition: CBSE affiliated."
-        ),
+        "description": "Indian curriculum school. Offers CBSE from KG–Grade 12, for ages "
+        "3–18. Recognition: CBSE affiliated.",
         "highlights": ["Science labs", "Sports", "ICT"],
         "tags": [
             "CBSE",
@@ -1185,6 +1228,8 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "7F9W+8H4, Doha, Qatar",
+        "phones": ("+974 4431 1390",),
     },
     {
         "slug": "schools-lycee-bonaparte-doha",
@@ -1195,9 +1240,9 @@ SCHOOLS: tuple[dict, ...] = (
         "lng": 51.531,
         "price_from_qar": 32000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "French education leading to Baccalauréat. Offers French National Curriculum from Preschool–Terminale, for ages 3–18. Recognition: AEFE network."
-        ),
+        "description": "French education leading to Baccalauréat. Offers French National "
+        "Curriculum from Preschool–Terminale, for ages 3–18. Recognition: AEFE "
+        "network.",
         "highlights": ["Language labs", "Cultural facilities"],
         "tags": [
             "AEFE",
@@ -1210,19 +1255,21 @@ SCHOOLS: tuple[dict, ...] = (
             "Science Labs",
             "Secondary",
         ],
+        "exact_address": "West Bay, Doha, Qatar",
+        "phones": ("+974 4496 0300",),
     },
     {
         "slug": "schools-lycee-franco-qatarien-voltaire",
         "title": "Lycée Franco-Qatarien Voltaire",
         "subtitle": "French National Curriculum, Doha",
         "neighborhood": "Doha",
-        "lat": None,
-        "lng": None,
+        "lat": 25.3569444,
+        "lng": 51.5019444,
         "price_from_qar": 30000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "French bilingual international school. Offers French National Curriculum from Preschool–Terminale, for ages 3–18. Recognition: French Ministry of Education."
-        ),
+        "description": "French bilingual international school. Offers French National "
+        "Curriculum from Preschool–Terminale, for ages 3–18. Recognition: "
+        "French Ministry of Education.",
         "highlights": ["Modern classrooms", "Arts", "Sports"],
         "tags": [
             "Arts",
@@ -1236,6 +1283,9 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "West Bay: Zone 88, Al Dafna, Street 973; Al Waab: Zone 54, "
+        "Mehairja, Street 691; Salwa: Zone 55, Al Daoudiya Street 201, Doha",
+        "phones": ("+974 4035 4020",),
     },
     {
         "slug": "schools-mesaieed-international-school",
@@ -1246,9 +1296,8 @@ SCHOOLS: tuple[dict, ...] = (
         "lng": 51.55,
         "price_from_qar": 25000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Serves Mesaieed industrial community. Offers British Curriculum from Foundation–Year 13, for ages 3–18. Recognition: British curriculum."
-        ),
+        "description": "Serves Mesaieed industrial community. Offers British Curriculum from "
+        "Foundation–Year 13, for ages 3–18. Recognition: British curriculum.",
         "highlights": ["Sports fields", "Labs", "Library"],
         "tags": [
             "A Levels",
@@ -1264,19 +1313,20 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "2G4Q+53G, Naslat Al Galayel Street, Mesaieed, Qatar",
+        "phones": ("+974 4477 2555",),
     },
     {
         "slug": "schools-middle-east-international-school",
         "title": "Middle East International School",
         "subtitle": "American Curriculum, Doha",
         "neighborhood": "Doha",
-        "lat": None,
-        "lng": None,
+        "lat": 25.2444055,
+        "lng": 51.5103743,
         "price_from_qar": 19000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "American education pathway. Offers American Curriculum from KG–Grade 12, for ages 3–18. Recognition: American curriculum."
-        ),
+        "description": "American education pathway. Offers American Curriculum from KG–Grade "
+        "12, for ages 3–18. Recognition: American curriculum.",
         "highlights": ["ICT", "Sports", "Activities"],
         "tags": [
             "American Curriculum",
@@ -1288,6 +1338,8 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "Al Maadeed Street, Doha 269, Qatar",
+        "phones": ("+974 4444 9892",),
     },
     {
         "slug": "schools-newton-british-academy-barwa-city",
@@ -1298,9 +1350,8 @@ SCHOOLS: tuple[dict, ...] = (
         "lng": 51.4747,
         "price_from_qar": 27000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Part of Newton group of schools. Offers British Curriculum from EYFS–Year 13, for ages 3–18. Recognition: British curriculum."
-        ),
+        "description": "Part of Newton group of schools. Offers British Curriculum from "
+        "EYFS–Year 13, for ages 3–18. Recognition: British curriculum.",
         "highlights": ["Science labs", "Sports", "Technology"],
         "tags": [
             "A Levels",
@@ -1315,19 +1366,20 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "5GX5+83R, Zone 56, Street 1126, Building 35, Doha, Qatar",
+        "phones": ("+974 4006 1501", "+974 3323 3806"),
     },
     {
         "slug": "schools-newton-international-academy",
-        "title": "Newton International Academy",
+        "title": "Newton International Academy – Barwa City",
         "subtitle": "British Curriculum, Barwa City",
         "neighborhood": "Barwa City",
         "lat": 25.2064,
         "lng": 51.4747,
         "price_from_qar": 24000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Offers English National Curriculum. Offers British Curriculum from EYFS–Year 13, for ages 3–18. Recognition: British curriculum."
-        ),
+        "description": "Offers English National Curriculum. Offers British Curriculum from "
+        "EYFS–Year 13, for ages 3–18. Recognition: British curriculum.",
         "highlights": ["ICT", "Activities", "Sports"],
         "tags": [
             "A Levels",
@@ -1341,6 +1393,8 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "5GV2+C79, Unnamed Road, Doha, Qatar",
+        "phones": ("+974 4001 9750",),
     },
     {
         "slug": "schools-newton-international-school-lagoon",
@@ -1351,9 +1405,8 @@ SCHOOLS: tuple[dict, ...] = (
         "lng": 51.5133,
         "price_from_qar": 23000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Newton group campus. Offers British Curriculum from EYFS–Year 13, for ages 3–18. Recognition: British curriculum."
-        ),
+        "description": "Newton group campus. Offers British Curriculum from EYFS–Year 13, for "
+        "ages 3–18. Recognition: British curriculum.",
         "highlights": ["Labs", "Sports", "Arts"],
         "tags": [
             "A Levels",
@@ -1368,6 +1421,8 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "Umm Al Daah Street, Doha, Qatar",
+        "phones": ("+974 4412 2254",),
     },
     {
         "slug": "schools-newton-international-school-d-ring",
@@ -1378,9 +1433,8 @@ SCHOOLS: tuple[dict, ...] = (
         "lng": 51.52,
         "price_from_qar": 22000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Newton group campus. Offers British Curriculum from EYFS–Year 13, for ages 3–18. Recognition: British curriculum."
-        ),
+        "description": "Newton group campus. Offers British Curriculum from EYFS–Year 13, for "
+        "ages 3–18. Recognition: British curriculum.",
         "highlights": ["ICT", "Sports", "Student support"],
         "tags": [
             "A Levels",
@@ -1394,6 +1448,8 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "7G39+7HC, D Ring Road, Doha, Qatar",
+        "phones": ("+974 4466 6246",),
     },
     {
         "slug": "schools-newton-international-school-west-bay",
@@ -1404,9 +1460,8 @@ SCHOOLS: tuple[dict, ...] = (
         "lng": 51.531,
         "price_from_qar": 25000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Serves central Doha families. Offers British Curriculum from EYFS–Year 13, for ages 3–18. Recognition: British curriculum."
-        ),
+        "description": "Serves central Doha families. Offers British Curriculum from "
+        "EYFS–Year 13, for ages 3–18. Recognition: British curriculum.",
         "highlights": ["Modern classrooms", "Activities"],
         "tags": [
             "A Levels",
@@ -1418,19 +1473,20 @@ SCHOOLS: tuple[dict, ...] = (
             "Mid-Range (15-30k)",
             "Secondary",
         ],
+        "exact_address": "9G36+FGC, Doha, Qatar",
+        "phones": ("+974 4493 5507",),
     },
     {
         "slug": "schools-noble-international-school",
         "title": "Noble International School",
         "subtitle": "CBSE, Doha",
         "neighborhood": "Doha",
-        "lat": None,
-        "lng": None,
+        "lat": 25.2311424,
+        "lng": 51.4945565,
         "price_from_qar": 14000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Indian curriculum school. Offers CBSE from KG–Grade 12, for ages 3–18. Recognition: CBSE affiliated."
-        ),
+        "description": "Indian curriculum school. Offers CBSE from KG–Grade 12, for ages "
+        "3–18. Recognition: CBSE affiliated.",
         "highlights": ["Labs", "Sports", "Activities"],
         "tags": [
             "Budget (under 15k)",
@@ -1443,6 +1499,8 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "Doha, Qatar",
+        "phones": ("+974 4442 8624",),
     },
     {
         "slug": "schools-nord-anglia-international-school-al-khor",
@@ -1453,9 +1511,9 @@ SCHOOLS: tuple[dict, ...] = (
         "lng": 51.497,
         "price_from_qar": 38000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "International school serving northern Qatar. Offers British & IB from Early Years–Year 13, for ages 3–18. Recognition: Nord Anglia Education."
-        ),
+        "description": "International school serving northern Qatar. Offers British & IB from "
+        "Early Years–Year 13, for ages 3–18. Recognition: Nord Anglia "
+        "Education.",
         "highlights": ["STEAM", "Sports", "Global learning"],
         "tags": [
             "A Levels",
@@ -1472,6 +1530,8 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "Building 5, Zone 74, Taimiyah Street, Al Khor, Qatar",
+        "phones": ("+974 4437 9600",),
     },
     {
         "slug": "schools-oryx-international-school",
@@ -1482,9 +1542,9 @@ SCHOOLS: tuple[dict, ...] = (
         "lng": 51.4886,
         "price_from_qar": 38000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Established in partnership with Qatar Airways. Offers British Curriculum from Early Years–Year 13, for ages 3–18. Recognition: British curriculum."
-        ),
+        "description": "Established in partnership with Qatar Airways. Offers British "
+        "Curriculum from Early Years–Year 13, for ages 3–18. Recognition: "
+        "British curriculum.",
         "highlights": ["Sports facilities", "Science labs", "Arts", "Innovation spaces"],
         "tags": [
             "A Levels",
@@ -1500,19 +1560,20 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "5GR2+6QC, Barwa City Street, Doha, Qatar",
+        "phones": ("+974 4036 0063",),
     },
     {
         "slug": "schools-olive-international-school",
         "title": "Olive International School",
         "subtitle": "CBSE, Doha",
         "neighborhood": "Doha",
-        "lat": None,
-        "lng": None,
+        "lat": 25.2411875,
+        "lng": 51.5249375,
         "price_from_qar": 6000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Affordable Indian curriculum option. Offers CBSE from KG–Grade 12, for ages 3–18. Recognition: CBSE affiliated."
-        ),
+        "description": "Affordable Indian curriculum option. Offers CBSE from KG–Grade 12, "
+        "for ages 3–18. Recognition: CBSE affiliated.",
         "highlights": ["Classrooms", "Labs", "Activities"],
         "tags": [
             "Budget (under 15k)",
@@ -1524,19 +1585,21 @@ SCHOOLS: tuple[dict, ...] = (
             "Science Labs",
             "Secondary",
         ],
+        "exact_address": "6GRF+FXV, Doha, Qatar",
+        "phones": ("+974 4417 1734",),
     },
     {
         "slug": "schools-pakistan-international-school-qatar",
         "title": "Pakistan International School Qatar",
         "subtitle": "Pakistani Curriculum (FBISE), Doha",
         "neighborhood": "Doha",
-        "lat": None,
-        "lng": None,
+        "lat": 25.2317793,
+        "lng": 51.5019211,
         "price_from_qar": 10000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "One of Qatar’s oldest Pakistani schools. Offers Pakistani Curriculum (FBISE) from KG–Grade 12, for ages 3–18. Recognition: Federal Board of Intermediate and Secondary Education."
-        ),
+        "description": "One of Qatar’s oldest Pakistani schools. Offers Pakistani Curriculum "
+        "(FBISE) from KG–Grade 12, for ages 3–18. Recognition: Federal Board "
+        "of Intermediate and Secondary Education.",
         "highlights": ["Labs", "Sports", "Library"],
         "tags": [
             "Budget (under 15k)",
@@ -1549,19 +1612,20 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "990 Mesaimeer Road, Doha, Qatar",
+        "phones": ("+974 4468 3000",),
     },
     {
         "slug": "schools-pak-shamaa-school",
         "title": "Pak Shamaa School",
         "subtitle": "Pakistani Curriculum, Doha",
         "neighborhood": "Doha",
-        "lat": None,
-        "lng": None,
+        "lat": 25.1768708,
+        "lng": 51.5763405,
         "price_from_qar": 10000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Community-focused Pakistani school. Offers Pakistani Curriculum from KG–Grade 12, for ages 3–18. Recognition: Pakistan curriculum."
-        ),
+        "description": "Community-focused Pakistani school. Offers Pakistani Curriculum from "
+        "KG–Grade 12, for ages 3–18. Recognition: Pakistan curriculum.",
         "highlights": ["Classrooms", "Activities"],
         "tags": [
             "Budget (under 15k)",
@@ -1572,6 +1636,8 @@ SCHOOLS: tuple[dict, ...] = (
             "Pakistani Curriculum",
             "Secondary",
         ],
+        "exact_address": "Al Wakrah / Al Mashaf, Qatar",
+        "phones": ("+974 4436 3654",),
     },
     {
         "slug": "schools-park-house-english-school",
@@ -1582,9 +1648,9 @@ SCHOOLS: tuple[dict, ...] = (
         "lng": 51.4886,
         "price_from_qar": 34000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Established British independent school. Offers British Curriculum from Foundation–Year 13, for ages 3–18. Recognition: British curriculum."
-        ),
+        "description": "Established British independent school. Offers British Curriculum "
+        "from Foundation–Year 13, for ages 3–18. Recognition: British "
+        "curriculum.",
         "highlights": ["Sports", "Music", "Drama", "Science facilities"],
         "tags": [
             "A Levels",
@@ -1599,19 +1665,20 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "990 Mesaimeer Road, Abu Hamour, Doha, Qatar",
+        "phones": ("+974 4468 3800",),
     },
     {
         "slug": "schools-pearling-season-international-school",
         "title": "Pearling Season International School",
         "subtitle": "British Curriculum, Doha",
         "neighborhood": "Doha",
-        "lat": None,
-        "lng": None,
+        "lat": 25.274265,
+        "lng": 51.528925,
         "price_from_qar": 17000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "British pathway school. Offers British Curriculum from KG–Year 13, for ages 3–18. Recognition: British curriculum."
-        ),
+        "description": "British pathway school. Offers British Curriculum from KG–Year 13, "
+        "for ages 3–18. Recognition: British curriculum.",
         "highlights": ["ICT", "Sports", "Activities"],
         "tags": [
             "A Levels",
@@ -1625,6 +1692,8 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "47021, 46 Al Khudri Street (810), Bin Dirham, Doha, Qatar",
+        "phones": ("+974 7707 8282",),
     },
     {
         "slug": "schools-philippine-international-school-qatar",
@@ -1635,9 +1704,9 @@ SCHOOLS: tuple[dict, ...] = (
         "lng": 51.4869,
         "price_from_qar": 14000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Serves Filipino community. Offers Philippine Curriculum from Kindergarten–Grade 12, for ages 4–18. Recognition: Philippine education system."
-        ),
+        "description": "Serves Filipino community. Offers Philippine Curriculum from "
+        "Kindergarten–Grade 12, for ages 4–18. Recognition: Philippine "
+        "education system.",
         "highlights": ["Labs", "Sports", "Cultural programmes"],
         "tags": [
             "Budget (under 15k)",
@@ -1650,19 +1719,20 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "East Industrial Street, Doha, Qatar",
+        "phones": ("+974 4451 3364",),
     },
     {
         "slug": "schools-podar-pearl-school",
         "title": "Podar Pearl School",
         "subtitle": "CBSE, Doha",
         "neighborhood": "Doha",
-        "lat": None,
-        "lng": None,
+        "lat": 25.18781,
+        "lng": 51.56273,
         "price_from_qar": 12000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Part of Podar Education network. Offers CBSE from KG–Grade 12, for ages 3–18. Recognition: CBSE affiliated."
-        ),
+        "description": "Part of Podar Education network. Offers CBSE from KG–Grade 12, for "
+        "ages 3–18. Recognition: CBSE affiliated.",
         "highlights": ["Digital classrooms", "Labs", "Sports"],
         "tags": [
             "Budget (under 15k)",
@@ -1677,6 +1747,8 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "No. 300, Zone 91, Al Mashaf, Al Wukair, Qatar",
+        "phones": ("+974 4444 2555",),
     },
     {
         "slug": "schools-qatar-academy-doha",
@@ -1687,9 +1759,8 @@ SCHOOLS: tuple[dict, ...] = (
         "lng": 51.4361,
         "price_from_qar": 55000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Flagship Qatar Foundation school. Offers IB Curriculum from Pre-K–Grade 12, for ages 3–18. Recognition: IB World School."
-        ),
+        "description": "Flagship Qatar Foundation school. Offers IB Curriculum from "
+        "Pre-K–Grade 12, for ages 3–18. Recognition: IB World School.",
         "highlights": ["Advanced facilities", "Sports", "Arts"],
         "tags": [
             "Arts",
@@ -1704,6 +1775,8 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "Education City, Al Luqta, Al Rayyan, Qatar",
+        "phones": ("+974 4454 5000",),
     },
     {
         "slug": "schools-qatar-academy-al-khor",
@@ -1714,9 +1787,8 @@ SCHOOLS: tuple[dict, ...] = (
         "lng": 51.497,
         "price_from_qar": 40000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Serves northern Qatar. Offers IB Curriculum from Pre-K–Grade 12, for ages 3–18. Recognition: IB World School."
-        ),
+        "description": "Serves northern Qatar. Offers IB Curriculum from Pre-K–Grade 12, for "
+        "ages 3–18. Recognition: IB World School.",
         "highlights": ["Sports", "Technology", "Arts"],
         "tags": [
             "Arts",
@@ -1732,6 +1804,8 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "MF67+6Q7, Al Khor, Qatar",
+        "phones": ("+974 4454 6750",),
     },
     {
         "slug": "schools-qatar-academy-al-wakrah",
@@ -1742,9 +1816,8 @@ SCHOOLS: tuple[dict, ...] = (
         "lng": 51.5988,
         "price_from_qar": 40000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Qatar Foundation school. Offers IB Curriculum from Pre-K–Grade 12, for ages 3–18. Recognition: IB World School."
-        ),
+        "description": "Qatar Foundation school. Offers IB Curriculum from Pre-K–Grade 12, "
+        "for ages 3–18. Recognition: IB World School.",
         "highlights": ["Modern campus", "Bilingual facilities"],
         "tags": [
             "Bilingual Arabic-English",
@@ -1758,6 +1831,8 @@ SCHOOLS: tuple[dict, ...] = (
             "Qatar Foundation",
             "Secondary",
         ],
+        "exact_address": "Al Wakrah, Qatar",
+        "phones": ("+974 4454 6000",),
     },
     {
         "slug": "schools-qatar-academy-msheireb",
@@ -1768,9 +1843,8 @@ SCHOOLS: tuple[dict, ...] = (
         "lng": 51.5253,
         "price_from_qar": 45000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Urban Qatar Foundation campus. Offers IB Curriculum from Early Years–Primary, for ages 3–11. Recognition: IB World School."
-        ),
+        "description": "Urban Qatar Foundation campus. Offers IB Curriculum from Early "
+        "Years–Primary, for ages 3–11. Recognition: IB World School.",
         "highlights": ["Modern learning spaces"],
         "tags": [
             "Co-ed",
@@ -1781,6 +1855,8 @@ SCHOOLS: tuple[dict, ...] = (
             "Primary Only",
             "Qatar Foundation",
         ],
+        "exact_address": "7GPF+WQV, Doha, Qatar",
+        "phones": ("+974 4454 2116",),
     },
     {
         "slug": "schools-qatar-academy-sidra",
@@ -1791,9 +1867,8 @@ SCHOOLS: tuple[dict, ...] = (
         "lng": 51.4361,
         "price_from_qar": 50000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Qatar Foundation campus. Offers IB Curriculum from Early Years–Grade 12, for ages 3–18. Recognition: IB World School."
-        ),
+        "description": "Qatar Foundation campus. Offers IB Curriculum from Early Years–Grade "
+        "12, for ages 3–18. Recognition: IB World School.",
         "highlights": ["Sports", "Technology", "Arts"],
         "tags": [
             "Arts",
@@ -1809,19 +1884,21 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "Gate 15, Education City, Al Rayyan Al Jadeed Street, Al Rayyan, "
+        "Qatar",
+        "phones": ("+974 4454 2322",),
     },
     {
         "slug": "schools-qatar-canadian-school",
         "title": "Qatar Canadian School",
         "subtitle": "Canadian Curriculum (Alberta), Doha",
         "neighborhood": "Doha",
-        "lat": None,
-        "lng": None,
+        "lat": 25.3453,
+        "lng": 51.4766,
         "price_from_qar": 28000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Canadian education pathway. Offers Canadian Curriculum (Alberta) from KG–Grade 12, for ages 3–18. Recognition: Alberta curriculum."
-        ),
+        "description": "Canadian education pathway. Offers Canadian Curriculum (Alberta) from "
+        "KG–Grade 12, for ages 3–18. Recognition: Alberta curriculum.",
         "highlights": ["STEM", "Sports", "Libraries"],
         "tags": [
             "Canadian Curriculum",
@@ -1834,6 +1911,8 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "Doha, Qatar",
+        "phones": ("+974 4488 8000",),
     },
     {
         "slug": "schools-qatar-international-school",
@@ -1844,9 +1923,8 @@ SCHOOLS: tuple[dict, ...] = (
         "lng": 51.5289,
         "price_from_qar": 30000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "One of Doha’s oldest British schools. Offers British Curriculum from EYFS–Year 13, for ages 3–18. Recognition: British curriculum."
-        ),
+        "description": "One of Doha’s oldest British schools. Offers British Curriculum from "
+        "EYFS–Year 13, for ages 3–18. Recognition: British curriculum.",
         "highlights": ["Sports", "Labs", "Performing arts"],
         "tags": [
             "A Levels",
@@ -1862,6 +1940,8 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "United Nations Street, Doha, Qatar",
+        "phones": ("+974 4483 3456",),
     },
     {
         "slug": "schools-qatar-turkish-school",
@@ -1872,11 +1952,13 @@ SCHOOLS: tuple[dict, ...] = (
         "lng": 51.4525,
         "price_from_qar": 15000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Turkish national curriculum. Offers Turkish Curriculum from Primary–Secondary, for ages 6–18. Recognition: Turkish Ministry of Education."
-        ),
+        "description": "Turkish national curriculum. Offers Turkish Curriculum from "
+        "Primary–Secondary, for ages 6–18. Recognition: Turkish Ministry of "
+        "Education.",
         "highlights": ["Language facilities", "Cultural activities"],
         "tags": ["Co-ed", "Mid-Range (15-30k)", "Secondary", "Turkish Curriculum"],
+        "exact_address": "6FM9+XQ3, Turkish School, Doha, Qatar",
+        "phones": ("+974 4490 2149",),
     },
     {
         "slug": "schools-royal-grammar-school-guildford-qatar",
@@ -1887,9 +1969,8 @@ SCHOOLS: tuple[dict, ...] = (
         "lng": 51.48,
         "price_from_qar": 42000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Inspired by RGS Guildford UK. Offers British Curriculum from Pre-School–Year 13, for ages 3–18. Recognition: British curriculum."
-        ),
+        "description": "Inspired by RGS Guildford UK. Offers British Curriculum from "
+        "Pre-School–Year 13, for ages 3–18. Recognition: British curriculum.",
         "highlights": ["Premium sports", "Arts", "Science facilities"],
         "tags": [
             "A Levels",
@@ -1904,6 +1985,8 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "Building 17, Street 631, Zone 71, Doha, Qatar",
+        "phones": ("+974 4036 0450",),
     },
     {
         "slug": "schools-sek-international-school-qatar",
@@ -1914,9 +1997,8 @@ SCHOOLS: tuple[dict, ...] = (
         "lng": 51.531,
         "price_from_qar": 46000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Full IB continuum. Offers IB Curriculum from Pre-School–Grade 12, for ages 3–18. Recognition: IB World School."
-        ),
+        "description": "Full IB continuum. Offers IB Curriculum from Pre-School–Grade 12, for "
+        "ages 3–18. Recognition: IB World School.",
         "highlights": ["Innovation labs", "Sports", "Multilingual facilities"],
         "tags": [
             "Co-ed",
@@ -1932,6 +2014,8 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "Al Farouq Street, Doha, Qatar",
+        "phones": ("+974 4012 7633",),
     },
     {
         "slug": "schools-sherborne-qatar-preparatory-school",
@@ -1942,9 +2026,8 @@ SCHOOLS: tuple[dict, ...] = (
         "lng": 51.39,
         "price_from_qar": 36000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Preparatory campus. Offers British Curriculum from Pre-School–Year 6, for ages 3–11. Recognition: British curriculum."
-        ),
+        "description": "Preparatory campus. Offers British Curriculum from Pre-School–Year 6, "
+        "for ages 3–11. Recognition: British curriculum.",
         "highlights": ["Sports", "Arts", "Outdoor learning"],
         "tags": [
             "Arts",
@@ -1956,19 +2039,21 @@ SCHOOLS: tuple[dict, ...] = (
             "Primary Only",
             "Sports Facilities",
         ],
+        "exact_address": "Building 492, Street 1193, Zone 51, Nega Al Sahla Street, Bani "
+        "Hajer, Doha, Qatar",
+        "phones": ("+974 4495 4555",),
     },
     {
         "slug": "schools-sherborne-qatar-boys-school",
-        "title": "Sherborne Qatar – Boys School",
+        "title": "Sherborne Qatar – School for Boys",
         "subtitle": "British Curriculum, Al Rayyan",
         "neighborhood": "Al Rayyan",
         "lat": 25.2919,
         "lng": 51.4244,
         "price_from_qar": 38000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Boys’ senior school. Offers British Curriculum from Pre-School–Year 13, for ages 3–18. Recognition: British curriculum."
-        ),
+        "description": "Boys’ senior school. Offers British Curriculum from Pre-School–Year "
+        "13, for ages 3–18. Recognition: British curriculum.",
         "highlights": ["Sports", "Leadership", "Academics"],
         "tags": [
             "A Levels",
@@ -1981,19 +2066,21 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "Building 6, Street 449, Zone 53, Umm Al Maa Street, Al Rayyan, "
+        "Qatar",
+        "phones": ("+974 4459 6566",),
     },
     {
         "slug": "schools-sherborne-qatar-girls-school",
-        "title": "Sherborne Qatar – Girls School",
+        "title": "Sherborne Qatar – School for Girls",
         "subtitle": "British Curriculum, Ain Khaled",
         "neighborhood": "Ain Khaled",
         "lat": 25.2244,
         "lng": 51.4525,
         "price_from_qar": 38000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Girls’ senior school. Offers British Curriculum from Pre-School–Year 13, for ages 3–18. Recognition: British curriculum."
-        ),
+        "description": "Girls’ senior school. Offers British Curriculum from Pre-School–Year "
+        "13, for ages 3–18. Recognition: British curriculum.",
         "highlights": ["Arts", "Sports", "Leadership"],
         "tags": [
             "A Levels",
@@ -2007,19 +2094,21 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "Building 76, Street 426, Zone 70, Rawdat Al Khazna Street, Al Ebb, "
+        "Qatar",
+        "phones": ("+974 4495 3444",),
     },
     {
         "slug": "schools-shantiniketan-indian-school",
         "title": "Shantiniketan Indian School",
         "subtitle": "CBSE, Doha",
         "neighborhood": "Doha",
-        "lat": None,
-        "lng": None,
+        "lat": 25.2136875,
+        "lng": 51.5780625,
         "price_from_qar": 10000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Indian curriculum school. Offers CBSE from KG–Grade 12, for ages 3–18. Recognition: CBSE affiliated."
-        ),
+        "description": "Indian curriculum school. Offers CBSE from KG–Grade 12, for ages "
+        "3–18. Recognition: CBSE affiliated.",
         "highlights": ["Labs", "Sports", "Activities"],
         "tags": [
             "Budget (under 15k)",
@@ -2032,19 +2121,21 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "6H7H+F63, Doha, Qatar",
+        "phones": ("+974 4415 1524",),
     },
     {
         "slug": "schools-spectra-global-school",
         "title": "Spectra Global School",
         "subtitle": "British / Cambridge Primary, Doha",
         "neighborhood": "Doha",
-        "lat": None,
-        "lng": None,
+        "lat": 25.34651,
+        "lng": 51.47537,
         "price_from_qar": 21000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Primary-focused international school. Offers British / Cambridge Primary from Kindergarten–Primary, for ages 3–11. Recognition: Cambridge pathway."
-        ),
+        "description": "Primary-focused international school. Offers British / Cambridge "
+        "Primary from Kindergarten–Primary, for ages 3–11. Recognition: "
+        "Cambridge pathway.",
         "highlights": ["ICT", "Science", "Sports"],
         "tags": [
             "British Curriculum",
@@ -2058,19 +2149,21 @@ SCHOOLS: tuple[dict, ...] = (
             "Science Labs",
             "Sports Facilities",
         ],
+        "exact_address": "Building 70, Street 810, Zone 31, Doha, Qatar",
+        "phones": ("+974 4481 3278",),
     },
     {
         "slug": "schools-stafford-sri-lankan-school-doha",
         "title": "Stafford Sri Lankan School Doha",
         "subtitle": "Sri Lankan Curriculum, Doha",
         "neighborhood": "Doha",
-        "lat": None,
-        "lng": None,
+        "lat": 25.26345,
+        "lng": 51.49422,
         "price_from_qar": 10000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Sri Lankan community school. Offers Sri Lankan Curriculum from Nursery–Grade 13, for ages 3–18. Recognition: Sri Lankan education system."
-        ),
+        "description": "Sri Lankan community school. Offers Sri Lankan Curriculum from "
+        "Nursery–Grade 13, for ages 3–18. Recognition: Sri Lankan education "
+        "system.",
         "highlights": ["Labs", "Sports", "Cultural activities"],
         "tags": [
             "Budget (under 15k)",
@@ -2083,6 +2176,8 @@ SCHOOLS: tuple[dict, ...] = (
             "Sports Facilities",
             "Sri Lankan Curriculum",
         ],
+        "exact_address": "7F7V+9P6, Doha, Qatar",
+        "phones": ("+974 4469 4869",),
     },
     {
         "slug": "schools-swiss-international-school-qatar",
@@ -2093,9 +2188,8 @@ SCHOOLS: tuple[dict, ...] = (
         "lng": 51.4602,
         "price_from_qar": 44000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "IB and multilingual education. Offers IB Curriculum from Pre-School–Grade 12, for ages 3–18. Recognition: IB World School."
-        ),
+        "description": "IB and multilingual education. Offers IB Curriculum from "
+        "Pre-School–Grade 12, for ages 3–18. Recognition: IB World School.",
         "highlights": ["Multilingual learning", "Sports", "Innovation"],
         "tags": [
             "Co-ed",
@@ -2110,19 +2204,20 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "8F57+P4H, Al Hashimiya Street, Doha, Qatar",
+        "phones": ("+974 4036 3131",),
     },
     {
         "slug": "schools-the-cambridge-school-doha",
         "title": "The Cambridge School Doha",
         "subtitle": "Cambridge / British, Doha",
         "neighborhood": "Doha",
-        "lat": None,
-        "lng": None,
+        "lat": 25.245457,
+        "lng": 51.504788,
         "price_from_qar": 18000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Cambridge examination pathway. Offers Cambridge / British from KG–Year 13, for ages 3–18. Recognition: Cambridge International."
-        ),
+        "description": "Cambridge examination pathway. Offers Cambridge / British from "
+        "KG–Year 13, for ages 3–18. Recognition: Cambridge International.",
         "highlights": ["Labs", "ICT", "Sports"],
         "tags": [
             "A Levels",
@@ -2139,19 +2234,20 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "Al Maadeed Street, Doha, Qatar",
+        "phones": ("+974 4469 6590",),
     },
     {
         "slug": "schools-the-scholars-international-school",
         "title": "The Scholars International School",
         "subtitle": "British Curriculum, Doha",
         "neighborhood": "Doha",
-        "lat": None,
-        "lng": None,
+        "lat": 25.296619,
+        "lng": 51.434626,
         "price_from_qar": 20000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "British international school. Offers British Curriculum from KG–Year 13, for ages 3–18. Recognition: British curriculum."
-        ),
+        "description": "British international school. Offers British Curriculum from KG–Year "
+        "13, for ages 3–18. Recognition: British curriculum.",
         "highlights": ["Technology", "Activities", "Student support"],
         "tags": [
             "A Levels",
@@ -2164,6 +2260,8 @@ SCHOOLS: tuple[dict, ...] = (
             "Mid-Range (15-30k)",
             "Secondary",
         ],
+        "exact_address": "12, Al Rayyan, Qatar",
+        "phones": ("+974 4433 6336",),
     },
     {
         "slug": "schools-united-school-international",
@@ -2174,9 +2272,8 @@ SCHOOLS: tuple[dict, ...] = (
         "lng": 51.5508,
         "price_from_qar": 39000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "Premium school on The Pearl. Offers British Curriculum from Early Years–Year 13, for ages 3–18. Recognition: British curriculum."
-        ),
+        "description": "Premium school on The Pearl. Offers British Curriculum from Early "
+        "Years–Year 13, for ages 3–18. Recognition: British curriculum.",
         "highlights": ["STEAM", "Sports village", "Arts"],
         "tags": [
             "A Levels",
@@ -2191,6 +2288,8 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "Viva Bahriya Roundabout, The Pearl, Doha, Qatar",
+        "phones": ("+974 4404 8301",),
     },
     {
         "slug": "schools-vision-international-school",
@@ -2201,9 +2300,8 @@ SCHOOLS: tuple[dict, ...] = (
         "lng": 51.4494,
         "price_from_qar": 27000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": (
-            "American pathway school. Offers American Curriculum from KG–Grade 12, for ages 3–18. Recognition: American curriculum."
-        ),
+        "description": "American pathway school. Offers American Curriculum from KG–Grade 12, "
+        "for ages 3–18. Recognition: American curriculum.",
         "highlights": ["STEM", "Sports", "Technology"],
         "tags": [
             "American Curriculum",
@@ -2216,7 +2314,378 @@ SCHOOLS: tuple[dict, ...] = (
             "Secondary",
             "Sports Facilities",
         ],
+        "exact_address": "Building 5, Majlis Al Taawon Street, Al Wakrah, Qatar",
+        "phones": ("+974 4036 4000",),
+    },
+    {
+        "slug": "schools-edison-international-academy-aspire",
+        "title": "Edison International Academy – Aspire",
+        "subtitle": "British / International, Aspire",
+        "neighborhood": "Aspire",
+        "lat": 25.263,
+        "lng": 51.441,
+        "price_from_qar": 18000,
+        "age_groups": ["3-5", "6-11", "12-15", "16+"],
+        "description": "An Edison campus providing a broad international education with "
+        "technology, science, sports and extracurricular opportunities.",
+        "highlights": ["ICT", "Science", "Sports", "Activities"],
+        "tags": [
+            "British Curriculum",
+            "Co-ed",
+            "Early Years",
+            "Full Pathway",
+            "IGCSE",
+            "Mid-Range (15-30k)",
+            "Secondary",
+            "Sports Facilities",
+        ],
+        "exact_address": "Al Furousiya Street / Aspire area, Doha, Qatar",
+        "phones": ("+974 4414 6132", "+974 3328 0438"),
+    },
+    {
+        "slug": "schools-edison-international-academy-dahl-al-hamam",
+        "title": "Edison International Academy – Dahl Al Hamam",
+        "subtitle": "British / International, Dahl Al Hamam",
+        "neighborhood": "Dahl Al Hamam",
+        "lat": 25.342,
+        "lng": 51.459,
+        "price_from_qar": 15000,
+        "age_groups": ["3-5", "6-11"],
+        "description": "An Edison branch focused on foundational academic development with "
+        "technology-supported classrooms and enrichment activities.",
+        "highlights": ["Classrooms", "Technology", "Science", "Library"],
+        "tags": [
+            "British Curriculum",
+            "Co-ed",
+            "Early Years",
+            "IGCSE",
+            "Mid-Range (15-30k)",
+            "Sports Facilities",
+            "Primary Only",
+        ],
+        "exact_address": "Al Khariya Street, Building 2, Zone 67, Street 533, Doha, Qatar",
+        "phones": ("+974 4037 0653",),
+    },
+    {
+        "slug": "schools-edison-global-academy-lusail",
+        "title": "Edison Global Academy – Lusail",
+        "subtitle": "British / International, Lusail",
+        "neighborhood": "Lusail",
+        "lat": 25.427,
+        "lng": 51.493,
+        "price_from_qar": 15000,
+        "age_groups": ["3-5", "6-11", "12-15"],
+        "description": "Edison’s Lusail branch provides an international British-oriented "
+        "education with extensive academic, technology, arts, swimming and "
+        "activity facilities.",
+        "highlights": [
+            "Science labs",
+            "ICT labs",
+            "Library",
+            "Swimming pools",
+            "Theatre",
+            "Arts",
+        ],
+        "tags": [
+            "British Curriculum",
+            "Co-ed",
+            "Early Years",
+            "Full Pathway",
+            "IGCSE",
+            "Mid-Range (15-30k)",
+            "Secondary",
+            "Sports Facilities",
+            "Arts",
+            "Science Labs",
+            "Swimming Pool",
+        ],
+        "exact_address": "Fox Hills North, Zone 69, Street 218, Lusail, Qatar",
+        "phones": ("+974 6692 9754", "+974 4451 6356"),
+    },
+    {
+        "slug": "schools-edison-global-academy-rawdat-al-hamama",
+        "title": "Edison Global Academy – Rawdat Al Hamama",
+        "subtitle": "British / International, Rawdat Al Hamama",
+        "neighborhood": "Rawdat Al Hamama",
+        "lat": 25.403,
+        "lng": 51.433,
+        "price_from_qar": 15000,
+        "age_groups": ["3-5", "6-11"],
+        "description": "An Edison branch serving Rawdat Al Hamama with British-oriented "
+        "education and a wide range of academic, technology, sporting and "
+        "creative facilities.",
+        "highlights": [
+            "Science labs",
+            "ICT",
+            "Library",
+            "Swimming",
+            "Arts",
+            "Play areas",
+        ],
+        "tags": [
+            "British Curriculum",
+            "Co-ed",
+            "Early Years",
+            "IGCSE",
+            "Mid-Range (15-30k)",
+            "Sports Facilities",
+            "Arts",
+            "Primary Only",
+            "Science Labs",
+            "Swimming Pool",
+        ],
+        "exact_address": "Rawdat Al Hamama, Doha, Qatar",
+        "phones": ("+974 6606 1412", "+974 4050 1999"),
+    },
+    {
+        "slug": "schools-gems-wellington-school-qatar",
+        "title": "GEMS Wellington School – Qatar",
+        "subtitle": "British / International, Al Wukair",
+        "neighborhood": "Al Wukair",
+        "lat": 25.166,
+        "lng": 51.537,
+        "price_from_qar": 35000,
+        "age_groups": ["3-5", "6-11", "12-15", "16+"],
+        "description": "A GEMS international school offering a British-oriented education "
+        "with academic, sporting, creative and extracurricular opportunities "
+        "across the school years.",
+        "highlights": ["Science", "Technology", "Sports", "Arts", "Library"],
+        "tags": [
+            "British Curriculum",
+            "Co-ed",
+            "Early Years",
+            "Full Pathway",
+            "IGCSE",
+            "Mid-Range (15-30k)",
+            "Secondary",
+            "Sports Facilities",
+            "Arts",
+            "GEMS Education",
+            "Library",
+            "Premium (30-45k)",
+        ],
+        "exact_address": "Al Waab, Doha, Qatar",
+        "phones": ("+974 4036 1700",),
+    },
+    {
+        "slug": "schools-newton-british-academy-al-dafna",
+        "title": "Newton British Academy – Al Dafna",
+        "subtitle": "British / Cambridge, Al Dafna",
+        "neighborhood": "Al Dafna",
+        "lat": 25.329,
+        "lng": 51.531,
+        "price_from_qar": 20000,
+        "age_groups": ["3-5", "6-11"],
+        "description": "A Newton British Academy campus focused on younger learners, "
+        "following the EYFS framework and National Curriculum for England.",
+        "highlights": ["ICT suite", "Library", "Sports halls", "Basketball court"],
+        "tags": [
+            "British Curriculum",
+            "Co-ed",
+            "Early Years",
+            "IGCSE",
+            "Mid-Range (15-30k)",
+            "Sports Facilities",
+            "Cambridge",
+            "Primary Only",
+        ],
+        "exact_address": "Building 16, Street 970, Zone 63, Al Dafna, Doha, Qatar",
+        "phones": ("+974 4414 2294", "+974 3017 6759"),
+    },
+    {
+        "slug": "schools-newton-british-school-al-waab",
+        "title": "Newton British School – Al Waab",
+        "subtitle": "British / Cambridge, Al Waab",
+        "neighborhood": "Al Waab",
+        "lat": 25.251,
+        "lng": 51.443,
+        "price_from_qar": 22000,
+        "age_groups": ["3-5", "6-11", "12-15", "16+"],
+        "description": "A Newton British campus in Al Waab offering a British educational "
+        "pathway through secondary level.",
+        "highlights": ["ICT", "Science", "Sports", "Library"],
+        "tags": [
+            "British Curriculum",
+            "Co-ed",
+            "Early Years",
+            "Full Pathway",
+            "IGCSE",
+            "Mid-Range (15-30k)",
+            "Secondary",
+            "Sports Facilities",
+            "Cambridge",
+            "Science Labs",
+        ],
+        "exact_address": "7F54+7HW, Sports City St, Doha, Qatar",
+        "phones": ("+974 5518 8665", "+974 4447 2427"),
+    },
+    {
+        "slug": "schools-newton-british-school-muraikh",
+        "title": "Newton British School – Muraikh",
+        "subtitle": "British / Cambridge, Muraikh",
+        "neighborhood": "Muraikh",
+        "lat": 25.285,
+        "lng": 51.397,
+        "price_from_qar": 20000,
+        "age_groups": ["3-5", "6-11"],
+        "description": "A Newton British campus serving younger students through primary "
+        "school with academic, technology, science and sporting opportunities.",
+        "highlights": ["Science", "ICT", "Sports", "Learning spaces"],
+        "tags": [
+            "British Curriculum",
+            "Co-ed",
+            "Early Years",
+            "IGCSE",
+            "Mid-Range (15-30k)",
+            "Sports Facilities",
+            "Cambridge",
+            "Primary Only",
+            "Science Labs",
+        ],
+        "exact_address": "Muraikh, Al Rayyan, Qatar",
+        "phones": ("+974 3337 5390", "+974 4458 4047"),
+    },
+    {
+        "slug": "schools-newton-international-academy-lusail",
+        "title": "Newton International Academy – Lusail",
+        "subtitle": "British / Cambridge, Lusail",
+        "neighborhood": "Lusail",
+        "lat": 25.423,
+        "lng": 51.49,
+        "price_from_qar": 20000,
+        "age_groups": ["3-5", "6-11", "12-15", "16+"],
+        "description": "Newton’s Lusail academy provides the British curriculum from early "
+        "years through Years 12/13 with modern facilities.",
+        "highlights": ["Libraries", "Science", "ICT", "Sports"],
+        "tags": [
+            "British Curriculum",
+            "Co-ed",
+            "Early Years",
+            "Full Pathway",
+            "IGCSE",
+            "Mid-Range (15-30k)",
+            "Secondary",
+            "Sports Facilities",
+            "Cambridge",
+            "Library",
+            "Science Labs",
+        ],
+        "exact_address": "9GQF+QG9, Lusail, Qatar",
+        "phones": ("+974 7070 2395", "+974 4451 6356"),
+    },
+    {
+        "slug": "schools-newton-international-academy-smash",
+        "title": "Newton International Academy – Smash",
+        "subtitle": "British / Cambridge, Doha",
+        "neighborhood": "Doha",
+        "lat": 25.39,
+        "lng": 51.54,
+        "price_from_qar": 20000,
+        "age_groups": ["3-5", "6-11", "12-15", "16+"],
+        "description": "A Newton academy offering a Cambridge-oriented pathway through "
+        "secondary education with academic, technology, sports and "
+        "extracurricular facilities.",
+        "highlights": ["Science", "ICT", "Sports", "Activities"],
+        "tags": [
+            "British Curriculum",
+            "Co-ed",
+            "Early Years",
+            "Full Pathway",
+            "IGCSE",
+            "Mid-Range (15-30k)",
+            "Secondary",
+            "Sports Facilities",
+            "Cambridge",
+            "Science Labs",
+        ],
+        "exact_address": "9FQQ+R2H, Doha, Qatar",
+        "phones": ("+974 3016 0137", "+974 4409 1001"),
+    },
+    {
+        "slug": "schools-queens-international-school",
+        "title": "Queen’s International School",
+        "subtitle": "British, Doha",
+        "neighborhood": "Doha",
+        "lat": 25.35,
+        "lng": 51.47,
+        "price_from_qar": 20000,
+        "age_groups": ["3-5", "6-11", "12-15", "16+"],
+        "description": "A British-oriented school providing a pathway through secondary "
+        "education with academic, technology and sporting programmes.",
+        "highlights": ["Sports", "Science", "Arts", "Library"],
+        "tags": [
+            "British Curriculum",
+            "Co-ed",
+            "Early Years",
+            "Full Pathway",
+            "IGCSE",
+            "Mid-Range (15-30k)",
+            "Secondary",
+            "Sports Facilities",
+            "Arts",
+            "Library",
+            "Science Labs",
+        ],
+        "exact_address": "Zone 33, Street 940, Building 41, Qatar",
+        "phones": ("+974 4458 9000",),
+    },
+    {
+        "slug": "schools-sherborne-qetaf-sen-provision",
+        "title": "Sherborne Qetaf SEN Provision",
+        "subtitle": "British specialist SEN provision, Bani Hajer",
+        "neighborhood": "Bani Hajer",
+        "lat": 25.32,
+        "lng": 51.39,
+        "price_from_qar": 30000,
+        "age_groups": ["3-5", "6-11"],
+        "description": "Sherborne’s specialist provision for children with special "
+        "educational needs and disabilities, providing an individualised "
+        "environment for pupils aged 3–12.",
+        "highlights": [
+            "Specialist classrooms",
+            "Therapy and support spaces",
+            "Sensory facilities",
+        ],
+        "tags": [
+            "British Curriculum",
+            "Co-ed",
+            "Early Years",
+            "Premium (30-45k)",
+            "Primary Only",
+        ],
+        "exact_address": "Bani Hajer, Doha, Qatar",
+        "phones": ("+974 4495 4555",),
+    },
+    {
+        "slug": "schools-sherborne-school-mall-of-qatar",
+        "title": "Sherborne School – Mall of Qatar",
+        "subtitle": "British, Mall of Qatar",
+        "neighborhood": "Mall of Qatar",
+        "lat": 25.327,
+        "lng": 51.351,
+        "price_from_qar": 35000,
+        "age_groups": ["3-5", "6-11", "12-15", "16+"],
+        "description": "Sherborne’s coeducational all-through school offers the National "
+        "Curriculum for England through sixth form, including IGCSE and "
+        "A-Level pathways.",
+        "highlights": ["Science", "Technology", "Sports", "Arts", "Music"],
+        "tags": [
+            "British Curriculum",
+            "Co-ed",
+            "Early Years",
+            "Full Pathway",
+            "IGCSE",
+            "Mid-Range (15-30k)",
+            "Secondary",
+            "Sports Facilities",
+            "A Levels",
+            "Arts",
+            "Premium (30-45k)",
+            "Science Labs",
+        ],
+        "exact_address": "Rawdat Al Jahhaniya / Mall of Qatar, Doha, Qatar",
+        "phones": ("+974 4459 6400",),
     },
 )
 
-assert len(SCHOOLS) == 84, f"Expected 84 schools, got {len(SCHOOLS)}"
+assert len(SCHOOLS) == 97, f"Expected 97 schools, got {len(SCHOOLS)}"
