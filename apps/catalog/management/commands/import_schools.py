@@ -1,4 +1,4 @@
-"""import_schools management command — seeds the 84 Qatar schools.
+"""import_schools management command — seeds the Qatar schools dataset.
 
 Run ``import_tags`` first; this command links each listing to its tags by name
 and aborts if any name is missing rather than silently creating half-tagged
@@ -9,10 +9,8 @@ deterministic ``uuid5(NAMESPACE, slug)``, so re-running updates changed fields
 instead of duplicating rows. The namespace is distinct from ``seed_catalog``'s,
 so the two datasets can never collide on an id.
 
-Coordinates come from the dataset as district centroids (~1-2km accurate), so
-distance sorting answers "which schools are in my part of town" and nothing
-finer. 29 schools whose location is only "Doha" carry NULL coordinates and drop
-out of distance-filtered results rather than being misplaced.
+Coordinates use the best available school, address, road, or district location.
+The supplied textual address is preserved separately in ``exact_address``.
 
 Why status=ACTIVE and owner=None: schools are editorial catalog data, not
 provider-submitted listings. The public ``/api/v1/listings/`` endpoint filters
@@ -25,7 +23,11 @@ import uuid
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
-from apps.catalog.models import Listing, ListingStatus, ListingTag
+from apps.catalog.models import (
+    Listing,
+    ListingStatus,
+    ListingTag,
+)
 from apps.catalog.seed_data.schools import CATEGORY, SCHOOLS
 
 # Fixed namespace — changing this orphans every previously-imported school.
@@ -39,7 +41,7 @@ def _uid(slug: str) -> uuid.UUID:
 
 class Command(BaseCommand):
     help = (
-        "Import the 84 Qatar schools from the SabilLife schools dataset as "
+        "Import the Qatar schools from the SabilLife schools dataset as "
         "ACTIVE, owner-less SCHOOLS listings with tags attached. Idempotent. "
         "Run import_tags first."
     )
@@ -99,15 +101,13 @@ class Command(BaseCommand):
                         "category": CATEGORY,
                         "subtitle": data["subtitle"],
                         "neighborhood": data["neighborhood"],
-                        # District centroids, ~1-2km — not geocoded addresses.
-                        # None for the 29 schools whose location is too vague to
-                        # place. See seed_data/schools.py.
                         "lat": data["lat"],
                         "lng": data["lng"],
                         "price_from_qar": data["price_from_qar"],
                         "age_groups": data["age_groups"],
                         "description": data["description"],
                         "highlights": data["highlights"],
+                        "exact_address": data["exact_address"],
                         "is_featured": False,
                         "status": ListingStatus.ACTIVE,
                         "owner": None,
@@ -116,6 +116,7 @@ class Command(BaseCommand):
                 if not options["skip_tags"]:
                     # set() so a re-run after a tag change drops stale links.
                     listing.tags.set(tag_map[t] for t in data["tags"])
+
                 if created:
                     created_count += 1
                 else:
@@ -143,13 +144,7 @@ class Command(BaseCommand):
                     f"({link_count / len(SCHOOLS):.1f} per school)."
                 )
             )
-        placed = sum(1 for s in SCHOOLS if s["lat"] is not None)
-        self.stdout.write(
-            f"Coordinates: {placed} placed at district centroids (~1-2km, not "
-            f"geocoded addresses), {len(SCHOOLS) - placed} left NULL because "
-            f'their location is only "Doha". The NULL ones are skipped by '
-            f"?sort=distance and max_distance_km."
-        )
+        self.stdout.write(f"Coordinates: all {len(SCHOOLS)} school(s) placed.")
 
     def _load_tag_map(self) -> dict[str, ListingTag]:
         """Resolve every tag name the dataset needs, or abort listing what's missing."""
