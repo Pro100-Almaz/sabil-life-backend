@@ -20,13 +20,21 @@ Implementation note on dlat/dlng:
 """
 
 import math
+from datetime import timedelta
 from urllib.parse import unquote, urlparse
 
 from django.conf import settings
 from django.db import transaction
 from django.db.models import ExpressionWrapper, FloatField, Func, QuerySet, Value
+from django.utils import timezone
 
-from apps.catalog.models import Listing, ListingImage
+from apps.catalog.models import (
+    Listing,
+    ListingCategory,
+    ListingImage,
+    ListingStatus,
+    MasterclassEventType,
+)
 from apps.catalog.tasks import delete_storage_objects
 
 
@@ -183,3 +191,14 @@ def url_to_storage_key(url: str) -> str | None:
         return path.split(prefix, 1)[1].lstrip("/") or None
 
     return path.lstrip("/") or None
+
+
+def draft_expired_one_time_masterclasses() -> int:
+    """Draft one-time masterclasses one hour after their start time."""
+    now = timezone.now()
+    return Listing.objects.filter(
+        category=ListingCategory.MASTERCLASSES,
+        event_type=MasterclassEventType.ONE_TIME,
+        starts_at__lte=now - timedelta(hours=1),
+        status__in=[ListingStatus.ACTIVE, ListingStatus.PENDING],
+    ).update(status=ListingStatus.DRAFT, updated_at=now)

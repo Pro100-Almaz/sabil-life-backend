@@ -1,8 +1,6 @@
 import logging
-from datetime import timedelta
 
-from django.db.models import Count, Q, QuerySet
-from django.utils import timezone
+from django.db.models import Count, QuerySet
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import filters, mixins, permissions, viewsets
@@ -19,7 +17,6 @@ from apps.catalog.models import (
     ListingStatus,
     ListingTag,
     ListingTagGroup,
-    MasterclassEventType,
 )
 from apps.catalog.schema import (
     CATEGORIES_SCHEMA,
@@ -37,7 +34,10 @@ from apps.catalog.serializers import (
     ListingTagGroupSerializer,
     TutorCardSerializer,
 )
-from apps.catalog.services import annotate_distance_km
+from apps.catalog.services import (
+    annotate_distance_km,
+    draft_expired_one_time_masterclasses,
+)
 from apps.providers.models import TutorDetail, TutorStatus, TutorSubject
 from apps.users.enums import UserRole
 from apps.users.permissions import IsFamily, IsMasterclass
@@ -77,14 +77,13 @@ class ListingViewSet(viewsets.ReadOnlyModelViewSet):
     # the custom ?sort= logic below takes precedence.
     ordering_fields = ["rating", "price_from_qar", "created_at"]
 
+    def list(self, request: Request, *args, **kwargs) -> Response:
+        draft_expired_one_time_masterclasses()
+        return super().list(request, *args, **kwargs)
+
     def get_queryset(self) -> QuerySet:
         qs = (
             Listing.objects.filter(status=ListingStatus.ACTIVE)
-            .exclude(
-                Q(category=ListingCategory.MASTERCLASSES)
-                & Q(event_type=MasterclassEventType.ONE_TIME)
-                & Q(starts_at__lte=timezone.now() - timedelta(hours=1))
-            )
             .prefetch_related("images")
             .prefetch_related("tags")
         )

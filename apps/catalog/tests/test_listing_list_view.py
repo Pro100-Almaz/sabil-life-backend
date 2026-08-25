@@ -65,7 +65,7 @@ class ListingListViewTests(APITestCase):
         self.assertIn(str(active.id), ids)
         self.assertEqual(len(ids), 1)
 
-    def test_expired_one_time_masterclass_is_hidden_during_task_delay(self):
+    def test_listing_request_drafts_expired_one_time_masterclass(self):
         expired = make_listing(
             title="Expired event",
             category=ListingCategory.MASTERCLASSES,
@@ -84,6 +84,8 @@ class ListingListViewTests(APITestCase):
         ids = [item["id"] for item in response.data["results"]]
         self.assertNotIn(str(expired.id), ids)
         self.assertIn(str(upcoming.id), ids)
+        expired.refresh_from_db()
+        self.assertEqual(expired.status, ListingStatus.DRAFT)
 
     # ------------------------------------------------------------------
     # Pagination shape

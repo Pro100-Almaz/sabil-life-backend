@@ -9,11 +9,11 @@ from apps.catalog.models import (
     ListingStatus,
     MasterclassEventType,
 )
-from apps.catalog.tasks import archive_expired_one_time_masterclasses
+from apps.catalog.services import draft_expired_one_time_masterclasses
 
 
 @pytest.mark.django_db
-def test_expiry_task_drafts_only_expired_one_time_masterclasses(
+def test_expiry_check_drafts_only_expired_one_time_masterclasses(
     django_assert_num_queries,
 ):
     expired = Listing.objects.create(
@@ -40,7 +40,7 @@ def test_expiry_task_drafts_only_expired_one_time_masterclasses(
     )
 
     with django_assert_num_queries(1):
-        updated = archive_expired_one_time_masterclasses()
+        updated = draft_expired_one_time_masterclasses()
 
     expired.refresh_from_db()
     within_grace_period.refresh_from_db()
