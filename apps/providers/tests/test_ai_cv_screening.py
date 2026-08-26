@@ -3,6 +3,7 @@ from unittest.mock import patch
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 
+from apps.providers.admin import AIScreeningInline
 from apps.providers.ai_screening import CVScreeningResult
 from apps.providers.models import (
     AIScreeningStatus,
@@ -20,6 +21,19 @@ from apps.users.models import CustomUser
     OPENAI_CV_MODEL="test-model",
 )
 class AIScreeningTests(TestCase):
+    def test_admin_formats_screening_lists_as_readable_text(self):
+        rendered = str(
+            AIScreeningInline._text_list(
+                ["Teaching experience", "Dates <require> verification"]
+            )
+        )
+
+        self.assertIn("Teaching experience", rendered)
+        self.assertIn("Dates &lt;require&gt; verification", rendered)
+        self.assertNotIn("[", rendered)
+        self.assertNotIn('"Teaching experience"', rendered)
+        self.assertEqual(AIScreeningInline._text_list([]), "—")
+
     def setUp(self):
         self.user = CustomUser.objects.create_user(
             email="screening@example.com",
