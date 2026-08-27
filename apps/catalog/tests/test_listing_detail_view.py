@@ -126,12 +126,7 @@ class ListingDetailViewTests(APITestCase):
         self.assertIsNone(response.data["owner_id"])
 
     def test_detail_owner_id_is_string_for_provider_owned(self):
-        """owner_id is a non-null string (the owner's PK) when the listing has an owner.
-
-        CustomUser uses BigAutoField (integer) primary keys, so owner_id is an
-        integer stringified — NOT a UUID.  We just verify it is non-null and that
-        it matches str(owner.pk).
-        """
+        """owner_id is the owner's public UUID when the listing has an owner."""
         owner = User.objects.create_user(
             email="provider@example.com", password="StrongPass!99"
         )
@@ -140,8 +135,8 @@ class ListingDetailViewTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         owner_id = response.data["owner_id"]
         self.assertIsNotNone(owner_id)
-        # owner_id must match str(owner.pk)
-        self.assertEqual(owner_id, str(owner.pk))
+        # owner_id must match str(owner.uuid)
+        self.assertEqual(owner_id, str(owner.uuid))
 
     def test_detail_description_and_highlights_present(self):
         listing = make_listing(

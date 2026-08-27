@@ -4,7 +4,7 @@ from .models import Favorite
 
 
 class FavoriteSerializer(serializers.ModelSerializer):
-    user = serializers.ReadOnlyField(source="user.id")
+    user = serializers.UUIDField(source="user.uuid", read_only=True)
 
     class Meta:
         model = Favorite

@@ -23,6 +23,7 @@ class ReviewListSerializer(serializers.ModelSerializer):
     """
 
     author_name = serializers.SerializerMethodField()
+    author_id = serializers.UUIDField(source="author.uuid", read_only=True)
 
     class Meta:
         model = Review
@@ -107,6 +108,7 @@ class TutorReviewListSerializer(serializers.ModelSerializer):
     """
 
     author_name = serializers.SerializerMethodField()
+    author_id = serializers.UUIDField(source="author.uuid", read_only=True)
 
     class Meta:
         model = TutorReview

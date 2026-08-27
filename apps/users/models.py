@@ -1,3 +1,5 @@
+import uuid
+
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -23,6 +25,14 @@ class Role(models.Model):
 
 
 class CustomUser(AbstractUser):
+    # Keep Django's integer primary key for existing relations and auth tables.
+    # ``uuid`` is the stable identifier exposed outside the backend.
+    uuid = models.UUIDField(
+        default=uuid.uuid4,
+        unique=True,
+        editable=False,
+        db_index=True,
+    )
     username = None
     email = models.EmailField(_("email address"), unique=True)
 

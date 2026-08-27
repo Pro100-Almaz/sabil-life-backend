@@ -92,7 +92,7 @@ class TestReviewListView:
         Review.objects.create(listing=listing, author=family, rating=5)
         resp = self.client.get(_reviews_url(listing.id))
         result = resp.json()["results"][0]
-        assert result["author_id"] == family.id
+        assert result["author_id"] == str(family.uuid)
 
     def test_response_fields(self):
         listing = _listing("Fields Check")
