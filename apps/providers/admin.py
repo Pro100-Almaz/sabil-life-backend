@@ -5,7 +5,7 @@ from django.core.files.storage import default_storage
 from django.http import FileResponse, Http404
 from django.template.response import TemplateResponse
 from django.urls import path, reverse
-from django.utils.html import format_html
+from django.utils.html import format_html, format_html_join
 from django.utils.translation import gettext_lazy as _
 from unfold.admin import ModelAdmin
 from unfold.decorators import action, display
@@ -213,10 +213,10 @@ class AIScreeningInline(admin.StackedInline):
     readonly_fields = (
         "status",
         "summary",
-        "strengths",
-        "concerns",
-        "missing_information",
-        "manual_checks",
+        "strengths_text",
+        "concerns_text",
+        "missing_information_text",
+        "manual_checks_text",
         "criteria",
         "confidence",
         "provider",
@@ -230,6 +230,37 @@ class AIScreeningInline(admin.StackedInline):
 
     def has_add_permission(self, request, obj=None):
         return False
+
+    @staticmethod
+    def _text_list(value):
+        if not isinstance(value, list):
+            return str(value).strip() or "—"
+
+        items = [str(item).strip() for item in value if str(item).strip()]
+        if not items:
+            return "—"
+
+        return format_html_join(
+            "",
+            '<p class="mb-2 last:mb-0">{}</p>',
+            ((item,) for item in items),
+        )
+
+    @admin.display(description=_("Strengths"))
+    def strengths_text(self, obj: ProviderVerificationAIScreening):
+        return self._text_list(obj.strengths)
+
+    @admin.display(description=_("Concerns"))
+    def concerns_text(self, obj: ProviderVerificationAIScreening):
+        return self._text_list(obj.concerns)
+
+    @admin.display(description=_("Missing information"))
+    def missing_information_text(self, obj: ProviderVerificationAIScreening):
+        return self._text_list(obj.missing_information)
+
+    @admin.display(description=_("Manual checks"))
+    def manual_checks_text(self, obj: ProviderVerificationAIScreening):
+        return self._text_list(obj.manual_checks)
 
 
 @admin.register(ProviderVerification)
