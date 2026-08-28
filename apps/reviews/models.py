@@ -59,8 +59,8 @@ class TutorReview(models.Model):
     Reviews drive the denormalized rating/review_count on TutorDetail via a
     post_save/post_delete signal (see signals.py).
 
-    A review may only be created when the family has an Inquiry with this tutor
-    in CONTACTED / ACCEPTED / COMPLETED (see services.can_review_tutor).
+    A review may only be created when the family has an accepted Inquiry with
+    this tutor (see services.can_review_tutor).
     """
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -96,3 +96,47 @@ class TutorReview(models.Model):
         return (
             f"TutorReview({self.tutor_id}, author={self.author_id}, rating={self.rating})"
         )
+
+
+class ReviewReport(models.Model):
+    review = models.ForeignKey(
+        Review,
+        on_delete=models.CASCADE,
+        related_name="reports",
+    )
+    reporter = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="review_reports",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["review", "reporter"],
+                name="unique_report_per_listing_review_user",
+            )
+        ]
+
+
+class TutorReviewReport(models.Model):
+    review = models.ForeignKey(
+        TutorReview,
+        on_delete=models.CASCADE,
+        related_name="reports",
+    )
+    reporter = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="tutor_review_reports",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["review", "reporter"],
+                name="unique_report_per_tutor_review_user",
+            )
+        ]

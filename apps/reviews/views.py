@@ -19,7 +19,7 @@ from rest_framework.views import APIView
 
 from apps.catalog.models import Listing, ListingStatus
 from apps.providers.models import TutorDetail
-from apps.reviews.models import Review, TutorReview
+from apps.reviews.models import Review, ReviewReport, TutorReview, TutorReviewReport
 from apps.reviews.permissions import IsFamily
 from apps.reviews.schema import (
     LISTING_REVIEWS_CREATE_SCHEMA,
@@ -250,3 +250,51 @@ class ReviewDetailView(APIView):
         review.delete()
         logger.info("Family %s deleted review %s.", request.user.email, review_id)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ReviewReportView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, review_id, version=None):
+        review = get_object_or_404(Review, pk=review_id)
+        if review.author_id == request.user.id:
+            return Response(
+                {"detail": "You cannot report your own review."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        _, created = ReviewReport.objects.get_or_create(
+            review=review,
+            reporter=request.user,
+        )
+        return Response(
+            {
+                "detail": "Review reported.",
+                "report_count": review.reports.count(),
+            },
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+        )
+
+
+class TutorReviewReportView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, review_id, version=None):
+        review = get_object_or_404(TutorReview, pk=review_id)
+        if review.author_id == request.user.id:
+            return Response(
+                {"detail": "You cannot report your own review."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        _, created = TutorReviewReport.objects.get_or_create(
+            review=review,
+            reporter=request.user,
+        )
+        return Response(
+            {
+                "detail": "Review reported.",
+                "report_count": review.reports.count(),
+            },
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+        )
