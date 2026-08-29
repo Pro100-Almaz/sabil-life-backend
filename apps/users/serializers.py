@@ -83,8 +83,10 @@ class CreateUserSerializer(serializers.ModelSerializer):
         validated_data.pop("password2")
         return CustomUser.objects.create_user(**validated_data)
 
+
 class PersonalInformationRequestSerializer(serializers.Serializer):
     "Validate inputs before the verification"
+
     old_password = serializers.CharField(
         required=False,
         allow_blank=True,
@@ -121,14 +123,29 @@ class PersonalInformationRequestSerializer(serializers.Serializer):
         return value
 
     def validate_new_email(self, value: str) -> str:
-        # Fail fast: surface a taken email BEFORE we email a code.
-        if CustomUser.objects.filter(email__iexact=value).exists():
+        user = self.context["request"].user
+        if CustomUser.objects.filter(email__iexact=value).exclude(pk=user.pk).exists():
             raise serializers.ValidationError(_("A user with this email already exists."))
         return value
 
     def validate(self, data: dict) -> dict:
         user = self.context["request"].user
         new_password = data["new_password"]
+
+        if not new_password and not data["new_name"] and not data["new_email"]:
+            raise serializers.ValidationError(
+                _("Provide at least one personal-information change.")
+            )
+
+        if data["new_name"] == user.full_name:
+            data["new_name"] = ""
+        if data["new_email"].lower() == user.email.lower():
+            data["new_email"] = ""
+
+        if not new_password and not data["new_name"] and not data["new_email"]:
+            raise serializers.ValidationError(
+                _("Provide at least one personal-information change.")
+            )
 
         if new_password == data["new_password2"] and new_password == "":
             return data
@@ -156,8 +173,10 @@ class PersonalInformationRequestSerializer(serializers.Serializer):
 
         return data
 
+
 class PersonalInformationConfirmSerializer(serializers.Serializer):
     code = serializers.CharField(min_length=CODE_LENGTH, max_length=CODE_LENGTH)
+
 
 class RegistrationRequestSerializer(serializers.ModelSerializer):
     """
@@ -313,7 +332,6 @@ class ChangePasswordSerializer(serializers.Serializer):
         return data
 
 
-
 class UserProfileSerializer(serializers.ModelSerializer):
     roles = serializers.SerializerMethodField()
 
@@ -336,6 +354,9 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "id": {"read_only": True},
             "uuid": {"read_only": True},
             "email": {"read_only": True},
+            "full_name": {"read_only": True},
+            "first_name": {"read_only": True},
+            "last_name": {"read_only": True},
             "is_verified": {"read_only": True},
         }
 

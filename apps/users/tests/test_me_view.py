@@ -5,6 +5,8 @@ This file replaces test_profile_view.py (which used the old 'profile' URL name).
 The view is now UserMeView served at /api/v1/auth/me/ (URL name: 'me').
 """
 
+from unittest.mock import patch
+
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from rest_framework import status
@@ -62,27 +64,26 @@ class MeViewTests(APITestCase):
             with self.subTest(field=field):
                 self.assertIn(field, response.data)
 
-    def test_update_me_put(self):
-        """Full profile update with PUT."""
+    def test_update_me_put_ignores_name_fields(self):
+        """Name changes require the verified personal-information flow."""
         self.client.force_authenticate(user=self.user)
-        data = {
-            "first_name": "Updated",
-            "last_name": "Name",
-        }
-        response = self.client.put(self.url, data, format="json")
+        response = self.client.put(
+            self.url, {"first_name": "Updated", "last_name": "Name"}, format="json"
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.user.refresh_from_db()
-        self.assertEqual(self.user.first_name, "Updated")
-        self.assertEqual(self.user.last_name, "Name")
+        self.assertEqual(self.user.first_name, "Test")
+        self.assertEqual(self.user.last_name, "User")
 
-    def test_update_me_patch(self):
-        """Partial profile update with PATCH."""
+    def test_update_me_ignores_full_name(self):
+        """Personal information can only change through verified edit flow."""
         self.client.force_authenticate(user=self.user)
-        data = {"full_name": "Patched Name"}
-        response = self.client.patch(self.url, data, format="json")
+        response = self.client.patch(
+            self.url, {"full_name": "Patched Name"}, format="json"
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.user.refresh_from_db()
-        self.assertEqual(self.user.full_name, "Patched Name")
+        self.assertEqual(self.user.full_name, "Test User")
 
     def test_update_me_ignores_password(self):
         """Profile updates cannot bypass the dedicated password endpoint."""
@@ -149,3 +150,43 @@ class MeViewTests(APITestCase):
         me_response = self.client.get(self.url)
         self.assertEqual(me_response.status_code, status.HTTP_200_OK)
         self.assertEqual(me_response.data["email"], "me_token_test@example.com")
+
+
+class PersonalInformationFlowTests(APITestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            email="edit-profile@example.com",
+            password="OldStrongPass!99",
+            full_name="Original Name",
+        )
+        self.request_url = reverse("v1:users:edit-profile")
+        self.confirm_url = reverse("v1:users:edit-profile-verify")
+        self.client.force_authenticate(user=self.user)
+
+    @patch("apps.users.views.send_edit_profile_email.delay")
+    @patch("apps.users.otp.generate_code", return_value="123456")
+    def test_verified_edit_applies_pending_changes(self, _mock_code, mock_email):
+        response = self.client.post(
+            self.request_url,
+            {
+                "new_name": "Updated Name",
+                "new_email": "updated@example.com",
+                "new_password": "NewStrongPass!88",
+                "new_password2": "NewStrongPass!88",
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        mock_email.assert_called_once_with("edit-profile@example.com", "123456")
+
+        response = self.client.post(self.confirm_url, {"code": "123456"}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["user"]["email"], "updated@example.com")
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.full_name, "Updated Name")
+        self.assertEqual(self.user.email, "updated@example.com")
+        self.assertTrue(self.user.check_password("NewStrongPass!88"))
+
+    def test_request_rejects_empty_change(self):
+        response = self.client.post(self.request_url, {}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)

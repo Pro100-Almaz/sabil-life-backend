@@ -31,26 +31,27 @@ from apps.users.serializers import (
     CreateUserSerializer,
     ForgotPasswordConfirmSerializer,
     ForgotPasswordRequestSerializer,
+    PersonalInformationConfirmSerializer,
+    PersonalInformationRequestSerializer,
     RegistrationRequestSerializer,
     RegistrationVerifySerializer,
     UserProfileSerializer,
-    PersonalInformationRequestSerializer,
-    PersonalInformationConfirmSerializer,
 )
 from apps.users.tasks import (
+    send_edit_profile_email,
     send_password_changed_email,
     send_password_reset_email,
     send_verification_email,
-    send_edit_profile_email,
 )
 from apps.users.throttles import (
     PasswordResetRequestThrottle,
+    PersonalInformationRequestThrottle,
     RegistrationCodeThrottle,
     UserLoginRateThrottle,
-    PersonalInformationRequestThrottle
 )
 
 logger = logging.getLogger(__name__)
+
 
 class PersonalInformationRequestView(generics.GenericAPIView):
     permission_classes = (permissions.IsAuthenticated,)
@@ -68,29 +69,26 @@ class PersonalInformationRequestView(generics.GenericAPIView):
         new_email = serializer.validated_data["new_email"]
 
         code = otp.start_information_change(
-            email=user.email, 
+            user_id=user.pk,
             new_password=new_password,
             new_name=new_name,
-            new_email=new_email, 
+            new_email=new_email,
         )
         send_edit_profile_email.delay(user.email, code)
 
         return Response(
-            {
-                "detail": (
-                    "If an account exists for this email, a reset code has been sent."
-                )
-            },
+            {"detail": ("A verification code has been sent to your email address.")},
             status=status.HTTP_200_OK,
         )
+
 
 class PersonalInformationConfirmView(generics.GenericAPIView):
     permission_classes = (permissions.IsAuthenticated,)
     authentication_classes = (TokenAuthentication,)
     serializer_class = PersonalInformationConfirmSerializer
     throttle_classes = [ScopedRateThrottle]
-    throttle_scope = "password_reset_confirm"
-    
+    throttle_scope = "personal_information_change_confirm"
+
     _ERROR_MESSAGES = {
         "expired": "Code expired or not found. Please request a new one.",
         "invalid": "Invalid code.",
@@ -106,46 +104,55 @@ class PersonalInformationConfirmView(generics.GenericAPIView):
 
         try:
             data = otp.verify_information_change_code(
-                email=user.email,
+                user_id=user.pk,
                 code=code,
             )
         except otp.VerificationError as exc:
             message = self._ERROR_MESSAGES.get(exc.reason, "Invalid code.")
             raise serializers.ValidationError({"code": [message]}) from exc
 
-        new_password = data["new_pass"]
+        if data["user_id"] != user.pk:
+            raise serializers.ValidationError({"code": ["Invalid code."]})
+
+        new_password_hash = data["new_password_hash"]
         new_name = data["new_name"]
         new_email = data["new_email"]
-        
-        if new_password != "":
+
+        try:
             with transaction.atomic():
-                user.set_password(new_password)
-                user.save(update_fields=["password"])
-                AuthToken.objects.filter(user=user).delete()
-                transaction.on_commit(lambda: send_password_changed_email.delay(user.email))
-            
+                update_fields = []
+                if new_password_hash:
+                    user.password = new_password_hash
+                    update_fields.append("password")
+                if new_name:
+                    user.full_name = new_name
+                    update_fields.append("full_name")
+                if new_email:
+                    user.email = new_email
+                    update_fields.append("email")
+                user.save(update_fields=update_fields)
+                if new_password_hash:
+                    AuthToken.objects.filter(user=user).delete()
+                    transaction.on_commit(
+                        lambda: send_password_changed_email.delay(user.email)
+                    )
+        except IntegrityError as exc:
+            raise serializers.ValidationError(
+                {"new_email": ["A user with this email already exists."]}
+            ) from exc
+
+        if new_password_hash:
             logger.info("Password changed for user ID %s.", user.pk)
-
-        if new_name != "":
-            with transaction.atomic():
-                user.full_name = new_name
-                user.save(update_fields=["full_name"])
-
+        if new_name:
             logger.info("Name changed for user ID %s.", user.pk)
-
-        if new_email != "":
-            with transaction.atomic():
-                user.email = new_email
-                user.save(update_fields=["email"])
-
+        if new_email:
             logger.info("Email changed for user ID %s.", user.pk)
 
         return Response(
-            {
-                user
-            },
+            {"user": UserProfileSerializer(user, context={"request": request}).data},
             status=status.HTTP_200_OK,
         )
+
 
 class ChangePasswordView(generics.GenericAPIView):
     permission_classes = (permissions.IsAuthenticated,)

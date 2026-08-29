@@ -7,11 +7,11 @@ from apps.users.views import (
     ForgotPasswordConfirmView,
     ForgotPasswordView,
     LoginView,
+    PersonalInformationConfirmView,
+    PersonalInformationRequestView,
     RegisterVerifyView,
     RegisterView,
     UserMeView,
-    PersonalInformationRequestView,
-    PersonalInformationConfirmView,
 )
 
 app_name = "users"
@@ -27,7 +27,11 @@ urlpatterns = [
     path("me/", UserMeView.as_view(), name="me"),
     # Auth
     path("edit-profile/", PersonalInformationRequestView.as_view(), name="edit-profile"),
-    path("edit-profile/verify", PersonalInformationConfirmView.as_view(), name="edit-profile-verify"),
+    path(
+        "edit-profile/verify/",
+        PersonalInformationConfirmView.as_view(),
+        name="edit-profile-verify",
+    ),
     path("change-password/", ChangePasswordView.as_view(), name="change-password"),
     path("forgot-password/", ForgotPasswordView.as_view(), name="forgot-password"),
     path(
