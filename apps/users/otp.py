@@ -152,3 +152,21 @@ def verify_password_reset_code(*, email: str, code: str) -> None:
         raise VerificationError("invalid")
 
     cache.delete(key)
+
+
+def _info_change_key(email: str) -> str:
+    return f"password-reset:{email.strip().lower()}"
+
+def start_information_change(*, email: str) -> str:
+    code = generate_code()
+
+    cache.set(
+        _info_change_key(email),
+        {
+            "code_hash": _hash_code(code),
+            "attempts": 0,
+        },
+        timeout=CODE_TTL,
+    )
+
+    return code

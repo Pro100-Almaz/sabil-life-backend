@@ -34,6 +34,8 @@ from apps.users.serializers import (
     RegistrationRequestSerializer,
     RegistrationVerifySerializer,
     UserProfileSerializer,
+    PersonalInformationRequestSerializer,
+    PersonalInformationConfirmSerializer,
 )
 from apps.users.tasks import (
     send_password_changed_email,
@@ -44,10 +46,91 @@ from apps.users.throttles import (
     PasswordResetRequestThrottle,
     RegistrationCodeThrottle,
     UserLoginRateThrottle,
+    PersonalInformationRequestThrottle
 )
 
 logger = logging.getLogger(__name__)
 
+class PersonalInformationRequestView(generics.GenericAPIView):
+    permission_classes = (permissions.IsAuthenticated,)
+    authentication_classes = (TokenAuthentication,)
+    serializer_class = PersonalInformationRequestSerializer
+    throttle_classes = [PersonalInformationRequestThrottle]
+
+    def post(self, request, *args, **kwargs) -> Response:
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user = request.user
+        new_password = serializer.validated_data["new_password"]
+        new_name = serializer.validated_data["new_name"]
+        new_email = serializer.validated_data["new_email"]
+
+        code = otp.start_information_change(email=user.email)
+        send_password_reset_email.delay(user.email, code)
+
+        return Response(
+            {
+                "detail": (
+                    "If an account exists for this email, a reset code has been sent."
+                )
+            },
+            status=status.HTTP_200_OK,
+        )
+
+class PersonalInformationConfirmView(generics.GenericAPIView):
+    permission_classes = (permissions.AllowAny,)
+    serializer_class = PersonalInformationConfirmSerializer
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "password_reset_confirm"
+    
+    _ERROR_MESSAGES = {
+        "expired": "Code expired or not found. Please request a new one.",
+        "invalid": "Invalid code.",
+        "too_many_attempts": "Too many attempts. Please request a new code.",
+    }
+
+    def post(self, request, *args, **kwargs) -> Response:
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user = request.user
+        code = serializer.validated_data["code"]
+        new_password = serializer.validated_data["new_password"]
+        new_name = serializer.validated_data["new_name"]
+        new_email = serializer.validated_data["new_email"]
+
+        try:
+            otp.verify_password_reset_code(
+                email=user.email,
+                code=code,
+            )
+        except otp.VerificationError as exc:
+            message = self._ERROR_MESSAGES.get(exc.reason, "Invalid code.")
+            raise serializers.ValidationError({"code": [message]}) from exc
+        
+        if new_password != "":
+            with transaction.atomic():
+                user.set_password(new_password)
+                user.save(update_fields=["password"])
+                AuthToken.objects.filter(user=user).delete()
+                transaction.on_commit(lambda: send_password_changed_email.delay(user.email))
+            
+            logger.info("Password changed for user ID %s.", user.pk)
+
+        if new_name != "":
+            with transaction.atomic():
+                user.full_name = new_name
+                user.save(update_fields=["full_name"])
+
+            logger.info("Name changed for user ID %s.", user.pk)
+
+        if new_email != "":
+            with transaction.atomic():
+                user.email = new_email
+                user.save(update_fields=["email"])
+
+            logger.info("Email changed for user ID %s.", user.pk)
 
 class ChangePasswordView(generics.GenericAPIView):
     permission_classes = (permissions.IsAuthenticated,)

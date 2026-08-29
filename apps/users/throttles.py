@@ -50,6 +50,17 @@ class RegistrationCodeThrottle(SimpleRateThrottle):
         return self.cache_format % {"scope": self.scope, "ident": email}
 
 
+class PersonalInformationRequestThrottle(SimpleRateThrottle):
+    scope = "personal_information_change_request"
+
+    def get_cache_key(self, request, view):
+        email = (request.data.get("email") or "").strip().lower()
+
+        if not email:
+            return None
+
+        return self.cache_format % {"scope": self.scope, "ident": email} 
+
 class PasswordResetRequestThrottle(SimpleRateThrottle):
     """
     Limit reset-email requests per normalized email address.

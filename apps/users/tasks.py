@@ -27,6 +27,23 @@ def send_verification_email(self, email: str, code: str) -> None:
     )
     logger.info("Verification code sent to %s", email)
 
+@shared_task(bind=True, base=BaseTaskWithRetry)
+def send_edit_profile_email(self, email: str, code: str) -> None: 
+    subject = _("Your Sabil Life profile edit code")
+    body = _(
+        "Your profile edit code is %(code)s. "
+        "It expires in 10 minutes. "
+        "If you did not request a profile information edit, ignore this email."
+    ) % {"code": code}
+
+    send_mail(
+        subject,
+        body,
+        settings.DEFAULT_FROM_EMAIL,
+        [email],
+        fail_silently=False,
+    )
+    logger.info("Password reset email sent.")
 
 @shared_task(bind=True, base=BaseTaskWithRetry)
 def send_password_reset_email(self, email: str, code: str) -> None:

@@ -83,6 +83,93 @@ class CreateUserSerializer(serializers.ModelSerializer):
         validated_data.pop("password2")
         return CustomUser.objects.create_user(**validated_data)
 
+class PersonalInformationRequestSerializer(serializers.ModelSerializer):
+    "Validate inputs before the verification"
+    old_password = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        default="",
+        write_only=True,
+        trim_whitespace=False,
+        style={"input_type": "password"},
+    )
+    new_password = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        default="",
+        write_only=True,
+        min_length=MIN_PASSWORD_LENGTH,
+        trim_whitespace=False,
+        style={"input_type": "password"},
+    )
+    new_password2 = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        default="",
+        write_only=True,
+        min_length=MIN_PASSWORD_LENGTH,
+        trim_whitespace=False,
+        style={"input_type": "password"},
+    )
+    new_email = serializers.EmailField(required=False, allow_blank=True, default="")
+    new_name = serializers.CharField(required=False, allow_blank=True, default="")
+
+    class Meta: 
+        model = CustomUser
+        fields = ("old_password", "new_password", "new_password2", "full_name", "new_email", "new_name")
+
+    def validate_old_password(self, value: str) -> str:
+        user = self.context["request"].user
+        if value != "" and not user.check_password(value):
+            raise serializers.ValidationError(_("Current password is incorrect."))
+        return value
+
+    def validate_email(self, value: str) -> str:
+        # Fail fast: surface a taken email BEFORE we email a code.
+        if CustomUser.objects.filter(email__iexact=value).exists():
+            raise serializers.ValidationError(_("A user with this email already exists."))
+        return value
+
+    def validate(self, data: dict) -> dict:
+        user = self.context["request"].user
+        new_password = data["new_password"]
+
+        if new_password == data["new_password2"] and new_password == "":
+            return data
+
+        if new_password != data["new_password2"]:
+            raise serializers.ValidationError(
+                {"new_password2": [_("Passwords do not match.")]}
+            )
+
+        if user.check_password(new_password):
+            raise serializers.ValidationError(
+                {"new_password": [_("New password must differ from current password.")]}
+            )
+
+        try:
+            validate_password(new_password, user=user)
+        except Exception as exc:
+            if hasattr(exc, "error_list"):
+                errors = get_errors(exc)
+            else:
+                errors = [
+                    _("An error occurred during password validation. Please try again.")
+                ]
+            raise serializers.ValidationError({"new_password": errors}) from exc
+
+        return data
+
+class PersonalInformationConfirmSerializer(serializers.ModelSerializer):
+    code = serializers.CharField(min_length=CODE_LENGTH, max_length=CODE_LENGTH)
+    new_email = serializers.EmailField(required=False, allow_blank=True, default="")
+    new_name = serializers.CharField(required=False, allow_blank=True, default="")
+    new_password = serializers.CharField(required=False, allow_blank=True, default="") 
+
+    def validate_email(self, value: str) -> str:
+        if CustomUser.objects.filter(email__iexact=value).exists():
+            raise serializers.ValidationError(_("A user with this email already exists."))
+        return value
 
 class RegistrationRequestSerializer(serializers.ModelSerializer):
     """
@@ -236,6 +323,7 @@ class ChangePasswordSerializer(serializers.Serializer):
             raise serializers.ValidationError({"new_password": errors}) from exc
 
         return data
+
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
