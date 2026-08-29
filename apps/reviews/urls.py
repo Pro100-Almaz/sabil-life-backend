@@ -10,7 +10,9 @@ from apps.reviews.views import (
     ListingReviewsView,
     MyReviewsView,
     ReviewDetailView,
+    ReviewReportView,
     TutorReviewDetailView,
+    TutorReviewReportView,
     TutorReviewsView,
 )
 
@@ -39,5 +41,15 @@ urlpatterns = [
         "reviews/<uuid:review_id>/",
         ReviewDetailView.as_view(),
         name="review-detail",
+    ),
+    path(
+        "reviews/<uuid:review_id>/report/",
+        ReviewReportView.as_view(),
+        name="review-report",
+    ),
+    path(
+        "tutor-reviews/<uuid:review_id>/report/",
+        TutorReviewReportView.as_view(),
+        name="tutor-review-report",
     ),
 ]
