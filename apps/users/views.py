@@ -41,6 +41,7 @@ from apps.users.tasks import (
     send_password_changed_email,
     send_password_reset_email,
     send_verification_email,
+    send_edit_profile_email,
 )
 from apps.users.throttles import (
     PasswordResetRequestThrottle,
@@ -66,8 +67,13 @@ class PersonalInformationRequestView(generics.GenericAPIView):
         new_name = serializer.validated_data["new_name"]
         new_email = serializer.validated_data["new_email"]
 
-        code = otp.start_information_change(email=user.email)
-        send_password_reset_email.delay(user.email, code)
+        code = otp.start_information_change(
+            email=user.email, 
+            new_password=new_password,
+            new_name=new_name,
+            new_email=new_email, 
+        )
+        send_edit_profile_email.delay(user.email, code)
 
         return Response(
             {
@@ -79,7 +85,8 @@ class PersonalInformationRequestView(generics.GenericAPIView):
         )
 
 class PersonalInformationConfirmView(generics.GenericAPIView):
-    permission_classes = (permissions.AllowAny,)
+    permission_classes = (permissions.IsAuthenticated,)
+    authentication_classes = (TokenAuthentication,)
     serializer_class = PersonalInformationConfirmSerializer
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "password_reset_confirm"
@@ -96,18 +103,19 @@ class PersonalInformationConfirmView(generics.GenericAPIView):
 
         user = request.user
         code = serializer.validated_data["code"]
-        new_password = serializer.validated_data["new_password"]
-        new_name = serializer.validated_data["new_name"]
-        new_email = serializer.validated_data["new_email"]
 
         try:
-            otp.verify_password_reset_code(
+            data = otp.verify_information_change_code(
                 email=user.email,
                 code=code,
             )
         except otp.VerificationError as exc:
             message = self._ERROR_MESSAGES.get(exc.reason, "Invalid code.")
             raise serializers.ValidationError({"code": [message]}) from exc
+
+        new_password = data["new_pass"]
+        new_name = data["new_name"]
+        new_email = data["new_email"]
         
         if new_password != "":
             with transaction.atomic():
@@ -131,6 +139,13 @@ class PersonalInformationConfirmView(generics.GenericAPIView):
                 user.save(update_fields=["email"])
 
             logger.info("Email changed for user ID %s.", user.pk)
+
+        return Response(
+            {
+                user
+            },
+            status=status.HTTP_200_OK,
+        )
 
 class ChangePasswordView(generics.GenericAPIView):
     permission_classes = (permissions.IsAuthenticated,)

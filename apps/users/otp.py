@@ -155,18 +155,51 @@ def verify_password_reset_code(*, email: str, code: str) -> None:
 
 
 def _info_change_key(email: str) -> str:
-    return f"password-reset:{email.strip().lower()}"
+    return f"info-change:{email.strip().lower()}"
 
-def start_information_change(*, email: str) -> str:
+def start_information_change(*, email: str, new_name: str, new_email: str, new_password: str) -> str:
     code = generate_code()
 
     cache.set(
         _info_change_key(email),
         {
             "code_hash": _hash_code(code),
+            "new_name": new_name,
+            "new_email": new_email,
+            "new_pass": new_password,
             "attempts": 0,
         },
         timeout=CODE_TTL,
     )
 
     return code
+
+def verify_information_change_code(*, email: str, code: str) -> None:
+    """
+    Check the code. On success, delete + return the pending payload.
+    On failure, raise VerificationError with a ``reason``.
+    """
+    key = _info_change_key(email)
+    data = cache.get(key)
+    if data is None:
+        raise VerificationError("expired")
+
+    if data["attempts"] >= MAX_ATTEMPTS:
+        cache.delete(key)
+        raise VerificationError("too_many_attempts")
+
+    if _hash_code(code) != data["code_hash"]:
+        data["attempts"] += 1
+        # Re-store WITHOUT resetting the TTL, else each wrong guess would
+        # extend the window. cache.ttl is a django_redis extension; the test
+        # cache (LocMemCache) lacks it, so fall back to the full TTL there.
+        try:
+            remaining = cache.ttl(key)
+        except AttributeError, NotImplementedError:
+            remaining = CODE_TTL
+        cache.set(key, data, timeout=remaining)
+        raise VerificationError("invalid")
+
+    cache.delete(key)  # single-use
+    return data
+
