@@ -4,13 +4,13 @@ from knox import views as knox_views
 from apps.users.views import (
     ChangePasswordView,
     CreateUserView,
+    DeleteMeView,
     ForgotPasswordConfirmView,
     ForgotPasswordView,
     LoginView,
     RegisterVerifyView,
     RegisterView,
     UserMeView,
-    DeleteMeView,
 )
 
 app_name = "users"
