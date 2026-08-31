@@ -238,6 +238,20 @@ class ChangePasswordSerializer(serializers.Serializer):
         return data
 
 
+class DeleteMeSerializer(serializers.Serializer):
+    password = serializers.CharField(
+        write_only=True,
+        trim_whitespace=False,
+        style={"input_type": "password"},
+    )
+
+    def validate_password(self, value: str) -> str:
+        user = self.context["request"].user
+        if not user.check_password(value):
+            raise serializers.ValidationError(_("Current password is incorrect."))
+        return value
+
+
 class UserProfileSerializer(serializers.ModelSerializer):
     roles = serializers.SerializerMethodField()
 
