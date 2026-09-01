@@ -132,6 +132,27 @@ class MeViewTests(APITestCase):
         self.assertAlmostEqual(self.user.home_lat, 25.369, places=3)
         self.assertAlmostEqual(self.user.home_lng, 51.551, places=3)
 
+    def test_update_location_rejects_incomplete_coordinates(self):
+        self.client.force_authenticate(user=self.user)
+
+        response = self.client.patch(self.url, {"home_lat": 25.369}, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("home_location", response.data)
+
+    def test_update_location_rejects_out_of_range_coordinates(self):
+        self.client.force_authenticate(user=self.user)
+
+        response = self.client.patch(
+            self.url,
+            {"home_lat": 91, "home_lng": 181},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("home_lat", response.data)
+        self.assertIn("home_lng", response.data)
+
     def test_concurrent_login_uses_me_url(self):
         """Tokens obtained via login work against the me endpoint."""
         login_url = reverse("v1:users:knox_login")
