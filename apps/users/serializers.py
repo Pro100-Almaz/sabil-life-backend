@@ -245,6 +245,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
         model = CustomUser
         fields = (
             "id",
+            "uuid",
             "email",
             "full_name",
             "roles",
@@ -257,6 +258,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
         )
         extra_kwargs = {
             "id": {"read_only": True},
+            "uuid": {"read_only": True},
             "email": {"read_only": True},
             "is_verified": {"read_only": True},
         }

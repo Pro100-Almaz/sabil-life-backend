@@ -78,7 +78,7 @@ class InquiryContactRedactionGatedTests(APITestCase):
         resp = self.client.get(self._detail_url(self.inquiry.id))
         family = resp.data["family"]
         self.assertIsNotNone(family["id"])
-        self.assertEqual(family["id"], str(self.family.id))
+        self.assertEqual(family["id"], str(self.family.uuid))
 
     @override_settings(BILLING_GATE_ENABLED=True)
     def test_full_name_is_null_when_gate_enabled(self):

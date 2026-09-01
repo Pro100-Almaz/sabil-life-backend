@@ -293,7 +293,7 @@ Query params:
   ...ListingCard fields,
   "description": "Long text...",
   "highlights": ["Native speaker", "Online or in person"],
-  "owner_id": "42",
+  "owner_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   "reviews": [
     {
       "id": "...uuid",
@@ -424,7 +424,7 @@ Response **201**: `FamilyInquiry` shape.
 {
   "id": "uuid",
   "listing_id": "uuid",
-  "provider_id": "42",
+  "provider_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   "status": "NEW",
   "message": "...",
   "contact_revealed": false,
@@ -454,7 +454,7 @@ List filter:
 {
   "id": "uuid",
   "listing_id": "uuid",
-  "provider_id": "42",
+  "provider_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   "family": {
     "id": "17",
     "full_name": "Aisha Al-Thani",       // null while contact_revealed=false
@@ -510,7 +510,7 @@ After cancellation the row is retained (status=`CANCELLED`, `cancelled_at` set).
 {
   "id": "uuid",
   "listing_id": "uuid",
-  "provider_id": "42",
+  "provider_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   "status": "CONFIRMED",
   "cancelled_at": null,
   "created_at": "...",

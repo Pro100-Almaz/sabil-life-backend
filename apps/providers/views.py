@@ -90,7 +90,7 @@ class ProviderProfileView(views.APIView):
         )
         return Response(
             {
-                "user_id": request.user.id,
+                "user_id": str(request.user.uuid),
                 "email": request.user.email,
                 "full_name": request.user.full_name,
                 "display_name": request.user.full_name,

@@ -70,7 +70,7 @@ class SubscriptionCreateViewTests(APITestCase):
         self.client.force_authenticate(user=self.family)
         resp = self.client.post(self.url, {"listing_id": str(self.mc_listing.id)})
         self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(resp.data["provider_id"], str(self.mc_provider.id))
+        self.assertEqual(resp.data["provider_id"], str(self.mc_provider.uuid))
 
     # ------------------------------------------------------------------
     # Role restrictions

@@ -19,7 +19,7 @@ _PRIVATE_DETAILS_EXAMPLE = {
 _FAMILY_SUB_EXAMPLE = {
     "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
     "listing_id": "550e8400-e29b-41d4-a716-446655440001",
-    "provider_id": "12",
+    "provider_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
     "status": "CONFIRMED",
     "cancelled_at": None,
     "created_at": "2026-06-01T10:00:00Z",

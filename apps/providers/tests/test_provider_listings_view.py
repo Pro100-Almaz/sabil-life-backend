@@ -175,7 +175,7 @@ class ProviderListingCreateTests(APITestCase):
         )
         self.assertEqual(resp.status_code, 201)
         self.assertEqual(resp.data["status"], ListingStatus.PENDING)
-        self.assertEqual(resp.data["owner_id"], str(user.id))
+        self.assertEqual(resp.data["owner_id"], str(user.uuid))
         self.assertEqual(resp.data["category"], ListingCategory.MASTERCLASSES)
         self.assertEqual(resp.data["event_type"], MasterclassEventType.ONGOING)
         self.assertIsNotNone(resp.data["starts_at"])
@@ -246,7 +246,7 @@ class ProviderListingCreateTests(APITestCase):
         )
         self.assertEqual(resp.status_code, 201)
         self.assertEqual(resp.data["category"], ListingCategory.TUTORING)
-        self.assertEqual(resp.data["owner_id"], str(user.id))
+        self.assertEqual(resp.data["owner_id"], str(user.uuid))
         self.assertFalse(resp.data["is_online"])
         self.assertEqual(resp.data["meeting_url"], "")
         self.assertEqual(resp.data["registration_url"], "")
@@ -286,7 +286,7 @@ class ProviderListingCreateTests(APITestCase):
         payload["owner"] = user2.id
         resp = client.post(LISTINGS_URL, payload, format="json")
         self.assertEqual(resp.status_code, 201)
-        self.assertEqual(resp.data["owner_id"], str(user1.id))
+        self.assertEqual(resp.data["owner_id"], str(user1.uuid))
 
     def test_family_cannot_create_listing(self):
         user = make_user(roles=[UserRole.FAMILY], verified=True)

@@ -187,7 +187,7 @@ class ProviderProfileReadTests(APITestCase):
         response = auth_client(user).get(PROFILE_URL)
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data["user_id"], user.id)
+        self.assertEqual(response.data["user_id"], str(user.uuid))
         self.assertEqual(response.data["availability"], "Weekdays")
         self.assertEqual(response.data["role"], UserRole.TUTOR)
 
@@ -200,7 +200,7 @@ class ProviderProfileReadTests(APITestCase):
         response = auth_client(user).get(PROFILE_URL)
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data["user_id"], user.id)
+        self.assertEqual(response.data["user_id"], str(user.uuid))
         self.assertEqual(response.data["role"], UserRole.MASTERCLASS)
 
 

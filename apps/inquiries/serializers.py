@@ -118,7 +118,7 @@ class TutorInquirySerializer(serializers.ModelSerializer):
         See docs/PHASE_6_BILLING.md for the full billing-gate design.
         """
         base: dict = {
-            "id": str(obj.family_id),
+            "id": str(obj.family.uuid),
             "full_name": None,
             "phone": None,
             "email": None,
