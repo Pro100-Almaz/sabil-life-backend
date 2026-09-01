@@ -84,6 +84,100 @@ class CreateUserSerializer(serializers.ModelSerializer):
         return CustomUser.objects.create_user(**validated_data)
 
 
+class PersonalInformationRequestSerializer(serializers.Serializer):
+    "Validate inputs before the verification"
+
+    old_password = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        default="",
+        write_only=True,
+        trim_whitespace=False,
+        style={"input_type": "password"},
+    )
+    new_password = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        default="",
+        write_only=True,
+        min_length=MIN_PASSWORD_LENGTH,
+        trim_whitespace=False,
+        style={"input_type": "password"},
+    )
+    new_password2 = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        default="",
+        write_only=True,
+        min_length=MIN_PASSWORD_LENGTH,
+        trim_whitespace=False,
+        style={"input_type": "password"},
+    )
+    new_email = serializers.EmailField(required=False, allow_blank=True, default="")
+    new_name = serializers.CharField(required=False, allow_blank=True, default="")
+
+    def validate_old_password(self, value: str) -> str:
+        user = self.context["request"].user
+        if value != "" and not user.check_password(value):
+            raise serializers.ValidationError(_("Current password is incorrect."))
+        return value
+
+    def validate_new_email(self, value: str) -> str:
+        user = self.context["request"].user
+        if CustomUser.objects.filter(email__iexact=value).exclude(pk=user.pk).exists():
+            raise serializers.ValidationError(_("A user with this email already exists."))
+        return value
+
+    def validate(self, data: dict) -> dict:
+        user = self.context["request"].user
+        new_password = data["new_password"]
+
+        if not new_password and not data["new_name"] and not data["new_email"]:
+            raise serializers.ValidationError(
+                _("Provide at least one personal-information change.")
+            )
+
+        if data["new_name"] == user.full_name:
+            data["new_name"] = ""
+        if data["new_email"].lower() == user.email.lower():
+            data["new_email"] = ""
+
+        if not new_password and not data["new_name"] and not data["new_email"]:
+            raise serializers.ValidationError(
+                _("Provide at least one personal-information change.")
+            )
+
+        if new_password == data["new_password2"] and new_password == "":
+            return data
+
+        if new_password != data["new_password2"]:
+            raise serializers.ValidationError(
+                {"new_password2": [_("Passwords do not match.")]}
+            )
+
+        if user.check_password(new_password):
+            raise serializers.ValidationError(
+                {"new_password": [_("New password must differ from current password.")]}
+            )
+
+        try:
+            validate_password(new_password, user=user)
+        except Exception as exc:
+            if hasattr(exc, "error_list"):
+                errors = get_errors(exc)
+            else:
+                errors = [
+                    _("An error occurred during password validation. Please try again.")
+                ]
+            raise serializers.ValidationError({"new_password": errors}) from exc
+
+        return data
+
+
+class PersonalInformationConfirmSerializer(serializers.Serializer):
+    code = serializers.CharField(min_length=CODE_LENGTH, max_length=CODE_LENGTH)
+
+
 class RegistrationRequestSerializer(serializers.ModelSerializer):
     """
     Step 1 of self-service registration: validate the inputs before a
@@ -260,6 +354,9 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "id": {"read_only": True},
             "uuid": {"read_only": True},
             "email": {"read_only": True},
+            "full_name": {"read_only": True},
+            "first_name": {"read_only": True},
+            "last_name": {"read_only": True},
             "is_verified": {"read_only": True},
         }
 

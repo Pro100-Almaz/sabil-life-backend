@@ -7,6 +7,8 @@ from apps.users.views import (
     ForgotPasswordConfirmView,
     ForgotPasswordView,
     LoginView,
+    PersonalInformationConfirmView,
+    PersonalInformationRequestView,
     RegisterVerifyView,
     RegisterView,
     UserMeView,
@@ -24,6 +26,12 @@ urlpatterns = [
     # Current-user profile — renamed from profile/ to me/ per spec §9
     path("me/", UserMeView.as_view(), name="me"),
     # Auth
+    path("edit-profile/", PersonalInformationRequestView.as_view(), name="edit-profile"),
+    path(
+        "edit-profile/verify/",
+        PersonalInformationConfirmView.as_view(),
+        name="edit-profile-verify",
+    ),
     path("change-password/", ChangePasswordView.as_view(), name="change-password"),
     path("forgot-password/", ForgotPasswordView.as_view(), name="forgot-password"),
     path(

@@ -380,6 +380,8 @@ REST_FRAMEWORK = {
         "password_reset_request": "5/hour",
         "password_reset_confirm": "20/hour",
         "change_password": "5/hour",
+        "personal_information_change_request": "5/hour",
+        "personal_information_change_confirm": "20/hour",
     },
 }
 

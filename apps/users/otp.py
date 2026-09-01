@@ -16,6 +16,7 @@ cleanup job is needed. Passwords are hashed at rest; codes are hashed too.
 
 import hashlib
 import secrets
+from typing import Any
 
 from django.contrib.auth.hashers import make_password
 from django.core.cache import cache
@@ -152,3 +153,52 @@ def verify_password_reset_code(*, email: str, code: str) -> None:
         raise VerificationError("invalid")
 
     cache.delete(key)
+
+
+def _info_change_key(user_id: int) -> str:
+    return f"info-change:{user_id}"
+
+
+def start_information_change(
+    *, user_id: int, new_name: str, new_email: str, new_password: str
+) -> str:
+    code = generate_code()
+
+    cache.set(
+        _info_change_key(user_id),
+        {
+            "code_hash": _hash_code(code),
+            "user_id": user_id,
+            "new_name": new_name,
+            "new_email": new_email,
+            "new_password_hash": make_password(new_password) if new_password else "",
+            "attempts": 0,
+        },
+        timeout=CODE_TTL,
+    )
+
+    return code
+
+
+def verify_information_change_code(*, user_id: int, code: str) -> dict[str, Any]:
+    """Verify and consume a pending personal-information change."""
+    key = _info_change_key(user_id)
+    data = cache.get(key)
+    if data is None:
+        raise VerificationError("expired")
+
+    if data["attempts"] >= MAX_ATTEMPTS:
+        cache.delete(key)
+        raise VerificationError("too_many_attempts")
+
+    if _hash_code(code) != data["code_hash"]:
+        data["attempts"] += 1
+        try:
+            remaining = cache.ttl(key)
+        except AttributeError, NotImplementedError:
+            remaining = CODE_TTL
+        cache.set(key, data, timeout=remaining)
+        raise VerificationError("invalid")
+
+    cache.delete(key)
+    return data
