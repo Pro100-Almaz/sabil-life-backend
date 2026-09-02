@@ -57,13 +57,16 @@ class TestReviewReports:
         assert second.json()["report_count"] == 1
         assert ReviewReport.objects.filter(review=self.review).count() == 1
 
-    def test_author_cannot_report_own_review(self):
+    def test_author_can_report_own_review(self):
         self.client.force_authenticate(self.author)
 
         response = self.client.post(self.url)
 
-        assert response.status_code == 400
-        assert not ReviewReport.objects.exists()
+        assert response.status_code == 201
+        assert ReviewReport.objects.filter(
+            review=self.review,
+            reporter=self.author,
+        ).exists()
 
     def test_admin_orders_reviews_by_report_count(self):
         other_author = _user("other-author@test.com")
@@ -112,3 +115,23 @@ class TestReviewReports:
         assert self.client.post(url).status_code == 201
         assert self.client.post(url).status_code == 200
         assert TutorReviewReport.objects.filter(review=tutor_review).count() == 1
+
+    def test_author_can_report_own_tutor_review(self):
+        tutor_user = _user("self-reported-tutor@test.com")
+        tutor = TutorDetail.objects.create(user=tutor_user)
+        tutor_review = TutorReview.objects.create(
+            tutor=tutor,
+            author=self.author,
+            rating=1,
+        )
+        url = reverse(
+            "v1:tutor-review-report",
+            kwargs={"review_id": tutor_review.id},
+        )
+        self.client.force_authenticate(self.author)
+
+        assert self.client.post(url).status_code == 201
+        assert TutorReviewReport.objects.filter(
+            review=tutor_review,
+            reporter=self.author,
+        ).exists()
