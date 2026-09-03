@@ -200,8 +200,7 @@ class ListingDetailSerializer(ListingCardSerializer):
         return representation
 
     def get_owner_id(self, obj: Listing) -> str | None:
-        pk = obj.owner_id
-        return str(pk) if pk is not None else None
+        return str(obj.owner.uuid) if obj.owner_id is not None else None
 
     def get_reviews(self, obj: Listing) -> list:
         from apps.reviews.serializers import ReviewListSerializer

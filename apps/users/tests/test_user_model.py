@@ -1,3 +1,5 @@
+import uuid
+
 import pytest
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError
@@ -18,6 +20,7 @@ class TestUserModel:
         assert not user.is_staff
         assert not user.is_superuser
         assert user.username is None
+        assert isinstance(user.uuid, uuid.UUID)
         assert user.check_password("testpass123")
 
     def test_create_user_gets_family_role(self, user):

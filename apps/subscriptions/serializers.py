@@ -53,8 +53,7 @@ class FamilySubscriptionSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
     def get_provider_id(self, obj: MasterclassSubscription) -> str | None:
-        pk = obj.provider_id
-        return str(pk) if pk is not None else None
+        return str(obj.provider.uuid) if obj.provider_id is not None else None
 
     def get_listing_private_details(self, obj: MasterclassSubscription) -> dict:
         listing = obj.listing
@@ -96,7 +95,7 @@ class ProviderSubscriptionSerializer(serializers.ModelSerializer):
 
     def get_family(self, obj: MasterclassSubscription) -> dict:
         return {
-            "id": str(obj.family_id),
+            "id": str(obj.family.uuid),
             "full_name": obj.family.full_name if obj.family_id else None,
         }
 

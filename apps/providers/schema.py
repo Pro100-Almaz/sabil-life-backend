@@ -30,7 +30,7 @@ _LISTING_EXAMPLE = {
     "rating": "0.0",
     "review_count": 0,
     "status": "PENDING",
-    "owner_id": "7",
+    "owner_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
     "created_at": "2026-06-01T10:00:00Z",
     "updated_at": "2026-06-01T10:00:00Z",
 }

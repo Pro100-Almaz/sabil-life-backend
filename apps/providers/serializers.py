@@ -56,7 +56,7 @@ class AvatarImageSerializer(serializers.ModelSerializer):
 
 
 class TutorDetailSerializer(serializers.ModelSerializer):
-    user_id = serializers.IntegerField(source="user.id", read_only=True)
+    user_id = serializers.UUIDField(source="user.uuid", read_only=True)
     full_name = serializers.CharField(source="user.full_name", read_only=True)
     email = serializers.EmailField(source="user.email", read_only=True)
     display_name = serializers.CharField(required=False, allow_blank=True)
@@ -227,8 +227,7 @@ class ProviderListingSerializer(serializers.ModelSerializer):
         ]
 
     def get_owner_id(self, obj: Listing) -> str | None:
-        pk = obj.owner_id
-        return str(pk) if pk is not None else None
+        return str(obj.owner.uuid) if obj.owner_id is not None else None
 
     def _get_request_user(self):
         request = self.context.get("request")
@@ -391,7 +390,7 @@ class VerifyProviderSerializer(serializers.ModelSerializer):
     happen via dedicated endpoints/serializers.
     """
 
-    user_id = serializers.IntegerField(source="user.id", read_only=True)
+    user_id = serializers.UUIDField(source="user.uuid", read_only=True)
     email = serializers.EmailField(source="user.email", read_only=True)
     full_name = serializers.CharField(source="user.full_name", read_only=True)
     has_cv = serializers.SerializerMethodField()

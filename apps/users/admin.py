@@ -34,8 +34,10 @@ class CustomUserAdmin(ModelAdmin, DjangoUserAdmin):
     change_password_form = AdminPasswordChangeForm
     model = CustomUser
     actions = [verify_providers]
+    readonly_fields = ("uuid",)
 
     list_display = (
+        "uuid",
         "email",
         "full_name",
         "display_roles",
@@ -49,12 +51,12 @@ class CustomUserAdmin(ModelAdmin, DjangoUserAdmin):
         "is_staff",
         "is_active",
     )
-    search_fields = ("email", "full_name", "phone")
+    search_fields = ("uuid", "email", "full_name", "phone")
     ordering = ("email",)
     filter_horizontal = ("roles",)
 
     fieldsets = (
-        (None, {"fields": ("email", "password")}),
+        (None, {"fields": ("uuid", "email", "password")}),
         (
             _("Personal info"),
             {"fields": ("full_name", "first_name", "last_name", "phone")},

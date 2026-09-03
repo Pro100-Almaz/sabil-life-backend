@@ -3,7 +3,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("users", "0005_delete_managerdetail"),
+        ("users", "0006_customuser_uuid"),
     ]
 
     operations = [
