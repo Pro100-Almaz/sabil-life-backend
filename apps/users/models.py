@@ -65,6 +65,7 @@ class CustomUser(AbstractUser):
             "Families are verified on registration."
         ),
     )
+    deleted_at = models.DateTimeField(_("deleted at"), null=True, blank=True)
 
     def _get_role_names(self) -> set[str]:
         if not hasattr(self, "_role_names_cache"):

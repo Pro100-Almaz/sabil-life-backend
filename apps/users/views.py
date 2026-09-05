@@ -1,9 +1,9 @@
 import logging
-from datetime import datetime
-from datetime import timezone as tz
+import uuid
 
 from django.contrib.auth import login
 from django.db import IntegrityError, transaction
+from django.utils import timezone
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from knox.auth import TokenAuthentication
 from knox.models import AuthToken
@@ -29,6 +29,7 @@ from apps.users.serializers import (
     AuthTokenSerializer,
     ChangePasswordSerializer,
     CreateUserSerializer,
+    DeleteMeSerializer,
     ForgotPasswordConfirmSerializer,
     ForgotPasswordRequestSerializer,
     PersonalInformationConfirmSerializer,
@@ -383,7 +384,7 @@ class RegisterVerifyView(generics.GenericAPIView):
 
         _, token = AuthToken.objects.create(user)
         token_ttl = knox_settings.TOKEN_TTL
-        expiry = datetime.now(tz=tz.utc) + token_ttl if token_ttl is not None else None
+        expiry = timezone.now() + token_ttl if token_ttl is not None else None
 
         logger.info("User %s registered (email verified).", user.email)
 
@@ -451,3 +452,52 @@ class CreateUserView(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save()
+
+
+class DeleteMeView(generics.GenericAPIView):
+    permission_classes = (permissions.IsAuthenticated,)
+    serializer_class = DeleteMeSerializer
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "delete_account"
+
+    def delete(self, request, *args, **kwargs) -> Response:
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user = request.user
+        user_id = user.pk
+
+        with transaction.atomic():
+            # Preserve protected historical rows while removing the account's
+            # identifying and authentication data.
+            user.email = f"deleted-{user_id}-{uuid.uuid4().hex}@deleted.invalid"
+            user.full_name = ""
+            user.first_name = ""
+            user.last_name = ""
+            user.phone = ""
+            user.home_lat = None
+            user.home_lng = None
+            user.is_active = False
+            user.is_verified = False
+            user.deleted_at = timezone.now()
+            user.set_unusable_password()
+            user.save(
+                update_fields=[
+                    "email",
+                    "full_name",
+                    "first_name",
+                    "last_name",
+                    "phone",
+                    "home_lat",
+                    "home_lng",
+                    "is_active",
+                    "is_verified",
+                    "deleted_at",
+                    "password",
+                ]
+            )
+            user.roles.clear()
+            AuthToken.objects.filter(user=user).delete()
+
+        logger.info("User ID %s deleted their account.", user_id)
+        return Response(status=status.HTTP_204_NO_CONTENT)

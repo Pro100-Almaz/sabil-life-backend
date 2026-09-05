@@ -4,6 +4,7 @@ from knox import views as knox_views
 from apps.users.views import (
     ChangePasswordView,
     CreateUserView,
+    DeleteMeView,
     ForgotPasswordConfirmView,
     ForgotPasswordView,
     LoginView,
@@ -39,6 +40,7 @@ urlpatterns = [
         ForgotPasswordConfirmView.as_view(),
         name="forgot-password-confirm",
     ),
+    path("delete-me/", DeleteMeView.as_view(), name="delete-me"),
     path("login/", LoginView.as_view(), name="knox_login"),
     path("logout/", knox_views.LogoutView.as_view(), name="knox_logout"),
     path("logoutall/", knox_views.LogoutAllView.as_view(), name="knox_logoutall"),
