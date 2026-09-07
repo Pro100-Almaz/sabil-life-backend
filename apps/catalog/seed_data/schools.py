@@ -1013,7 +1013,7 @@ SCHOOLS: tuple[dict, ...] = (
         "neighborhood": "Lusail",
         "lat": 25.253165,
         "lng": 51.4906859,
-        "price_from_qar": 36000,
+        "price_from_qar": 55000,
         "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
         "description": "Modern premium British school. Offers British Curriculum from "
         "Pre-School–Year 13, for ages 3–18. Recognition: Nord Anglia "
