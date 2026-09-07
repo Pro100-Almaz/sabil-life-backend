@@ -46,6 +46,7 @@ _LISTING_DETAIL_EXAMPLE = {
     "highlights": ["Small groups", "Weekend slots", "Native Arabic speakers"],
     "owner_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
     "reviews": [],
+    "driving_distance_km": 4.7,
 }
 
 _CATEGORY_EXAMPLE = [
