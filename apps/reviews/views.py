@@ -257,12 +257,6 @@ class ReviewReportView(APIView):
 
     def post(self, request, review_id, version=None):
         review = get_object_or_404(Review, pk=review_id)
-        if review.author_id == request.user.id:
-            return Response(
-                {"detail": "You cannot report your own review."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
         _, created = ReviewReport.objects.get_or_create(
             review=review,
             reporter=request.user,
@@ -281,12 +275,6 @@ class TutorReviewReportView(APIView):
 
     def post(self, request, review_id, version=None):
         review = get_object_or_404(TutorReview, pk=review_id)
-        if review.author_id == request.user.id:
-            return Response(
-                {"detail": "You cannot report your own review."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
         _, created = TutorReviewReport.objects.get_or_create(
             review=review,
             reporter=request.user,
