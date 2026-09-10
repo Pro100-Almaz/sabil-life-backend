@@ -176,7 +176,7 @@ def get_driving_distance_km(
         data = response.json()
         meters = data["routes"][0]["summary"]["distance"]
         return round(meters / 1000, 2)
-    except (httpx.HTTPError, KeyError, IndexError):
+    except httpx.HTTPError, KeyError, IndexError:
         return None
 
 
