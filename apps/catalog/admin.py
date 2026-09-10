@@ -258,6 +258,7 @@ class ListingAdmin(ModelAdmin):
     form = ListingAdminForm
     inlines = [ListingImageInline, ListingContactInline]
     actions = [approve_listings, reject_listings, mark_featured, unmark_featured]
+    filter_horizontal = ("tags",)
 
     # List view -----------------------------------------------------------
     list_display = (
@@ -303,6 +304,13 @@ class ListingAdmin(ModelAdmin):
                     "exact_address",
                     "materials_required",
                 )
+            },
+        ),
+        (
+            _("Tags"),
+            {
+                "fields": ("tags",),
+                "description": _("Choose the tags associated with this listing."),
             },
         ),
         (
