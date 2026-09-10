@@ -9,11 +9,12 @@ from django.test import RequestFactory
 
 from apps.catalog.admin import (
     ListingAdmin,
+    ListingAdminForm,
     approve_listings,
     mark_featured,
     reject_listings,
 )
-from apps.catalog.models import Listing, ListingCategory, ListingStatus
+from apps.catalog.models import Listing, ListingCategory, ListingStatus, ListingTag
 
 User = get_user_model()
 
@@ -170,3 +171,35 @@ class TestAdminActionsRegistered:
         assert "reject_listings" in action_names
         assert "mark_featured" in action_names
         assert "unmark_featured" in action_names
+
+
+class TestListingAdminTags:
+    def test_tags_are_available_in_the_listing_form(self, admin_instance, rf, superuser):
+        form = admin_instance.get_form(_request(rf, superuser))
+
+        assert "tags" in form.base_fields
+        assert admin_instance.filter_horizontal == ("tags",)
+
+    def test_selected_tags_are_saved(self):
+        listing = _make_listing()
+        tag = ListingTag.objects.create(
+            name="Mathematics",
+            category=ListingCategory.TUTORING,
+        )
+        form = ListingAdminForm(
+            data={
+                "title": listing.title,
+                "category": listing.category,
+                "status": listing.status,
+                "tags": [tag.pk],
+                "price_from_qar": listing.price_from_qar,
+                "rating": listing.rating,
+                "review_count": listing.review_count,
+                "event_type": listing.event_type,
+            },
+            instance=listing,
+        )
+
+        assert form.is_valid(), form.errors
+        saved_listing = form.save()
+        assert list(saved_listing.tags.all()) == [tag]
