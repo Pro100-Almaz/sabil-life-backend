@@ -747,7 +747,7 @@ SCHOOLS: tuple[dict, ...] = (
             "Co-ed",
             "Early Years",
             "Library",
-            "Premium",
+            "Premium (30-45k)",
             "Primary Only",
             "Sports Facilities",
         ],
