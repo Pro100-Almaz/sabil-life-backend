@@ -734,8 +734,8 @@ SCHOOLS: tuple[dict, ...] = (
         "neighborhood": "Fereej Kulaib",
         "lat": 25.3150879,
         "lng": 51.4903727,
-        "price_from_qar": 35000,
-        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
+        "price_from_qar": 38200,
+        "age_groups": ["3-5", "6-11", "12-15", "16+"],
         "description": "Prestigious British preparatory school. Offers British Primary "
         "Curriculum from FS1–Year 8, for ages 3–13. Recognition: British "
         "Schools Overseas recognised.",
@@ -747,7 +747,7 @@ SCHOOLS: tuple[dict, ...] = (
             "Co-ed",
             "Early Years",
             "Library",
-            "Premium (30-45k)",
+            "Premium",
             "Primary Only",
             "Sports Facilities",
         ],
@@ -1009,15 +1009,13 @@ SCHOOLS: tuple[dict, ...] = (
     {
         "slug": "schools-hamilton-international-school",
         "title": "Hamilton International School",
-        "subtitle": "British Curriculum, Lusail",
+        "subtitle": "IB/American Curriculum, Mesaimeer",
         "neighborhood": "Lusail",
-        "lat": 25.253165,
-        "lng": 51.4906859,
+        "lat": 25.207447,
+        "lng": 51.526736,
         "price_from_qar": 55000,
-        "age_groups": ["0-3", "3-5", "6-11", "12-15", "16+"],
-        "description": "Modern premium British school. Offers British Curriculum from "
-        "Pre-School–Year 13, for ages 3–18. Recognition: Nord Anglia "
-        "Education.",
+        "age_groups": ["3-5", "6-11", "12-15", "16+"],
+        "description": "The Hamilton International School is a premium international school in Doha offering an engaging American curriculum and a personalized approach to learning for students from Early Childhood through Grade 12.\nOur diverse community represents more than 90 nationalities, creating an inclusive and internationally minded environment where students are encouraged to develop academically, socially, and personally.\nAs part of International Schools Partnership (ISP), our students also benefit from connections and learning opportunities across a global community of schools.\nAt Hamilton, our aim is to ignite passion, purpose, and potential, preparing students with the knowledge, confidence, character, and skills they need for university and life beyond school.",
         "highlights": ["STEAM", "Sports", "Performing arts"],
         "tags": [
             "A Levels",
