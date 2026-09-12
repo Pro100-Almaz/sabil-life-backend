@@ -23,6 +23,7 @@ import math
 from datetime import timedelta
 from urllib.parse import unquote, urlparse
 
+import httpx
 from django.conf import settings
 from django.db import transaction
 from django.db.models import ExpressionWrapper, FloatField, Func, QuerySet, Value
@@ -143,6 +144,40 @@ def haversine_km(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
         + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2) ** 2
     )
     return 2 * R * math.asin(math.sqrt(a))
+
+
+ORS_DIRECTIONS_URL = "https://api.openrouteservice.org/v2/directions/driving-car"
+
+
+def get_driving_distance_km(
+    origin_lat: float, origin_lng: float, dest_lat: float, dest_lng: float
+) -> float | None:
+    """
+    Real road-network distance (km) via the OpenRouteService Directions API.
+
+    Only ever called for a single listing (the detail endpoint) — this is a
+    live external HTTP call, so it must not be used in the list-endpoint
+    haversine annotation path above, which runs over many rows at once.
+
+    Returns None on any failure (missing key, no route, timeout, rate limit);
+    callers should treat that the same as "distance unavailable".
+    """
+    if not settings.ORS_API_KEY:
+        return None
+
+    try:
+        response = httpx.post(
+            ORS_DIRECTIONS_URL,
+            headers={"Authorization": settings.ORS_API_KEY},
+            json={"coordinates": [[origin_lng, origin_lat], [dest_lng, dest_lat]]},
+            timeout=5.0,
+        )
+        response.raise_for_status()
+        data = response.json()
+        meters = data["routes"][0]["summary"]["distance"]
+        return round(meters / 1000, 2)
+    except httpx.HTTPError, KeyError, IndexError:
+        return None
 
 
 def delete_listing_image(image: ListingImage) -> None:

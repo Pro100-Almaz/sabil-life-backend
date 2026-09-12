@@ -37,6 +37,7 @@ from apps.catalog.serializers import (
 from apps.catalog.services import (
     annotate_distance_km,
     draft_expired_one_time_masterclasses,
+    get_driving_distance_km,
 )
 from apps.providers.models import TutorDetail, TutorStatus, TutorSubject
 from apps.users.enums import UserRole
@@ -80,6 +81,23 @@ class ListingViewSet(viewsets.ReadOnlyModelViewSet):
     def list(self, request: Request, *args, **kwargs) -> Response:
         draft_expired_one_time_masterclasses()
         return super().list(request, *args, **kwargs)
+
+    def retrieve(self, request: Request, *args, **kwargs) -> Response:
+        instance = self.get_object()
+
+        lat_str = request.query_params.get("lat")
+        lng_str = request.query_params.get("lng")
+        if lat_str is not None and lng_str is not None and instance.lat is not None:
+            try:
+                lat, lng = float(lat_str), float(lng_str)
+                instance.driving_distance_km = get_driving_distance_km(
+                    lat, lng, instance.lat, instance.lng
+                )
+            except TypeError, ValueError:
+                instance.driving_distance_km = None
+
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
 
     def get_queryset(self) -> QuerySet:
         qs = (

@@ -164,12 +164,17 @@ class ListingDetailSerializer(ListingCardSerializer):
 
     reviews embeds the 10 most-recent reviews (Phase 7). Full paginated list
     is at GET /api/v1/listings/{id}/reviews/.
+
+    driving_distance_km is a real road-network distance from OpenRouteService,
+    set by the view only on this (single-object) endpoint — never on the list
+    endpoint, which uses the cheaper straight-line distance_km instead.
     """
 
     owner_id = serializers.SerializerMethodField()
     reviews = serializers.SerializerMethodField()
     images = ListingImageSerializer(many=True, read_only=True)
     contacts = ListingContactSerializer(many=True, read_only=True)
+    driving_distance_km = serializers.SerializerMethodField()
 
     class Meta(ListingCardSerializer.Meta):
         fields = ListingCardSerializer.Meta.fields + [
@@ -184,7 +189,11 @@ class ListingDetailSerializer(ListingCardSerializer):
             "registration_url",
             "event_type",
             "starts_at",
+            "driving_distance_km",
         ]
+
+    def get_driving_distance_km(self, obj: Listing) -> float | None:
+        return getattr(obj, "driving_distance_km", None)
 
     def to_representation(self, instance: Listing) -> dict:
         representation = super().to_representation(instance)
