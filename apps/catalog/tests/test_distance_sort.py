@@ -6,14 +6,19 @@ Covers:
 - ?max_distance_km= excludes listings outside the radius.
 - Listings with null lat/lng sort last (get NULL distance_km).
 - Spot-check: listing at the query point reports ~0 km distance.
+- get_driving_distance_km() and the detail-endpoint driving_distance_km field.
 """
 
+from unittest.mock import Mock, patch
+
+import httpx
+from django.test import override_settings
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
 from apps.catalog.models import Listing, ListingCategory, ListingStatus
-from apps.catalog.services import haversine_km
+from apps.catalog.services import get_driving_distance_km, haversine_km
 
 # Reference point: West Bay, Doha (used in spec smoke test)
 REF_LAT = 25.369
@@ -204,3 +209,126 @@ class DistanceSortTests(APITestCase):
         """
         d = haversine_km(25.286, 51.536, 25.369, 51.551)
         self.assertAlmostEqual(d, 9.3, delta=1.0)
+
+
+class GetDrivingDistanceKmTests(APITestCase):
+    """Unit tests for get_driving_distance_km() — the OpenRouteService lookup."""
+
+    ORIGIN = (REF_LAT, REF_LNG)
+    DEST = (25.286, 51.536)
+
+    @override_settings(ORS_API_KEY="")
+    def test_returns_none_without_api_key(self):
+        with patch("apps.catalog.services.httpx.post") as mock_post:
+            result = get_driving_distance_km(*self.ORIGIN, *self.DEST)
+
+        self.assertIsNone(result)
+        mock_post.assert_not_called()
+
+    @override_settings(ORS_API_KEY="test-key")
+    def test_returns_km_on_success(self):
+        mock_response = Mock()
+        mock_response.raise_for_status.return_value = None
+        mock_response.json.return_value = {
+            "routes": [{"summary": {"distance": 12345.678}}]
+        }
+
+        with patch(
+            "apps.catalog.services.httpx.post", return_value=mock_response
+        ) as mock_post:
+            result = get_driving_distance_km(*self.ORIGIN, *self.DEST)
+
+        self.assertEqual(result, 12.35)
+        _, kwargs = mock_post.call_args
+        self.assertEqual(kwargs["headers"]["Authorization"], "test-key")
+        # ORS expects [lng, lat] pairs, origin first.
+        self.assertEqual(
+            kwargs["json"]["coordinates"],
+            [[self.ORIGIN[1], self.ORIGIN[0]], [self.DEST[1], self.DEST[0]]],
+        )
+
+    @override_settings(ORS_API_KEY="test-key")
+    def test_returns_none_on_http_error(self):
+        with patch(
+            "apps.catalog.services.httpx.post",
+            side_effect=httpx.ConnectTimeout("timed out"),
+        ):
+            result = get_driving_distance_km(*self.ORIGIN, *self.DEST)
+
+        self.assertIsNone(result)
+
+    @override_settings(ORS_API_KEY="test-key")
+    def test_returns_none_on_malformed_response(self):
+        mock_response = Mock()
+        mock_response.raise_for_status.return_value = None
+        mock_response.json.return_value = {"routes": []}
+
+        with patch("apps.catalog.services.httpx.post", return_value=mock_response):
+            result = get_driving_distance_km(*self.ORIGIN, *self.DEST)
+
+        self.assertIsNone(result)
+
+
+class ListingDetailDrivingDistanceTests(APITestCase):
+    """Tests for driving_distance_km on GET /listings/{id}/ (detail only)."""
+
+    def _detail_url(self, listing: Listing) -> str:
+        return reverse("v1:catalog:listings-detail", kwargs={"id": listing.id})
+
+    @patch("apps.catalog.views.get_driving_distance_km")
+    def test_present_when_lat_lng_and_listing_coords_given(self, mock_get):
+        mock_get.return_value = 7.42
+        listing = make_listing(lat=25.370, lng=51.552)
+
+        response = self.client.get(
+            self._detail_url(listing),
+            {"lat": str(REF_LAT), "lng": str(REF_LNG)},
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["driving_distance_km"], 7.42)
+        mock_get.assert_called_once_with(REF_LAT, REF_LNG, 25.370, 51.552)
+
+    @patch("apps.catalog.views.get_driving_distance_km")
+    def test_none_without_lat_lng_params(self, mock_get):
+        listing = make_listing(lat=25.370, lng=51.552)
+
+        response = self.client.get(self._detail_url(listing))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIsNone(response.data["driving_distance_km"])
+        mock_get.assert_not_called()
+
+    @patch("apps.catalog.views.get_driving_distance_km")
+    def test_none_and_skipped_when_listing_missing_lng(self, mock_get):
+        """
+        A listing with lat set but lng null must not trigger an ORS call —
+        regression test for the missing instance.lng guard.
+        """
+        listing = make_listing(lat=25.370, lng=None)
+
+        response = self.client.get(
+            self._detail_url(listing),
+            {"lat": str(REF_LAT), "lng": str(REF_LNG)},
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIsNone(response.data["driving_distance_km"])
+        mock_get.assert_not_called()
+
+    @patch("apps.catalog.views.get_driving_distance_km")
+    def test_non_numeric_lat_lng_rejected_without_calling_ors(self, mock_get):
+        """
+        A non-numeric lat/lng is rejected by the `lat`/`lng` NumberFilter
+        declared on ListingFilter (400) before the view's own float() parsing
+        ever runs — either way, ORS must never be called for bad input.
+        """
+        listing = make_listing(lat=25.370, lng=51.552)
+
+        response = self.client.get(
+            self._detail_url(listing),
+            {"lat": "not-a-number", "lng": str(REF_LNG)},
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        mock_get.assert_not_called()
