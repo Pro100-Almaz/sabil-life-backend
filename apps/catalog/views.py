@@ -98,7 +98,7 @@ class ListingViewSet(viewsets.ReadOnlyModelViewSet):
                 instance.driving_distance_km = get_driving_distance_km(
                     lat, lng, instance.lat, instance.lng
                 )
-            except (TypeError, ValueError):
+            except TypeError, ValueError:
                 instance.driving_distance_km = None
 
         serializer = self.get_serializer(instance)
@@ -128,7 +128,7 @@ class ListingViewSet(viewsets.ReadOnlyModelViewSet):
                 lat = float(lat_str)
                 lng = float(lng_str)
                 qs = annotate_distance_km(qs, lat, lng)
-            except (TypeError, ValueError):
+            except TypeError, ValueError:
                 logger.debug(
                     "Invalid lat/lng params (%s, %s) — distance not annotated.",
                     lat_str,
@@ -143,7 +143,7 @@ class ListingViewSet(viewsets.ReadOnlyModelViewSet):
             try:
                 max_dist = float(max_dist_str)
                 qs = qs.filter(distance_km__lte=max_dist)
-            except (TypeError, ValueError):
+            except TypeError, ValueError:
                 pass
 
         # ------------------------------------------------------------------
