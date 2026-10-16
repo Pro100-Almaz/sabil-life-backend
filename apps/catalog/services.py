@@ -25,6 +25,7 @@ from urllib.parse import unquote, urlparse
 
 import httpx
 from django.conf import settings
+from django.core.cache import cache
 from django.db import transaction
 from django.db.models import ExpressionWrapper, FloatField, Func, QuerySet, Value
 from django.utils import timezone
@@ -147,6 +148,7 @@ def haversine_km(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
 
 
 ORS_DIRECTIONS_URL = "https://api.openrouteservice.org/v2/directions/driving-car"
+ORS_CACHE_TTL = 60 * 60
 
 
 def get_driving_distance_km(
@@ -165,6 +167,20 @@ def get_driving_distance_km(
     if not settings.ORS_API_KEY:
         return None
 
+    coords = (origin_lat, origin_lng, dest_lat, dest_lng)
+    if not all(math.isfinite(c) for c in coords):
+        return None
+    if not (-90 <= origin_lat <= 90 and -90 <= dest_lat <= 90):
+        return None
+    if not (-180 <= origin_lng <= 180 and -180 <= dest_lng <= 180):
+        return None
+
+    # ~110m origin precision keeps repeat lookups cheap and shields the ORS quota.
+    cache_key = "ors:dist:{:.3f}:{:.3f}:{:.5f}:{:.5f}".format(*coords)
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return cached
+
     try:
         response = httpx.post(
             ORS_DIRECTIONS_URL,
@@ -175,9 +191,12 @@ def get_driving_distance_km(
         response.raise_for_status()
         data = response.json()
         meters = data["routes"][0]["summary"]["distance"]
-        return round(meters / 1000, 2)
-    except httpx.HTTPError, KeyError, IndexError:
+        distance = round(meters / 1000, 2)
+    except httpx.HTTPError, KeyError, IndexError, TypeError, ValueError:
         return None
+
+    cache.set(cache_key, distance, ORS_CACHE_TTL)
+    return distance
 
 
 def delete_listing_image(image: ListingImage) -> None:

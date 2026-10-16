@@ -12,6 +12,7 @@ Covers:
 from unittest.mock import Mock, patch
 
 import httpx
+from django.core.cache import cache
 from django.test import override_settings
 from django.urls import reverse
 from rest_framework import status
@@ -217,6 +218,9 @@ class GetDrivingDistanceKmTests(APITestCase):
     ORIGIN = (REF_LAT, REF_LNG)
     DEST = (25.286, 51.536)
 
+    def setUp(self):
+        cache.clear()
+
     @override_settings(ORS_API_KEY="")
     def test_returns_none_without_api_key(self):
         with patch("apps.catalog.services.httpx.post") as mock_post:
@@ -267,6 +271,57 @@ class GetDrivingDistanceKmTests(APITestCase):
             result = get_driving_distance_km(*self.ORIGIN, *self.DEST)
 
         self.assertIsNone(result)
+
+    @override_settings(ORS_API_KEY="test-key")
+    def test_returns_none_on_invalid_json(self):
+        mock_response = Mock()
+        mock_response.raise_for_status.return_value = None
+        mock_response.json.side_effect = ValueError("bad json")
+
+        with patch("apps.catalog.services.httpx.post", return_value=mock_response):
+            self.assertIsNone(get_driving_distance_km(*self.ORIGIN, *self.DEST))
+
+    @override_settings(ORS_API_KEY="test-key")
+    def test_returns_none_on_null_distance(self):
+        mock_response = Mock()
+        mock_response.raise_for_status.return_value = None
+        mock_response.json.return_value = {"routes": [{"summary": {"distance": None}}]}
+
+        with patch("apps.catalog.services.httpx.post", return_value=mock_response):
+            self.assertIsNone(get_driving_distance_km(*self.ORIGIN, *self.DEST))
+
+    @override_settings(ORS_API_KEY="test-key")
+    def test_returns_none_on_http_status_error(self):
+        mock_response = Mock()
+        mock_response.raise_for_status.side_effect = httpx.HTTPStatusError(
+            "429", request=Mock(), response=Mock()
+        )
+
+        with patch("apps.catalog.services.httpx.post", return_value=mock_response):
+            self.assertIsNone(get_driving_distance_km(*self.ORIGIN, *self.DEST))
+
+    @override_settings(ORS_API_KEY="test-key")
+    def test_rejects_invalid_coordinates_without_calling_ors(self):
+        with patch("apps.catalog.services.httpx.post") as mock_post:
+            self.assertIsNone(get_driving_distance_km(float("nan"), 51.5, *self.DEST))
+            self.assertIsNone(get_driving_distance_km(999.0, 51.5, *self.DEST))
+            self.assertIsNone(get_driving_distance_km(25.0, 500.0, *self.DEST))
+        mock_post.assert_not_called()
+
+    @override_settings(ORS_API_KEY="test-key")
+    def test_caches_successful_lookup(self):
+        mock_response = Mock()
+        mock_response.raise_for_status.return_value = None
+        mock_response.json.return_value = {"routes": [{"summary": {"distance": 5000}}]}
+
+        with patch(
+            "apps.catalog.services.httpx.post", return_value=mock_response
+        ) as mock_post:
+            first = get_driving_distance_km(*self.ORIGIN, *self.DEST)
+            second = get_driving_distance_km(*self.ORIGIN, *self.DEST)
+
+        self.assertEqual(first, second)
+        self.assertEqual(mock_post.call_count, 1)
 
 
 class ListingDetailDrivingDistanceTests(APITestCase):
