@@ -87,7 +87,12 @@ class ListingViewSet(viewsets.ReadOnlyModelViewSet):
 
         lat_str = request.query_params.get("lat")
         lng_str = request.query_params.get("lng")
-        if lat_str is not None and lng_str is not None and instance.lat is not None:
+        if (
+            lat_str is not None
+            and lng_str is not None
+            and instance.lat is not None
+            and instance.lng is not None
+        ):
             try:
                 lat, lng = float(lat_str), float(lng_str)
                 instance.driving_distance_km = get_driving_distance_km(
