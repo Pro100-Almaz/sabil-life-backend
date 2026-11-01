@@ -8,7 +8,11 @@ from apps.core.tasks import BaseTaskWithRetry
 from apps.inquiries.models import Inquiry, InquiryStatus
 from apps.notifications.models import NotificationType
 from apps.notifications.services import notify_user
-from apps.providers.models import ProviderVerification, StatusChoices
+from apps.providers.models import (
+    ListingOwnershipRequest,
+    ProviderVerification,
+    StatusChoices,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -170,5 +174,45 @@ def notify_verification_result(self, verification_id: int) -> None:
             "verification_id": verification.id,
             "provider_type": verification.provider_type,
             "status": verification.status,
+        },
+    )
+
+
+@shared_task(bind=True, base=BaseTaskWithRetry)
+def notify_ownership_result(self, request_id: int) -> None:
+    """Notify a provider that their listing ownership request was decided."""
+    try:
+        ownership = ListingOwnershipRequest.objects.select_related("user", "listing").get(
+            id=request_id
+        )
+    except ListingOwnershipRequest.DoesNotExist:
+        logger.warning("Ownership request %s no longer exists; skipping.", request_id)
+        return
+
+    title_of = ownership.listing.title
+    if ownership.status == StatusChoices.APPROVED:
+        ntype = NotificationType.OWNERSHIP_APPROVED
+        title = _("Ownership approved")
+        body = _("You are now the owner of %(listing)s.") % {"listing": title_of}
+    elif ownership.status == StatusChoices.REJECTED:
+        ntype = NotificationType.OWNERSHIP_REJECTED
+        title = _("Ownership rejected")
+        body = _("Your ownership request for %(listing)s was rejected.") % {
+            "listing": title_of
+        }
+        if ownership.comment:
+            body = f"{body} {ownership.comment}"
+    else:
+        return
+
+    notify_user(
+        ownership.user,
+        type=ntype,
+        title=title,
+        body=body,
+        data={
+            "ownership_request_id": ownership.id,
+            "listing_id": str(ownership.listing_id),
+            "status": ownership.status,
         },
     )

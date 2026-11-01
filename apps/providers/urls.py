@@ -5,6 +5,8 @@ from apps.providers.views import (
     AvatarUploadView,
     ListingImageDetailView,
     ListingImageView,
+    ListingOwnershipAdminViewSet,
+    ListingOwnershipRequestViewSet,
     ProviderListingViewSet,
     ProviderProfileView,
     ProviderVerificationAdminViewSet,
@@ -17,6 +19,16 @@ app_name = "providers"
 router = DefaultRouter()
 # Only register routes we support (no PUT — handled via http_method_names on the view)
 router.register(r"listings", ProviderListingViewSet, basename="provider-listings")
+router.register(
+    r"ownership-requests/admin",
+    ListingOwnershipAdminViewSet,
+    basename="ownership-admin",
+)
+router.register(
+    r"ownership-requests",
+    ListingOwnershipRequestViewSet,
+    basename="ownership-requests",
+)
 router.register(
     r"verify/admin",
     ProviderVerificationAdminViewSet,

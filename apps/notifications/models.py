@@ -42,6 +42,8 @@ class NotificationType(models.TextChoices):
     PROVIDER_REJECTED = "PROVIDER_REJECTED", _("Provider application rejected")
     LISTING_APPROVED = "LISTING_APPROVED", _("Listing applicatoin approved")
     LISTING_REJECTED = "LISTING_REJECTED", _("Listing application rejected")
+    OWNERSHIP_APPROVED = "OWNERSHIP_APPROVED", _("Listing ownership approved")
+    OWNERSHIP_REJECTED = "OWNERSHIP_REJECTED", _("Listing ownership rejected")
     INQUIRY_RESPONSE = "INQUIRY_RESPONSE", _("Inquiry responded")
     INQUIRY_REQUEST = "INQUIRY_REQUEST", _("Inquiry requested")
     INQUIRY_CREATED = "INQUIRY_CREATED", _("Inquiry created by administrator")

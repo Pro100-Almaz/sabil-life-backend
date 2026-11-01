@@ -13,6 +13,7 @@ from unfold.widgets import UnfoldAdminTextareaWidget
 
 from apps.providers.models import (
     AIScreeningStatus,
+    ListingOwnershipRequest,
     ProviderVerification,
     ProviderVerificationAIScreening,
     StatusChoices,
@@ -20,7 +21,7 @@ from apps.providers.models import (
     TutorStatus,
     TutorSubject,
 )
-from apps.providers.services import apply_verification_outcome
+from apps.providers.services import apply_ownership_outcome, apply_verification_outcome
 from apps.providers.tasks import queue_cv_screening
 
 
@@ -364,3 +365,51 @@ class ProviderVerificationAdmin(ModelAdmin):
         if screening is None:
             return None
         return screening.status, screening.get_status_display()
+
+
+@action(
+    description=_("Approve ownership request (transfers the listing)"),
+    icon="check_circle",
+)
+def approve_ownership_requests(modeladmin, request, queryset):
+    approved = 0
+    for ownership in queryset.filter(status=StatusChoices.PENDING).select_related(
+        "listing", "user"
+    ):
+        ownership.status = StatusChoices.APPROVED
+        ownership.comment = ""
+        ownership.save(update_fields=["status", "comment", "updated_at"])
+        apply_ownership_outcome(ownership, request.user)
+        approved += 1
+    modeladmin.message_user(
+        request,
+        _("%(n)d ownership request(s) APPROVED.") % {"n": approved},
+        messages.SUCCESS if approved else messages.WARNING,
+    )
+
+
+@action(description=_("Reject ownership request"), icon="cancel")
+def reject_ownership_requests(modeladmin, request, queryset):
+    rejected = 0
+    for ownership in queryset.filter(status=StatusChoices.PENDING).select_related(
+        "listing", "user"
+    ):
+        ownership.status = StatusChoices.REJECTED
+        ownership.save(update_fields=["status", "updated_at"])
+        apply_ownership_outcome(ownership, request.user)
+        rejected += 1
+    modeladmin.message_user(
+        request,
+        _("%(n)d ownership request(s) REJECTED.") % {"n": rejected},
+        messages.SUCCESS if rejected else messages.WARNING,
+    )
+
+
+@admin.register(ListingOwnershipRequest)
+class ListingOwnershipRequestAdmin(ModelAdmin):
+    list_display = ("listing", "user", "status", "created_at")
+    list_filter = ("status",)
+    search_fields = ("listing__title", "user__email")
+    raw_id_fields = ("listing", "user")
+    readonly_fields = ("created_at", "updated_at")
+    actions = [approve_ownership_requests, reject_ownership_requests]

@@ -269,3 +269,59 @@ class ProviderVerificationAIScreening(models.Model):
 
     def __str__(self) -> str:
         return f"AI screening {self.pk} ({self.status})"
+
+
+class ListingOwnershipRequest(models.Model):
+    """
+    A provider's request to become the owner of an existing listing.
+
+    A manager/admin APPROVES (the listing's owner is switched to the requester)
+    or REJECTS (with a comment). The requester may CANCEL while it is PENDING.
+    A user can have at most one PENDING request per listing.
+    """
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="listing_ownership_requests",
+        verbose_name=_("user"),
+    )
+    listing = models.ForeignKey(
+        "catalog.Listing",
+        on_delete=models.CASCADE,
+        related_name="ownership_requests",
+        verbose_name=_("listing"),
+    )
+    status = models.CharField(
+        _("status"),
+        max_length=20,
+        choices=StatusChoices.choices,
+        default=StatusChoices.PENDING,
+    )
+    message = models.TextField(
+        _("message"),
+        blank=True,
+        help_text=_("Why the requester should own this listing."),
+    )
+    comment = models.TextField(
+        _("comment"),
+        blank=True,
+        help_text=_("Reviewer note — e.g. the reason a request was rejected."),
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = _("listing ownership request")
+        verbose_name_plural = _("listing ownership requests")
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "listing"],
+                condition=models.Q(status="PENDING"),
+                name="unique_pending_ownership_request",
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"OwnershipRequest({self.user.email}, {self.listing_id}, {self.status})"

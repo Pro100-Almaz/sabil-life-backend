@@ -5,6 +5,7 @@ from django.db import transaction
 from apps.catalog.tasks import delete_storage_objects
 from apps.providers.models import (
     AvatarImage,
+    ListingOwnershipRequest,
     ProviderChoices,
     ProviderVerification,
     StatusChoices,
@@ -57,3 +58,37 @@ def delete_avatar_image(avatar: AvatarImage) -> None:
     avatar.delete()
     if key:
         transaction.on_commit(lambda: delete_storage_objects.delay([key]))
+
+
+def apply_ownership_outcome(ownership: ListingOwnershipRequest, reviewer=None) -> bool:
+    """
+    Apply a reviewed ownership request. Approving makes the requester the
+    listing's owner and closes every other pending request for that listing.
+    """
+    approved = ownership.status == StatusChoices.APPROVED
+
+    if approved:
+        with transaction.atomic():
+            listing = ownership.listing
+            listing.owner = ownership.user
+            listing.save(update_fields=["owner", "updated_at"])
+            ListingOwnershipRequest.objects.filter(
+                listing=listing, status=StatusChoices.PENDING
+            ).exclude(pk=ownership.pk).update(
+                status=StatusChoices.REJECTED,
+                comment="Another provider was approved for this listing.",
+            )
+
+    logger.info(
+        "Reviewer %s set ownership request %s (%s, listing %s) to %s.",
+        getattr(reviewer, "email", "system"),
+        ownership.pk,
+        ownership.user.email,
+        ownership.listing_id,
+        ownership.status,
+    )
+
+    from apps.notifications.tasks import notify_ownership_result
+
+    transaction.on_commit(lambda: notify_ownership_result.delay(ownership.pk))
+    return approved

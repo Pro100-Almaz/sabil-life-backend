@@ -9,11 +9,14 @@ from apps.catalog.models import (
     Listing,
     ListingCategory,
     ListingContact,
+    ListingStatus,
+    ListingTag,
     MasterclassEventType,
 )
 from apps.catalog.serializers import ListingContactSerializer, ListingImageSerializer
 from apps.providers.models import (
     AvatarImage,
+    ListingOwnershipRequest,
     ProviderChoices,
     ProviderVerification,
     StatusChoices,
@@ -183,6 +186,15 @@ class ProviderListingSerializer(serializers.ModelSerializer):
     images = ListingImageSerializer(many=True, read_only=True)
     contacts = ListingContactSerializer(many=True, required=False)
     image_urls = serializers.SerializerMethodField()
+    tags = serializers.ListField(
+        child=serializers.CharField(max_length=200),
+        required=False,
+        write_only=True,
+        help_text="Tag names, resolved within the listing category.",
+    )
+    tag_names = serializers.SlugRelatedField(
+        source="tags", slug_field="name", many=True, read_only=True
+    )
 
     class Meta:
         model = Listing
@@ -199,6 +211,8 @@ class ProviderListingSerializer(serializers.ModelSerializer):
             "image_urls",
             "images",
             "contacts",
+            "tags",
+            "tag_names",
             "description",
             "highlights",
             "is_featured",
@@ -240,6 +254,9 @@ class ProviderListingSerializer(serializers.ModelSerializer):
         # Managers and admins may create listings in any category.
         if user.has_any_role(UserRole.MANAGER, UserRole.ADMIN):
             return value
+        # An owner may keep the category of a listing they were granted.
+        if self.instance is not None and value == self.instance.category:
+            return value
         allowed_categories = set()
         for role_key, cat in _PROVIDER_CATEGORY_MAP.items():
             if user.has_role(role_key):
@@ -260,6 +277,7 @@ class ProviderListingSerializer(serializers.ModelSerializer):
             "category",
             getattr(self.instance, "category", None),
         )
+        self._resolve_tags(attrs, category)
 
         if category != ListingCategory.MASTERCLASSES:
             attrs["is_online"] = False
@@ -326,6 +344,24 @@ class ProviderListingSerializer(serializers.ModelSerializer):
 
         return attrs
 
+    def validate_tags(self, names):
+        return list(dict.fromkeys(n.strip() for n in names if n.strip()))
+
+    def _resolve_tags(self, attrs: dict, category: str | None) -> None:
+        """Swap submitted tag names for ListingTag rows of the listing category.
+        A category change without new tags drops the now-foreign tags."""
+        if "tags" in attrs:
+            names = attrs["tags"]
+            found = ListingTag.objects.filter(category=category, name__in=names)
+            missing = set(names) - {t.name for t in found}
+            if missing:
+                raise serializers.ValidationError(
+                    {"tags": f"Unknown tags for {category}: {sorted(missing)}"}
+                )
+            attrs["tags"] = list(found)
+        elif self.instance is not None and category != self.instance.category:
+            attrs["tags"] = []
+
     def validate_contacts(self, contacts):
         if len(contacts) > 20:
             raise serializers.ValidationError(
@@ -345,8 +381,10 @@ class ProviderListingSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def create(self, validated_data):
+        tags = validated_data.pop("tags", [])
         contacts_data = validated_data.pop("contacts", [])
         listing = super().create(validated_data)
+        listing.tags.set(tags)
         ListingContact.objects.bulk_create(
             [
                 ListingContact(listing=listing, **contact_data)
@@ -357,8 +395,11 @@ class ProviderListingSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def update(self, instance, validated_data):
+        tags = validated_data.pop("tags", None)
         contacts_data = validated_data.pop("contacts", serializers.empty)
         listing = super().update(instance, validated_data)
+        if tags is not None:
+            listing.tags.set(tags)
 
         if contacts_data is not serializers.empty:
             listing.contacts.all().delete()
@@ -489,4 +530,89 @@ class ProviderVerificationReviewSerializer(serializers.ModelSerializer):
         # Clear any stale rejection note when approving.
         if status_value == StatusChoices.APPROVED:
             attrs["comment"] = comment
+        return attrs
+
+
+# ---------------------------------------------------------------------------
+# Listing Ownership Requests
+# ---------------------------------------------------------------------------
+
+
+class ListingOwnershipRequestSerializer(serializers.ModelSerializer):
+    """Read serializer shared by the provider and reviewer endpoints."""
+
+    user_id = serializers.UUIDField(source="user.uuid", read_only=True)
+    email = serializers.EmailField(source="user.email", read_only=True)
+    full_name = serializers.CharField(source="user.full_name", read_only=True)
+    listing_title = serializers.CharField(source="listing.title", read_only=True)
+    listing_id = serializers.UUIDField(read_only=True)
+    current_owner_id = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ListingOwnershipRequest
+        fields = [
+            "id",
+            "user_id",
+            "email",
+            "full_name",
+            "listing_id",
+            "listing_title",
+            "current_owner_id",
+            "status",
+            "message",
+            "comment",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = fields
+
+    def get_current_owner_id(self, obj: ListingOwnershipRequest) -> str | None:
+        owner = obj.listing.owner
+        return str(owner.uuid) if owner is not None else None
+
+
+class ListingOwnershipRequestCreateSerializer(serializers.Serializer):
+    listing_id = serializers.UUIDField()
+    message = serializers.CharField(required=False, allow_blank=True, max_length=2000)
+
+    def validate_listing_id(self, value):
+        user = self.context["request"].user
+        listing = Listing.objects.filter(id=value, status=ListingStatus.ACTIVE).first()
+        if listing is None:
+            raise serializers.ValidationError("Listing not found.")
+        if listing.owner_id == user.id:
+            raise serializers.ValidationError("You already own this listing.")
+        if ListingOwnershipRequest.objects.filter(
+            user=user, listing=listing, status=StatusChoices.PENDING
+        ).exists():
+            raise serializers.ValidationError(
+                "You already have a pending request for this listing."
+            )
+        self.context["listing"] = listing
+        return value
+
+
+class ListingOwnershipReviewSerializer(serializers.ModelSerializer):
+    """Reviewer serializer: APPROVE or REJECT (rejection needs a comment)."""
+
+    class Meta:
+        model = ListingOwnershipRequest
+        fields = ["status", "comment"]
+
+    def validate_status(self, value: str) -> str:
+        if value not in (StatusChoices.APPROVED, StatusChoices.REJECTED):
+            raise serializers.ValidationError(
+                "Reviewers may only set status to APPROVED or REJECTED."
+            )
+        return value
+
+    def validate(self, attrs: dict) -> dict:
+        if self.instance and self.instance.status != StatusChoices.PENDING:
+            raise serializers.ValidationError("Only pending requests can be reviewed.")
+        comment = (attrs.get("comment") or "").strip()
+        if attrs.get("status") == StatusChoices.REJECTED and not comment:
+            raise serializers.ValidationError(
+                {"comment": "A comment explaining the rejection is required."}
+            )
+        attrs["comment"] = comment
         return attrs
