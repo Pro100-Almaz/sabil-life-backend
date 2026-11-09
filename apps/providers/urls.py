@@ -7,6 +7,7 @@ from apps.providers.views import (
     ListingImageView,
     ListingOwnershipAdminViewSet,
     ListingOwnershipRequestViewSet,
+    ProviderEventViewSet,
     ProviderListingViewSet,
     ProviderProfileView,
     ProviderVerificationAdminViewSet,
@@ -36,6 +37,22 @@ router.register(
 )
 
 urlpatterns = router.urls + [
+    path(
+        "listings/<uuid:listing_id>/events/",
+        ProviderEventViewSet.as_view({"get": "list", "post": "create"}),
+        name="provider-listing-events",
+    ),
+    path(
+        "listings/<uuid:listing_id>/events/<uuid:pk>/",
+        ProviderEventViewSet.as_view(
+            {
+                "get": "retrieve",
+                "patch": "partial_update",
+                "delete": "destroy",
+            }
+        ),
+        name="provider-listing-event-detail",
+    ),
     # router.urls first so "verify/admin/" is matched by the admin viewset
     # before the catch-all "verify/<provider_type>/" below can swallow it.
     path("verify/", VerifyProviderView.as_view(), name="provider-verify"),

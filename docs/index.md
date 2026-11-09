@@ -81,3 +81,8 @@ This documentation is your comprehensive guide to building robust applications w
 *   **[Testing](testing.md):** Understand how to write and run tests for your project to ensure code quality and reliability.
 *   **[Environment Setup](environment_setup.md):** Get detailed instructions on setting up your development environment.
 *   **[AI-Assisted Development](ai.md):** Learn how the project's AI agent tooling (AGENTS.md, skills) helps coding assistants work with the codebase.
+
+## Mobile API guides
+
+* [Mobile integration](MOBILE_INTEGRATION.md)
+* [Listing events: publish, edit, delete, and public discovery](MOBILE_EVENTS.md)

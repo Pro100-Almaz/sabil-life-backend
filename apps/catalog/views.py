@@ -10,6 +10,7 @@ from rest_framework.response import Response
 
 from apps.catalog.filters import ListingFilter, TutorFilter
 from apps.catalog.models import (
+    Event,
     Listing,
     ListingCategory,
     ListingClient,
@@ -26,6 +27,7 @@ from apps.catalog.schema import (
 )
 from apps.catalog.serializers import (
     CategoryCountSerializer,
+    EventSerializer,
     ListingCardSerializer,
     ListingClientListSerializer,
     ListingClientOwnerSerializer,
@@ -106,7 +108,7 @@ class ListingViewSet(viewsets.ReadOnlyModelViewSet):
             .prefetch_related("tags")
         )
         if self.action == "retrieve":
-            qs = qs.prefetch_related("contacts")
+            qs = qs.prefetch_related("contacts", "events")
         if self.request.user.is_authenticated:
             qs = qs.exclude(owner=self.request.user)
 
@@ -363,5 +365,20 @@ class ListingOwnerViewSet(
         )
         listing_id = self.request.query_params.get("listing")
         if listing_id:
+            qs = qs.filter(listing_id=listing_id)
+        return qs
+
+
+class EventViewSet(viewsets.ReadOnlyModelViewSet):
+    """All events are public, including events on inactive listings."""
+
+    permission_classes = [permissions.AllowAny]
+    serializer_class = EventSerializer
+    queryset = Event.objects.all()
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        listing_id = self.kwargs.get("listing_id")
+        if listing_id is not None:
             qs = qs.filter(listing_id=listing_id)
         return qs

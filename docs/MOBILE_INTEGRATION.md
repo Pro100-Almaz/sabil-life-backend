@@ -1,5 +1,7 @@
 # Mobile Integration Guide
 
+For listing-owned events, use the [Mobile events endpoint guide](MOBILE_EVENTS.md), including immediate publishing, provider ownership, public feeds, and request examples.
+
 This document is a complete, self-contained reference for integrating a mobile client with the Sabil Life backend. It is written so a mobile agent can implement against it without reading the Django source.
 
 If anything here disagrees with the live OpenAPI schema, the OpenAPI schema wins — fetch it from `/api/schema/` (see [Live schema](#live-schema)).

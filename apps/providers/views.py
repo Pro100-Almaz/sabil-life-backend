@@ -6,6 +6,7 @@ import rest_framework.exceptions
 import rest_framework.status
 from django.core.files.storage import default_storage
 from django.db import transaction
+from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import (
@@ -21,7 +22,7 @@ from rest_framework import (
 from rest_framework.response import Response
 
 from apps.catalog.models import Listing, ListingImage, ListingStatus
-from apps.catalog.serializers import ListingImageSerializer
+from apps.catalog.serializers import EventSerializer, ListingImageSerializer
 from apps.catalog.services import delete_listing, delete_listing_image
 from apps.providers.models import (
     AvatarImage,
@@ -62,6 +63,7 @@ from apps.users.permissions import (
     IsManagerOrAdmin,
     IsMasterclass,
     IsMasterclassManagerOrAdmin,
+    IsProvider,
 )
 
 logger = logging.getLogger(__name__)
@@ -731,3 +733,26 @@ class ListingOwnershipAdminViewSet(
             ownership = serializer.save()
             apply_ownership_outcome(ownership, request.user)
         return Response(ListingOwnershipRequestSerializer(ownership).data)
+
+
+class ProviderEventViewSet(viewsets.ModelViewSet):
+    """Create (and immediately publish) or manage events on an owned listing.
+
+    The listing comes exclusively from the URL and cannot be reassigned.
+    Ownership is checked on every request, including after ownership transfers.
+    """
+
+    serializer_class = EventSerializer
+    permission_classes = [permissions.IsAuthenticated, IsProvider]
+    http_method_names = ["get", "post", "patch", "delete", "head", "options"]
+
+    def get_listing(self):
+        return get_object_or_404(
+            Listing, id=self.kwargs["listing_id"], owner=self.request.user
+        )
+
+    def get_queryset(self):
+        return self.get_listing().events.all()
+
+    def perform_create(self, serializer):
+        serializer.save(listing=self.get_listing())
