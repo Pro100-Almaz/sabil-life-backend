@@ -5,3 +5,6 @@ class CatalogConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "apps.catalog"
     verbose_name = "Catalog"
+
+    def ready(self):
+        from apps.catalog import signals  # noqa: F401

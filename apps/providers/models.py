@@ -10,6 +10,32 @@ class ProviderChoices(models.TextChoices):
     TUTOR = "TUTOR", _("Tutor")
 
 
+class ProviderFollow(models.Model):
+    client = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="provider_follows",
+    )
+    provider = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="provider_followers",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at", "-pk"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["client", "provider"], name="unique_client_provider_follow"
+            ),
+            models.CheckConstraint(
+                condition=~models.Q(client=models.F("provider")),
+                name="provider_follow_no_self",
+            ),
+        ]
+
+
 class StatusChoices(models.TextChoices):
     PENDING = "PENDING", _("Pending")
     APPROVED = "APPROVED", _("Approved")

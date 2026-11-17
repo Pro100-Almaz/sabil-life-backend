@@ -1,6 +1,7 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 
+from apps.providers.follows import ProviderFollowViewSet, ProviderSubscriberViewSet
 from apps.providers.views import (
     AvatarUploadView,
     ListingImageDetailView,
@@ -18,6 +19,7 @@ from apps.providers.views import (
 app_name = "providers"
 
 router = DefaultRouter()
+router.register("subscribers", ProviderSubscriberViewSet, basename="provider-subscribers")
 # Only register routes we support (no PUT — handled via http_method_names on the view)
 router.register(r"listings", ProviderListingViewSet, basename="provider-listings")
 router.register(
@@ -75,3 +77,9 @@ urlpatterns = router.urls + [
         name="listing-image-detail",
     ),
 ]
+
+follow_router = DefaultRouter()
+follow_router.register(
+    "provider-subscriptions", ProviderFollowViewSet, basename="provider-follows"
+)
+follow_urlpatterns = follow_router.urls
