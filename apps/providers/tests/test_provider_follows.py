@@ -6,7 +6,7 @@ from django.db import IntegrityError, transaction
 from django.utils import timezone
 from rest_framework.test import APIClient, APITestCase
 
-from apps.catalog.models import Event, Listing, ListingCategory
+from apps.catalog.models import Event, Listing, ListingCategory, ListingStatus
 from apps.notifications.models import Notification, NotificationType
 from apps.notifications.tasks import notify_provider_event
 from apps.providers.models import ProviderFollow
@@ -170,7 +170,10 @@ class ProviderEventNotificationTests(APITestCase):
             client=self.family, provider=self.provider
         )
         self.listing = Listing.objects.create(
-            owner=self.provider, title="School", category=ListingCategory.SCHOOLS
+            owner=self.provider,
+            title="School",
+            category=ListingCategory.SCHOOLS,
+            status=ListingStatus.ACTIVE,
         )
 
     def publish(self):
@@ -198,6 +201,14 @@ class ProviderEventNotificationTests(APITestCase):
         delay.reset_mock()
         with self.captureOnCommitCallbacks(execute=True):
             client.patch(f"{url}{response.data['id']}/", {"title": "Updated"})
+        delay.assert_not_called()
+
+    @patch("apps.catalog.signals.notify_provider_event.delay")
+    def test_event_on_non_active_listing_does_not_notify(self, delay):
+        self.listing.status = ListingStatus.PENDING
+        self.listing.save()
+        with self.captureOnCommitCallbacks(execute=True):
+            self.publish()
         delay.assert_not_called()
 
     @patch("apps.catalog.signals.notify_provider_event.delay")

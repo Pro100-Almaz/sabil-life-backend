@@ -5,7 +5,6 @@ from pathlib import Path
 import rest_framework.exceptions
 import rest_framework.status
 from django.core.files.storage import default_storage
-from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema, extend_schema_view
@@ -52,9 +51,10 @@ from apps.providers.serializers import (
     VerifyProviderSerializer,
 )
 from apps.providers.services import (
-    apply_ownership_outcome,
+    OwnershipReviewError,
     apply_verification_outcome,
     delete_avatar_image,
+    review_ownership_request,
 )
 from apps.providers.tasks import queue_cv_screening
 from apps.users.enums import UserRole
@@ -722,16 +722,30 @@ class ListingOwnershipAdminViewSet(
             qs = qs.filter(status=status_param.upper())
         listing = self.request.query_params.get("listing")
         if listing:
-            qs = qs.filter(listing_id=listing)
+            try:
+                listing_id = uuid.UUID(listing)
+            except ValueError:
+                raise rest_framework.exceptions.ValidationError(
+                    {"listing": "Must be a valid UUID."}
+                ) from None
+            qs = qs.filter(listing_id=listing_id)
         return qs
 
     def partial_update(self, request, *args, **kwargs):
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        with transaction.atomic():
-            ownership = serializer.save()
-            apply_ownership_outcome(ownership, request.user)
+        try:
+            ownership = review_ownership_request(
+                instance.pk,
+                serializer.validated_data["status"],
+                serializer.validated_data["comment"],
+                request.user,
+            )
+        except OwnershipReviewError as exc:
+            raise rest_framework.exceptions.ValidationError(
+                {"detail": str(exc)}
+            ) from None
         return Response(ListingOwnershipRequestSerializer(ownership).data)
 
 

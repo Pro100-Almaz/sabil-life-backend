@@ -89,11 +89,21 @@ class EventTests(APITestCase):
             auth_client(self.other).patch(detail, {"title": "Yes"}).status_code, 200
         )
 
-    def test_inactive_parent_does_not_hide_event(self):
+    def test_inactive_parent_hides_event(self):
         event_id = self.create_event()
         self.listing.status = ListingStatus.DRAFT
         self.listing.save()
-        self.assertEqual(APIClient().get(f"/api/v1/events/{event_id}/").status_code, 200)
+        public = APIClient()
+        self.assertEqual(public.get(f"/api/v1/events/{event_id}/").status_code, 404)
+        self.assertNotIn(
+            event_id, [e["id"] for e in public.get("/api/v1/events/").data["results"]]
+        )
+
+    def test_nested_events_for_unknown_listing_is_404(self):
+        import uuid
+
+        res = APIClient().get(f"/api/v1/listings/{uuid.uuid4()}/events/")
+        self.assertEqual(res.status_code, 404)
 
     def test_invalid_dates_rejected_on_create_and_partial_update(self):
         bad = {**self.payload, "ends_at": timezone.now().isoformat()}

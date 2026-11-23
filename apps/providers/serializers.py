@@ -609,6 +609,8 @@ class ListingOwnershipReviewSerializer(serializers.ModelSerializer):
     def validate(self, attrs: dict) -> dict:
         if self.instance and self.instance.status != StatusChoices.PENDING:
             raise serializers.ValidationError("Only pending requests can be reviewed.")
+        if not attrs.get("status"):
+            raise serializers.ValidationError({"status": "This field is required."})
         comment = (attrs.get("comment") or "").strip()
         if attrs.get("status") == StatusChoices.REJECTED and not comment:
             raise serializers.ValidationError(

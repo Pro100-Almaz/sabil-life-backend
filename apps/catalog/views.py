@@ -1,6 +1,7 @@
 import logging
 
 from django.db.models import Count, QuerySet
+from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import filters, mixins, permissions, viewsets
@@ -370,15 +371,20 @@ class ListingOwnerViewSet(
 
 
 class EventViewSet(viewsets.ReadOnlyModelViewSet):
-    """All events are public, including events on inactive listings."""
+    """Public events, limited to events on ACTIVE listings.
+
+    Events on draft/pending/rejected/expired listings are hidden, matching the
+    public listing endpoints. The nested route 404s for unknown/non-public listings.
+    """
 
     permission_classes = [permissions.AllowAny]
     serializer_class = EventSerializer
-    queryset = Event.objects.all()
+    queryset = Event.objects.filter(listing__status=ListingStatus.ACTIVE)
 
     def get_queryset(self):
         qs = super().get_queryset()
         listing_id = self.kwargs.get("listing_id")
         if listing_id is not None:
+            get_object_or_404(Listing, id=listing_id, status=ListingStatus.ACTIVE)
             qs = qs.filter(listing_id=listing_id)
         return qs

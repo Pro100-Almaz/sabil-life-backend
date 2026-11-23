@@ -87,6 +87,60 @@ class OwnershipRequestTests(APITestCase):
         self.assertEqual(self.listing.owner, self.provider)
         rival_req = ListingOwnershipRequest.objects.get(user=rival)
         self.assertEqual(rival_req.status, StatusChoices.REJECTED)
+        # Both the approved and the auto-rejected requester are notified.
+        notified = {c.args[0] for c in _delay.call_args_list}
+        self.assertEqual(notified, {req_id, rival_req.pk})
+
+    @patch("apps.notifications.tasks.notify_ownership_result.delay")
+    def test_bulk_admin_approve_same_listing_approves_only_one(self, _delay):
+        from django.contrib.admin.sites import site
+        from django.test import RequestFactory
+
+        from apps.providers.admin import approve_ownership_requests
+
+        self._request()
+        rival = make_user([UserRole.MASTERCLASS])
+        self._request(client=auth_client(rival))
+        request = RequestFactory().post("/")
+        request.user = self.admin
+        modeladmin = site._registry[ListingOwnershipRequest]
+        with (
+            patch.object(modeladmin, "message_user"),
+            self.captureOnCommitCallbacks(execute=True),
+        ):
+            approve_ownership_requests(
+                modeladmin, request, ListingOwnershipRequest.objects.all()
+            )
+        statuses = sorted(
+            ListingOwnershipRequest.objects.values_list("status", flat=True)
+        )
+        self.assertEqual(statuses, [StatusChoices.APPROVED, StatusChoices.REJECTED])
+        self.listing.refresh_from_db()
+        approved = ListingOwnershipRequest.objects.get(status=StatusChoices.APPROVED)
+        self.assertEqual(self.listing.owner_id, approved.user_id)
+
+    @patch("apps.notifications.tasks.notify_ownership_result.delay")
+    def test_cannot_approve_request_for_inactive_listing(self, _delay):
+        req_id = self._request().data["id"]
+        self.listing.status = ListingStatus.DRAFT
+        self.listing.save()
+        res = auth_client(self.admin).patch(
+            f"{ADMIN_URL}{req_id}/", {"status": "APPROVED"}, format="json"
+        )
+        self.assertEqual(res.status_code, 400)
+        self.listing.refresh_from_db()
+        self.assertIsNone(self.listing.owner)
+
+    def test_review_requires_status(self):
+        req_id = self._request().data["id"]
+        res = auth_client(self.admin).patch(
+            f"{ADMIN_URL}{req_id}/", {"comment": "x"}, format="json"
+        )
+        self.assertEqual(res.status_code, 400)
+
+    def test_admin_list_invalid_listing_param_is_400(self):
+        res = auth_client(self.admin).get(f"{ADMIN_URL}?listing=abc")
+        self.assertEqual(res.status_code, 400)
 
     @patch("apps.notifications.tasks.notify_ownership_result.delay")
     def test_rejection_requires_comment(self, _delay):
