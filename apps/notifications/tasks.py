@@ -3,14 +3,63 @@ import logging
 from celery import shared_task
 from django.utils.translation import gettext as _
 
-from apps.catalog.models import Listing, ListingStatus
+from apps.catalog.models import Event, Listing, ListingStatus
 from apps.core.tasks import BaseTaskWithRetry
 from apps.inquiries.models import Inquiry, InquiryStatus
-from apps.notifications.models import NotificationType
-from apps.notifications.services import notify_user
-from apps.providers.models import ProviderVerification, StatusChoices
+from apps.notifications.models import Notification, NotificationType
+from apps.notifications.services import notify_user, send_push_to_user
+from apps.providers.models import (
+    ListingOwnershipRequest,
+    ProviderFollow,
+    ProviderVerification,
+    StatusChoices,
+)
 
 logger = logging.getLogger(__name__)
+
+
+@shared_task(bind=True, base=BaseTaskWithRetry, soft_time_limit=270, time_limit=300)
+def notify_provider_event(self, event_id: str, provider_id: int) -> None:
+    """Deliver one inbox entry per follower; pushes remain best effort."""
+    event = Event.objects.filter(pk=event_id).first()
+    if event is None:
+        logger.info("Event %s no longer exists; skipping", event_id)
+        return
+    follows = ProviderFollow.objects.filter(
+        provider_id=provider_id,
+        created_at__lte=event.published_at,
+        client__is_active=True,
+        client__deleted_at__isnull=True,
+    ).select_related("client", "provider")
+    data = {
+        "event_id": str(event.pk),
+        "listing_id": str(event.listing_id),
+    }
+    for follow in follows.iterator(chunk_size=500):
+        data["provider_id"] = str(follow.provider.uuid)
+        notification, created = Notification.objects.get_or_create(
+            user=follow.client,
+            event=event,
+            defaults={
+                "type": NotificationType.PROVIDER_EVENT,
+                "title": _("New provider event"),
+                "body": event.title,
+                "data": data,
+            },
+        )
+        if created:
+            try:
+                send_push_to_user(
+                    follow.client,
+                    notification.title,
+                    notification.body,
+                    notification.data,
+                )
+            except Exception:
+                logger.exception(
+                    "Push failed for event %s, user %s", event_id, follow.client_id
+                )
+
 
 ProviderResponse = {
     InquiryStatus.ACCEPTED,
@@ -170,5 +219,45 @@ def notify_verification_result(self, verification_id: int) -> None:
             "verification_id": verification.id,
             "provider_type": verification.provider_type,
             "status": verification.status,
+        },
+    )
+
+
+@shared_task(bind=True, base=BaseTaskWithRetry)
+def notify_ownership_result(self, request_id: int) -> None:
+    """Notify a provider that their listing ownership request was decided."""
+    try:
+        ownership = ListingOwnershipRequest.objects.select_related("user", "listing").get(
+            id=request_id
+        )
+    except ListingOwnershipRequest.DoesNotExist:
+        logger.warning("Ownership request %s no longer exists; skipping.", request_id)
+        return
+
+    title_of = ownership.listing.title
+    if ownership.status == StatusChoices.APPROVED:
+        ntype = NotificationType.OWNERSHIP_APPROVED
+        title = _("Ownership approved")
+        body = _("You are now the owner of %(listing)s.") % {"listing": title_of}
+    elif ownership.status == StatusChoices.REJECTED:
+        ntype = NotificationType.OWNERSHIP_REJECTED
+        title = _("Ownership rejected")
+        body = _("Your ownership request for %(listing)s was rejected.") % {
+            "listing": title_of
+        }
+        if ownership.comment:
+            body = f"{body} {ownership.comment}"
+    else:
+        return
+
+    notify_user(
+        ownership.user,
+        type=ntype,
+        title=title,
+        body=body,
+        data={
+            "ownership_request_id": ownership.id,
+            "listing_id": str(ownership.listing_id),
+            "status": ownership.status,
         },
     )

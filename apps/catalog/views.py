@@ -1,6 +1,7 @@
 import logging
 
 from django.db.models import Count, QuerySet
+from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import filters, mixins, permissions, viewsets
@@ -10,6 +11,7 @@ from rest_framework.response import Response
 
 from apps.catalog.filters import ListingFilter, TutorFilter
 from apps.catalog.models import (
+    Event,
     Listing,
     ListingCategory,
     ListingClient,
@@ -26,6 +28,7 @@ from apps.catalog.schema import (
 )
 from apps.catalog.serializers import (
     CategoryCountSerializer,
+    EventSerializer,
     ListingCardSerializer,
     ListingClientListSerializer,
     ListingClientOwnerSerializer,
@@ -111,7 +114,7 @@ class ListingViewSet(viewsets.ReadOnlyModelViewSet):
             .prefetch_related("tags")
         )
         if self.action == "retrieve":
-            qs = qs.prefetch_related("contacts")
+            qs = qs.prefetch_related("contacts", "events")
         if self.request.user.is_authenticated:
             qs = qs.exclude(owner=self.request.user)
 
@@ -368,5 +371,25 @@ class ListingOwnerViewSet(
         )
         listing_id = self.request.query_params.get("listing")
         if listing_id:
+            qs = qs.filter(listing_id=listing_id)
+        return qs
+
+
+class EventViewSet(viewsets.ReadOnlyModelViewSet):
+    """Public events, limited to events on ACTIVE listings.
+
+    Events on draft/pending/rejected/expired listings are hidden, matching the
+    public listing endpoints. The nested route 404s for unknown/non-public listings.
+    """
+
+    permission_classes = [permissions.AllowAny]
+    serializer_class = EventSerializer
+    queryset = Event.objects.filter(listing__status=ListingStatus.ACTIVE)
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        listing_id = self.kwargs.get("listing_id")
+        if listing_id is not None:
+            get_object_or_404(Listing, id=listing_id, status=ListingStatus.ACTIVE)
             qs = qs.filter(listing_id=listing_id)
         return qs

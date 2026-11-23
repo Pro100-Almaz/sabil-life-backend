@@ -5,6 +5,7 @@ from pathlib import Path
 import rest_framework.exceptions
 import rest_framework.status
 from django.core.files.storage import default_storage
+from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import (
@@ -20,10 +21,11 @@ from rest_framework import (
 from rest_framework.response import Response
 
 from apps.catalog.models import Listing, ListingImage, ListingStatus
-from apps.catalog.serializers import ListingImageSerializer
+from apps.catalog.serializers import EventSerializer, ListingImageSerializer
 from apps.catalog.services import delete_listing, delete_listing_image
 from apps.providers.models import (
     AvatarImage,
+    ListingOwnershipRequest,
     ProviderChoices,
     ProviderVerification,
     StatusChoices,
@@ -39,17 +41,30 @@ from apps.providers.schema import (
 )
 from apps.providers.serializers import (
     AvatarImageSerializer,
+    ListingOwnershipRequestCreateSerializer,
+    ListingOwnershipRequestSerializer,
+    ListingOwnershipReviewSerializer,
     ProviderListingSerializer,
     ProviderVerificationRequestSerializer,
     ProviderVerificationReviewSerializer,
     TutorDetailSerializer,
     VerifyProviderSerializer,
 )
-from apps.providers.services import apply_verification_outcome, delete_avatar_image
+from apps.providers.services import (
+    OwnershipReviewError,
+    apply_verification_outcome,
+    delete_avatar_image,
+    review_ownership_request,
+)
 from apps.providers.tasks import queue_cv_screening
 from apps.users.enums import UserRole
 from apps.users.models import Role
-from apps.users.permissions import IsManagerOrAdmin, IsMasterclassManagerOrAdmin
+from apps.users.permissions import (
+    IsManagerOrAdmin,
+    IsMasterclass,
+    IsMasterclassManagerOrAdmin,
+    IsProvider,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -611,3 +626,147 @@ class ListingImageDetailView(generics.DestroyAPIView):
         image = self._get_listing(request, listing_id, image_id)
         delete_listing_image(image)
         return Response(status=204)
+
+
+# ---------------------------------------------------------------------------
+# Listing Ownership Requests
+# ---------------------------------------------------------------------------
+
+
+class ListingOwnershipRequestViewSet(
+    mixins.CreateModelMixin,
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet,
+):
+    """
+    Provider-side ownership requests.
+
+    GET    /api/v1/provider/ownership-requests/        — list own requests
+    POST   /api/v1/provider/ownership-requests/        — {"listing_id", "message"}
+    GET    /api/v1/provider/ownership-requests/{id}/   — retrieve own request
+    DELETE /api/v1/provider/ownership-requests/{id}/   — cancel a PENDING request
+
+    Auth: IsAuthenticated + MASTERCLASS role (managers/admins review instead).
+    """
+
+    permission_classes = [permissions.IsAuthenticated, IsMasterclass]
+    serializer_class = ListingOwnershipRequestSerializer
+    pagination_class = None
+
+    def get_queryset(self):
+        return ListingOwnershipRequest.objects.filter(
+            user=self.request.user
+        ).select_related("user", "listing__owner")
+
+    def create(self, request, *args, **kwargs):
+        serializer = ListingOwnershipRequestCreateSerializer(
+            data=request.data, context={"request": request}
+        )
+        serializer.is_valid(raise_exception=True)
+        ownership = ListingOwnershipRequest.objects.create(
+            user=request.user,
+            listing=serializer.context["listing"],
+            message=serializer.validated_data.get("message", ""),
+        )
+        logger.info(
+            "Provider %s requested ownership of listing %s.",
+            request.user.email,
+            ownership.listing_id,
+        )
+        return Response(
+            ListingOwnershipRequestSerializer(ownership).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+    def perform_destroy(self, instance) -> None:
+        if instance.status != StatusChoices.PENDING:
+            raise rest_framework.exceptions.ValidationError(
+                {"detail": "Only a pending request can be cancelled."}
+            )
+        instance.status = StatusChoices.CANCELLED
+        instance.save(update_fields=["status", "updated_at"])
+
+
+class ListingOwnershipAdminViewSet(
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    mixins.UpdateModelMixin,
+    viewsets.GenericViewSet,
+):
+    """
+    Manager/admin review of ownership requests.
+
+    GET   /api/v1/provider/ownership-requests/admin/        — list (?status=, ?listing=)
+    GET   /api/v1/provider/ownership-requests/admin/{id}/   — retrieve
+    PATCH /api/v1/provider/ownership-requests/admin/{id}/   — APPROVE / REJECT
+
+    Approving transfers ownership of the listing to the requester.
+
+    Auth: IsAuthenticated + IsManagerOrAdmin.
+    """
+
+    permission_classes = [permissions.IsAuthenticated, IsManagerOrAdmin]
+    http_method_names = ["get", "patch", "head", "options"]
+
+    def get_serializer_class(self):
+        if self.action == "partial_update":
+            return ListingOwnershipReviewSerializer
+        return ListingOwnershipRequestSerializer
+
+    def get_queryset(self):
+        qs = ListingOwnershipRequest.objects.select_related("user", "listing__owner")
+        status_param = self.request.query_params.get("status")
+        if status_param:
+            qs = qs.filter(status=status_param.upper())
+        listing = self.request.query_params.get("listing")
+        if listing:
+            try:
+                listing_id = uuid.UUID(listing)
+            except ValueError:
+                raise rest_framework.exceptions.ValidationError(
+                    {"listing": "Must be a valid UUID."}
+                ) from None
+            qs = qs.filter(listing_id=listing_id)
+        return qs
+
+    def partial_update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        try:
+            ownership = review_ownership_request(
+                instance.pk,
+                serializer.validated_data["status"],
+                serializer.validated_data["comment"],
+                request.user,
+            )
+        except OwnershipReviewError as exc:
+            raise rest_framework.exceptions.ValidationError(
+                {"detail": str(exc)}
+            ) from None
+        return Response(ListingOwnershipRequestSerializer(ownership).data)
+
+
+class ProviderEventViewSet(viewsets.ModelViewSet):
+    """Create (and immediately publish) or manage events on an owned listing.
+
+    The listing comes exclusively from the URL and cannot be reassigned.
+    Ownership is checked on every request, including after ownership transfers.
+    """
+
+    serializer_class = EventSerializer
+    permission_classes = [permissions.IsAuthenticated, IsProvider]
+    http_method_names = ["get", "post", "patch", "delete", "head", "options"]
+
+    def get_listing(self):
+        return get_object_or_404(
+            Listing, id=self.kwargs["listing_id"], owner=self.request.user
+        )
+
+    def get_queryset(self):
+        return self.get_listing().events.all()
+
+    def perform_create(self, serializer):
+        serializer.save(listing=self.get_listing())

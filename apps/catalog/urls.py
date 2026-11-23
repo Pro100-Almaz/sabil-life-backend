@@ -2,6 +2,7 @@ from django.urls import path
 from rest_framework.routers import DefaultRouter
 
 from apps.catalog.views import (
+    EventViewSet,
     ListingClientViewSet,
     ListingOwnerViewSet,
     ListingViewSet,
@@ -13,6 +14,7 @@ from apps.catalog.views import (
 )
 
 router = DefaultRouter()
+router.register(r"events", EventViewSet, basename="events")
 router.register(r"listings", ListingViewSet, basename="listings")
 router.register(r"tutors", TutorListViewSet, basename="tutors")
 router.register(
@@ -23,6 +25,11 @@ router.register(r"listing-clients", ListingOwnerViewSet, basename="listing-clien
 app_name = "catalog"
 
 urlpatterns = router.urls + [
+    path(
+        "listings/<uuid:listing_id>/events/",
+        EventViewSet.as_view({"get": "list"}),
+        name="listing-events",
+    ),
     path("categories/", categories_view, name="categories"),
     path("subjects/", tutor_subjects_view, name="subjects"),
     path("tags/", listing_tags_view, name="tags"),

@@ -38,10 +38,13 @@ class Device(models.Model):
 
 
 class NotificationType(models.TextChoices):
+    PROVIDER_EVENT = "PROVIDER_EVENT", _("Provider published an event")
     PROVIDER_APPROVED = "PROVIDER_APPROVED", _("Provider application approved")
     PROVIDER_REJECTED = "PROVIDER_REJECTED", _("Provider application rejected")
     LISTING_APPROVED = "LISTING_APPROVED", _("Listing applicatoin approved")
     LISTING_REJECTED = "LISTING_REJECTED", _("Listing application rejected")
+    OWNERSHIP_APPROVED = "OWNERSHIP_APPROVED", _("Listing ownership approved")
+    OWNERSHIP_REJECTED = "OWNERSHIP_REJECTED", _("Listing ownership rejected")
     INQUIRY_RESPONSE = "INQUIRY_RESPONSE", _("Inquiry responded")
     INQUIRY_REQUEST = "INQUIRY_REQUEST", _("Inquiry requested")
     INQUIRY_CREATED = "INQUIRY_CREATED", _("Inquiry created by administrator")
@@ -62,6 +65,13 @@ class Notification(models.Model):
         related_name="notifications",
         verbose_name=_("user"),
     )
+    event = models.ForeignKey(
+        "catalog.Event",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="notifications",
+    )
     type = models.CharField(_("type"), max_length=40, choices=NotificationType.choices)
     title = models.CharField(_("title"), max_length=255)
     body = models.TextField(_("body"))
@@ -75,6 +85,11 @@ class Notification(models.Model):
         verbose_name_plural = _("notifications")
         ordering = ["-created_at"]
         indexes = [models.Index(fields=["user", "is_read"])]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "event"], name="unique_user_event_notification"
+            )
+        ]
 
     def __str__(self) -> str:
         return f"Notification({self.user.email}, {self.type})"

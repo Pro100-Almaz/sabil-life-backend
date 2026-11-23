@@ -13,6 +13,7 @@ from unfold.widgets import UnfoldAdminTextareaWidget
 
 from apps.providers.models import (
     AIScreeningStatus,
+    ListingOwnershipRequest,
     ProviderVerification,
     ProviderVerificationAIScreening,
     StatusChoices,
@@ -20,7 +21,11 @@ from apps.providers.models import (
     TutorStatus,
     TutorSubject,
 )
-from apps.providers.services import apply_verification_outcome
+from apps.providers.services import (
+    OwnershipReviewError,
+    apply_verification_outcome,
+    review_ownership_request,
+)
 from apps.providers.tasks import queue_cv_screening
 
 
@@ -364,3 +369,56 @@ class ProviderVerificationAdmin(ModelAdmin):
         if screening is None:
             return None
         return screening.status, screening.get_status_display()
+
+
+def _review_ownership_selection(modeladmin, request, queryset, status, label):
+    done = skipped = 0
+    for ownership_id in queryset.filter(status=StatusChoices.PENDING).values_list(
+        "pk", flat=True
+    ):
+        try:
+            review_ownership_request(ownership_id, status, reviewer=request.user)
+        except OwnershipReviewError:
+            # e.g. auto-rejected because another selected request for the same
+            # listing was approved earlier in this loop.
+            skipped += 1
+            continue
+        done += 1
+    msg = _("%(n)d ownership request(s) %(label)s.") % {"n": done, "label": label}
+    if skipped:
+        msg += " " + _("%(n)d skipped (no longer reviewable).") % {"n": skipped}
+    modeladmin.message_user(request, msg, messages.SUCCESS if done else messages.WARNING)
+
+
+@action(
+    description=_("Approve ownership request (transfers the listing)"),
+    icon="check_circle",
+)
+def approve_ownership_requests(modeladmin, request, queryset):
+    _review_ownership_selection(
+        modeladmin, request, queryset, StatusChoices.APPROVED, "APPROVED"
+    )
+
+
+@action(description=_("Reject ownership request"), icon="cancel")
+def reject_ownership_requests(modeladmin, request, queryset):
+    _review_ownership_selection(
+        modeladmin, request, queryset, StatusChoices.REJECTED, "REJECTED"
+    )
+
+
+@admin.register(ListingOwnershipRequest)
+class ListingOwnershipRequestAdmin(ModelAdmin):
+    list_display = ("listing", "user", "status", "created_at")
+    list_filter = ("status",)
+    search_fields = ("listing__title", "user__email")
+    raw_id_fields = ("listing", "user")
+    actions = [approve_ownership_requests, reject_ownership_requests]
+
+    def get_readonly_fields(self, request, obj=None):
+        # Decisions must go through the actions so ownership actually moves;
+        # editing status/user/listing in the form would bypass that.
+        fields = ["status", "created_at", "updated_at"]
+        if obj is not None:
+            fields += ["listing", "user", "comment"]
+        return fields

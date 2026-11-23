@@ -252,3 +252,31 @@ class ListingImage(models.Model):
 
     def __str__(self):
         return self.key
+
+
+class Event(models.Model):
+    """A publicly published event belonging to exactly one listing."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    listing = models.ForeignKey(Listing, on_delete=models.CASCADE, related_name="events")
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    starts_at = models.DateTimeField()
+    ends_at = models.DateTimeField(null=True, blank=True)
+    location = models.CharField(max_length=500, blank=True)
+    registration_url = models.URLField(blank=True)
+    published_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["starts_at", "id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(ends_at__isnull=True)
+                | models.Q(ends_at__gt=models.F("starts_at")),
+                name="event_ends_after_start",
+            ),
+        ]
+
+    def __str__(self):
+        return self.title

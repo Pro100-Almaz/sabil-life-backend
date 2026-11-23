@@ -8,6 +8,7 @@ from django.core.validators import EmailValidator, URLValidator
 from rest_framework import serializers
 
 from apps.catalog.models import (
+    Event,
     Listing,
     ListingCategory,
     ListingClient,
@@ -156,6 +157,33 @@ class ListingCardSerializer(serializers.ModelSerializer):
         return [default_storage.url(img.key) for img in obj.images.all()]
 
 
+class EventSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Event
+        fields = [
+            "id",
+            "listing",
+            "title",
+            "description",
+            "starts_at",
+            "ends_at",
+            "location",
+            "registration_url",
+            "published_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "listing", "published_at", "updated_at"]
+
+    def validate(self, attrs):
+        starts_at = attrs.get("starts_at", getattr(self.instance, "starts_at", None))
+        ends_at = attrs.get("ends_at", getattr(self.instance, "ends_at", None))
+        if ends_at is not None and starts_at is not None and ends_at <= starts_at:
+            raise serializers.ValidationError(
+                {"ends_at": "Must be later than starts_at."}
+            )
+        return attrs
+
+
 class ListingDetailSerializer(ListingCardSerializer):
     """
     Serializer for the detail endpoint (ListingDetail shape per spec §9).
@@ -174,6 +202,7 @@ class ListingDetailSerializer(ListingCardSerializer):
     reviews = serializers.SerializerMethodField()
     images = ListingImageSerializer(many=True, read_only=True)
     contacts = ListingContactSerializer(many=True, read_only=True)
+    events = EventSerializer(many=True, read_only=True)
     driving_distance_km = serializers.SerializerMethodField()
 
     class Meta(ListingCardSerializer.Meta):
@@ -190,6 +219,7 @@ class ListingDetailSerializer(ListingCardSerializer):
             "event_type",
             "starts_at",
             "driving_distance_km",
+            "events",
         ]
 
     def get_driving_distance_km(self, obj: Listing) -> float | None:

@@ -24,6 +24,7 @@ class NotificationAdmin(ModelAdmin):
     search_fields = ("user__email", "title", "body")
     readonly_fields = (
         "user",
+        "event",
         "type",
         "title",
         "body",

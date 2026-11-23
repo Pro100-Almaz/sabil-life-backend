@@ -243,6 +243,13 @@ UNFOLD = {
                             "admin:providers_providerverification_changelist"
                         ),
                     },
+                    {
+                        "title": _("Ownership requests"),
+                        "icon": "assignment_ind",
+                        "link": reverse_lazy(
+                            "admin:providers_listingownershiprequest_changelist"
+                        ),
+                    },
                 ],
             },
             {
